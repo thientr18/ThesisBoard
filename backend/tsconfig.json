@@ -1,0 +1,10 @@
+{
+  "compilerOptions": {
+    "target": "ES2020",        // JS version khi build ra
+    "module": "CommonJS",      // Node.js dùng CommonJS
+    "rootDir": "src",          // Source code nằm trong folder src
+    "outDir": "dist",          // Sau khi build thì JS nằm trong dist
+    "strict": true,            // Bật strict mode để check type chặt chẽ
+    "esModuleInterop": true    // Cho phép import thư viện CommonJS như express
+  }
+}
