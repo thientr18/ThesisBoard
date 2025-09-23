@@ -14,3 +14,6 @@ yarn-error.log*
 # Env files
 .env
 .env.*
+
+# others
+/bin

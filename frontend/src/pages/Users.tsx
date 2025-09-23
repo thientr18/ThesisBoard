@@ -11,12 +11,12 @@ function Users() {
   const [newName, setNewName] = useState("");
 
   useEffect(() => {
-    getUsers().then(setUsers);
+    getUsers().then((data) => setUsers(data as User[]));
   }, []);
 
   const handleAddUser = async () => {
     if (!newName.trim()) return;
-    const newUser = await createUser(newName);
+    const newUser = await createUser(newName) as User;
     setUsers([...users, newUser]);
     setNewName("");
   };
