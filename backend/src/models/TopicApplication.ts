@@ -8,6 +8,9 @@ export class TopicApplication extends Model<InferAttributes<TopicApplication>, I
   declare status: 'pending' | 'accepted' | 'rejected' | 'cancelled';
   declare note: string | null;
   declare decidedAt: Date | null;
+  declare proposalTitle: string | null;
+  declare proposalAbstract: string | null;
+  declare proposalFileUrl: string | null;
 }
 
 TopicApplication.init(
@@ -18,6 +21,9 @@ TopicApplication.init(
     status: { type: DataTypes.ENUM('pending', 'accepted', 'rejected', 'cancelled'), defaultValue: 'pending' },
     note: { type: DataTypes.STRING(255), allowNull: true },
     decidedAt: { type: DataTypes.DATE, allowNull: true, field: 'decided_at' },
+    proposalTitle: { type: DataTypes.STRING(255), allowNull: true, field: 'proposal_title' },
+    proposalAbstract: { type: DataTypes.TEXT, allowNull: true, field: 'proposal_abstract' },
+    proposalFileUrl: { type: DataTypes.STRING(1024), allowNull: true, field: 'proposal_file_url' },
   },
   {
     sequelize,

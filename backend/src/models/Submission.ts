@@ -7,7 +7,7 @@ export class Submission extends Model<InferAttributes<Submission>, InferCreation
   declare entityId: number;
   declare title: string | null;
   declare description: string | null;
-  declare fileUrl: string; // URL to the submitted file
+  declare fileUrl: string;
   declare uploadedByUserId: number;
 }
 

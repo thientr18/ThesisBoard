@@ -15,6 +15,7 @@ import { ThesisAssignment } from './ThesisAssignment';
 import { DefenseSession } from './DefenseSession';
 import { ThesisEvaluation } from './ThesisEvaluation';
 import { ThesisFinalGrade } from './ThesisFinalGrade';
+import { ThesisProposal } from './ThesisProposal';
 import { Announcement } from './Announcement';
 import { Notification } from './Notification';
 import { Attachment } from './Attachment';
@@ -38,6 +39,7 @@ const models = {
     DefenseSession,
     ThesisEvaluation,
     ThesisFinalGrade,
+    ThesisProposal,
     Announcement,
     Notification,
     Attachment,
@@ -100,6 +102,16 @@ function applyAssociations() {
 
     PreThesisProject.belongsTo(Teacher, { as: 'supervisorTeacher', foreignKey: 'supervisorTeacherId' });
     Teacher.hasMany(PreThesisProject, { as: 'supervisions', foreignKey: 'supervisorTeacherId' });
+
+    // thesis_proposals (student -> available teacher)
+    ThesisProposal.belongsTo(Student, { foreignKey: 'studentId' });
+    Student.hasMany(ThesisProposal, { foreignKey: 'studentId' });
+
+    ThesisProposal.belongsTo(Teacher, { as: 'targetTeacher', foreignKey: 'targetTeacherId' });
+    Teacher.hasMany(ThesisProposal, { as: 'receivedProposals', foreignKey: 'targetTeacherId' });
+
+    ThesisProposal.belongsTo(Semester, { foreignKey: 'semesterId' });
+    Semester.hasMany(ThesisProposal, { foreignKey: 'semesterId' });
 
     // thesis_registrations
     ThesisRegistration.belongsTo(Student, { foreignKey: 'studentId' });
