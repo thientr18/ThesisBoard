@@ -7,6 +7,7 @@ export class StudentSemester extends Model<InferAttributes<StudentSemester>, Inf
   declare semesterId: number;
   declare gpa: number | null;
   declare totalCredits: number | null;
+  declare type: 'pre-thesis' | 'thesis';
   declare status: 'enrolled' | 'suspended' | 'completed';
 }
 
@@ -17,6 +18,7 @@ StudentSemester.init(
     semesterId: { type: DataTypes.BIGINT, allowNull: false, field: 'semester_id' },
     gpa: { type: DataTypes.DECIMAL(3, 2), allowNull: true },
     totalCredits: { type: DataTypes.INTEGER, allowNull: true, field: 'total_credits' },
+    type: { type: DataTypes.ENUM('thesis', 'pre-thesis'), allowNull: false },
     status: { type: DataTypes.ENUM('enrolled', 'suspended', 'completed'), defaultValue: 'enrolled' },
   },
   {
