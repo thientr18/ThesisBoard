@@ -1,13 +1,21 @@
-import axios from "axios";
+import { api } from './axios0Instance';
 
-const API_URL = "http://localhost:5000/api/users";
-
-export const getUsers = async () => {
-  const res = await axios.get(API_URL);
-  return res.data;
+export const fetchUsers = async () => {
+  try {
+    const response = await api.get('/api/protected');
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching protected data:', error);
+    throw error;
+  }
 };
 
-export const createUser = async (name: string) => {
-  const res = await axios.post(API_URL, { name });
-  return res.data;
+export const fetchPublicData = async () => {
+  try {
+    const response = await api.get('/api/public');
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching public data:', error);
+    throw error;
+  }
 };
