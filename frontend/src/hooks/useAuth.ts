@@ -6,11 +6,14 @@ export function useAuth() {
     isLoading,
     user,
     loginWithRedirect,
-    logout
+    logout,
+    getAccessTokenSilently
   } = useAuth0();
 
   const handleLogin = () => {
-    loginWithRedirect();
+    loginWithRedirect({
+      appState: { returnTo: window.location.pathname }
+    });
   };
 
   const handleLogout = () => {
@@ -22,6 +25,7 @@ export function useAuth() {
     isLoading,
     user,
     login: handleLogin,
-    logout: handleLogout
+    logout: handleLogout,
+    getToken: getAccessTokenSilently
   };
 }

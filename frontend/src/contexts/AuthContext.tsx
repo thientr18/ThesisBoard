@@ -1,47 +1,50 @@
-import { type PropsWithChildren, useEffect } from 'react';
-import { Auth0Provider, useAuth0 } from '@auth0/auth0-react';
-import { configureAuth } from '../api/axios0Instance';
+import React, { createContext, useContext, useState, useEffect } from 'react';
+import { isAuthenticated, logout, getToken } from '../utils/auth';
+import { useNavigate } from 'react-router-dom';
 
-function AuthAxiosBridge() {
-  const { getAccessTokenSilently, isAuthenticated } = useAuth0();
-  
+interface AuthContextType {
+  isAuthenticated: boolean;
+  loading: boolean;
+  logout: () => void;
+  getToken: () => string | null;
+}
+
+const AuthContext = createContext<AuthContextType | undefined>(undefined);
+
+export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const [loading, setLoading] = useState(true);
+  const [authenticated, setAuthenticated] = useState(false);
+  const navigate = useNavigate();
+
   useEffect(() => {
-    configureAuth(async () => {
-      if (!isAuthenticated) {
-        console.log('User not authenticated');
-        return null;
-      }
-      try {
-        console.log('Getting token for audience:', import.meta.env.VITE_AUTH0_AUDIENCE);
-        const token = await getAccessTokenSilently({
-          authorizationParams: { 
-            audience: import.meta.env.VITE_AUTH0_AUDIENCE 
-          },
-        });
-        console.log('Token received:', token ? 'YES (length: ' + token.length + ')' : 'NO');
-        return token;
-      } catch (error) {
-        console.error('Error getting token:', error);
-        return null;
-      }
-    });
-  }, [getAccessTokenSilently, isAuthenticated]);
-  
-  return null;
-}
+    const checkAuth = () => {
+      setAuthenticated(isAuthenticated());
+      setLoading(false);
+    };
+    
+    checkAuth();
+  }, []);
 
-export function AuthProvider({ children }: PropsWithChildren) {
-  return (
-    <Auth0Provider
-      domain={import.meta.env.VITE_AUTH0_DOMAIN}
-      clientId={import.meta.env.VITE_AUTH0_CLIENT_ID}
-      authorizationParams={{
-        redirect_uri: window.location.origin,
-        audience: import.meta.env.VITE_AUTH0_AUDIENCE,
-      }}
-    >
-      <AuthAxiosBridge />
-      {children}
-    </Auth0Provider>
-  );
-}
+  const handleLogout = () => {
+    logout();
+    setAuthenticated(false);
+    navigate('/login');
+  };
+
+  const value = {
+    isAuthenticated: authenticated,
+    loading,
+    logout: handleLogout,
+    getToken
+  };
+
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+};
+
+export const useCustomAuth = () => {
+  const context = useContext(AuthContext);
+  if (context === undefined) {
+    throw new Error('useCustomAuth must be used within an AuthProvider');
+  }
+  return context;
+};

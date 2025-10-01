@@ -16,4 +16,4 @@ yarn-error.log*
 .env.*
 
 # others
-/bin
+/.bin

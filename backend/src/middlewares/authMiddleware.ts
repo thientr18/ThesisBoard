@@ -1,6 +1,13 @@
-import { auth, requiredScopes } from 'express-oauth2-jwt-bearer';
+import { auth, AuthResult, requiredScopes } from 'express-oauth2-jwt-bearer';
 import { Request, Response, NextFunction } from 'express';
 import 'dotenv/config';
+
+// Define interface to extend the Auth0 JWT verification result with expected properties
+interface ExtendedJwtPayload extends AuthResult {
+  permissions?: string[];
+  roles?: string[];
+  [key: string]: any; // Allow for dynamic properties like namespace claims
+}
 
 export const checkJwt = auth({
   audience: process.env.AUTH0_AUDIENCE,
@@ -10,7 +17,7 @@ export const checkJwt = auth({
 
 export const requireAdmin = (req: Request, res: Response, next: NextFunction) => {
   try {
-    const user = req.auth;
+    const user = req.auth as ExtendedJwtPayload;
     
     // Check if user object exists
     if (!user) {
@@ -20,11 +27,8 @@ export const requireAdmin = (req: Request, res: Response, next: NextFunction) =>
       });
     }
     
-    // Check for admin role in permissions or roles
-    // Auth0 typically includes roles in the token under a custom namespace
-    // The exact path depends on how you've configured your Auth0 rules
     const roles = user.permissions || 
-                  user[`${process.env.AUTH0_AUDIENCE}/roles`] || 
+                  (process.env.AUTH0_AUDIENCE ? user[`${process.env.AUTH0_AUDIENCE}/roles`] : undefined) || 
                   user.roles || 
                   user['https://thesisboard-api.com/roles'];
     

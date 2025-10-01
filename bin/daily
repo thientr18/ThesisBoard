@@ -1,0 +1,52 @@
+01/10:
+    - Setup API layers
+    - Setup Context
+    - Setup Hooks
+    - errorHandler Backend
+    - Auth0 Roles & Permissions for different user types
+
+29/09:
+    - ✅ Grant Password
+    - ✅ Testing authentication & authorization
+
+28/09:
+    - ✅ Design Login Page
+    - ✅ Develop Login with token
+    - ✅ Implement Authentication Token Handling
+    - ✅ User Management in Auth0
+    - ✅ Route Protection
+
+26/09:
+    - ✅ Backend Integration
+    - ✅ Frontend Integration
+    - ✅ Config TailwindCSS
+
+25/09:
+    - ✅ Auth0 Setup
+
+24/09:
+    - ✅ Thay đổi database xíu:
+        + Pre-thesis hiện tại: 
+            Supervisor assign topics -> Student apply topics + submit proposal-> Supervisor approve topics 
+            -> Student submit pre-thesis -> Supervisor approve pre-thesis
+        + Thesis:
+            Teacher assign registration -> Moderator approve registration -> Student submit thesis
+            -> Supervisor approve thesis
+        + Pre-thesis thay đổi thành: 
+            Supervisor assign topics -> Student apply topics -> Supervisor approve topics 
+            -> Student submit pre-thesis -> Supervisor grade pre-thesis -> Moderator export pre-thesis report
+        + Thesis thay đổi thành:
+            Student submit proposal -> Teacher assign registration -> Moderator approve registration + export registration report
+            -> Student submit thesis -> Supervisor grade thesis -> Moderator assign Reviewer 
+            -> Reviewer review & grade thesis -> Moderator assign Committee & Defense Session
+            -> Moderator export thesis report
+    
+23/09:
+    - ✅ associations checking 
+    - ✅ review and evaluate models
+    - ✅ indexes for better performance
+    - ✅ fix any issues found and run models testing to ensure everything works as expected
+
+22/09:
+    - ✅ build ERD && schema models
+    - ✅ add timestamps where necessary
