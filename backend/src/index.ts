@@ -4,7 +4,7 @@ import dotenv from "dotenv";
 import { sequelize } from "./models/db";
 import { applyAssociations } from "./models";
 import routes from "./routes";
-import { errorHandler } from "./middlewares/errorHandler";
+import { errorHandler, notFoundHandler, setupUnhandledErrorHandlers } from './middlewares/errorHandler';
 
 dotenv.config();
 const app = express();
@@ -12,8 +12,10 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-app.use(routes);
+app.use('/api', routes);
+app.use(notFoundHandler);
 app.use(errorHandler);
+setupUnhandledErrorHandlers();
 
 async function start() {
     try {
@@ -21,7 +23,7 @@ async function start() {
         console.log("✅ Database connected successfully.");
         applyAssociations();
 
-        await sequelize.sync({ alter: true });
+        await sequelize.sync();
         console.log("✅ Models synchronized.");
 
         const PORT = process.env.PORT || 5000;
