@@ -15,5 +15,5 @@ ThesisFinalGrade.init(
     finalScore: { type: DataTypes.DECIMAL(5, 2), allowNull: false, field: 'final_score' },
     computedAt: { type: DataTypes.DATE, allowNull: false, defaultValue: DataTypes.NOW, field: 'computed_at' },
   },
-  { sequelize, tableName: 'thesis_final_grades', modelName: 'ThesisFinalGrade', underscored: true, timestamps: true }
+  { sequelize, tableName: 'thesis_final_grades', modelName: 'ThesisFinalGrade', underscored: true, timestamps: true, paranoid: true }
 );

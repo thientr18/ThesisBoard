@@ -39,6 +39,7 @@ Announcement.init(
     tableName: 'announcements',
     modelName: 'Announcement',
     underscored: true,
-    timestamps: true
+    timestamps: true,
+    paranoid: true
   }
 );

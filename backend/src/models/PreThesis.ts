@@ -1,7 +1,7 @@
 import { DataTypes, Model, InferAttributes, InferCreationAttributes, CreationOptional } from 'sequelize';
 import { sequelize } from './db';
 
-export class PreThesisProject extends Model<InferAttributes<PreThesisProject>, InferCreationAttributes<PreThesisProject>> {
+export class PreThesis extends Model<InferAttributes<PreThesis>, InferCreationAttributes<PreThesis>> {
   declare id: CreationOptional<number>;
   declare studentId: number;
   declare topicId: number;
@@ -11,7 +11,7 @@ export class PreThesisProject extends Model<InferAttributes<PreThesisProject>, I
   declare finalScore: number | null;
 }
 
-PreThesisProject.init(
+PreThesis.init(
   {
     id: { type: DataTypes.BIGINT, primaryKey: true, autoIncrement: true },
     studentId: { type: DataTypes.BIGINT, allowNull: false, field: 'student_id' },
@@ -22,14 +22,15 @@ PreThesisProject.init(
     finalScore: { type: DataTypes.DECIMAL(5, 2), allowNull: true, field: 'final_score' },
   },
   { sequelize,
-    tableName: 'pre_thesis_projects',
-    modelName: 'PreThesisProject',
+    tableName: 'pre_theses',
+    modelName: 'PreThesis',
     underscored: true,
     timestamps: true,
+    paranoid: true,
     indexes: [ {
       unique: true,
       fields: ['student_id', 'semester_id'],
-      name: 'uniq_pre_thesis_project_per_student_per_semester'
+      name: 'uniq_pre_thesis_per_student_per_semester'
     } ]
   }
 );

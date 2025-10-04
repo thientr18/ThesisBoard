@@ -25,6 +25,7 @@ ThesisAssignment.init(
     modelName: 'ThesisAssignment',
     underscored: true,
     timestamps: true,
+    paranoid: true,
     indexes: [{
       unique: true,
       fields: ['thesis_id', 'teacher_id', 'role'],

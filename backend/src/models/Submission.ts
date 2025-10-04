@@ -21,5 +21,5 @@ Submission.init(
     fileUrl: { type: DataTypes.STRING(1024), allowNull: false, field: 'file_url' },
     uploadedByUserId: { type: DataTypes.BIGINT, allowNull: false, field: 'uploaded_by_user_id' },
   },
-  { sequelize, tableName: 'submissions', modelName: 'Submission', underscored: true, timestamps: true }
+  { sequelize, tableName: 'submissions', modelName: 'Submission', underscored: true, timestamps: true, paranoid: true }
 );

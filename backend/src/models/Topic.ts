@@ -25,5 +25,5 @@ Topic.init(
     maxSlots: { type: DataTypes.INTEGER, allowNull: false, field: 'max_slots' },
     status: { type: DataTypes.ENUM('open', 'closed'), defaultValue: 'open' },
   },
-  { sequelize, tableName: 'topics', modelName: 'Topic', underscored: true, timestamps: true }
+  { sequelize, tableName: 'topics', modelName: 'Topic', underscored: true, timestamps: true, paranoid: true }
 );

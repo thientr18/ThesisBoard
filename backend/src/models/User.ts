@@ -19,7 +19,7 @@ User.init(
     fullName: { type: DataTypes.STRING(255), allowNull: false, field: 'full_name' },
     status: { type: DataTypes.ENUM('active', 'inactive'), defaultValue: 'active' },
   },
-  { sequelize, tableName: 'users', modelName: 'User', underscored: true, timestamps: true }
+  { sequelize, tableName: 'users', modelName: 'User', underscored: true, timestamps: true, paranoid: true }
 );
 
 export default User;

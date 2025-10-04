@@ -31,6 +31,7 @@ TopicApplication.init(
     modelName: 'TopicApplication',
     underscored: true,
     timestamps: true,
+    paranoid: true,
     indexes: [{ unique: true, fields: ['topic_id', 'student_id'] }],
     hooks: {
       async beforeCreate(app, options) {

@@ -27,6 +27,7 @@ Thesis.init(
     modelName: 'Thesis',
     underscored: true,
     timestamps: true,
+    paranoid: true,
     indexes: [ {
       unique: true,
       fields: ['student_id', 'semester_id'],

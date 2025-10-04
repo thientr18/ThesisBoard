@@ -33,6 +33,7 @@ ThesisProposal.init(
     modelName: 'ThesisProposal',
     underscored: true,
     timestamps: true,
+    paranoid: true,
     indexes: [
       // One active "submitted" proposal per student per semester (soft constraint)
       { unique: false, fields: ['student_id', 'semester_id', 'status'], name: 'idx_thesis_proposal_student_semester_status' },

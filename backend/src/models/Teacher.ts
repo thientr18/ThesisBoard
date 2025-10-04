@@ -21,5 +21,5 @@ Teacher.init(
     phone: { type: DataTypes.STRING(32), allowNull: true },
     email: { type: DataTypes.STRING(255), allowNull: true },
   },
-  { sequelize, tableName: 'teachers', modelName: 'Teacher', underscored: true, timestamps: true }
+  { sequelize, tableName: 'teachers', modelName: 'Teacher', underscored: true, timestamps: true, paranoid: true }
 );

@@ -25,6 +25,7 @@ ThesisEvaluation.init(
     modelName: 'ThesisEvaluation',
     underscored: true,
     timestamps: true,
+    paranoid: true,
     indexes: [{ 
       unique: true,
       fields: ['thesis_id', 'evaluator_teacher_id', 'role'],
