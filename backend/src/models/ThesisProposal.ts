@@ -1,5 +1,6 @@
 import { DataTypes, Model, InferAttributes, InferCreationAttributes, CreationOptional, Op } from 'sequelize';
 import { sequelize } from './db';
+import { AppError } from '../utils/AppError';
 
 export class ThesisProposal extends Model<InferAttributes<ThesisProposal>, InferCreationAttributes<ThesisProposal>> {
   declare id: CreationOptional<number>;
@@ -45,20 +46,20 @@ ThesisProposal.init(
             where: { studentId: p.studentId, semesterId: p.semesterId, status: 'accepted' },
             transaction: options.transaction,
           });
-          if (existing) throw new Error('Student already has an accepted thesis proposal this semester.');
+          if (existing) throw new AppError('Student already has an accepted thesis proposal this semester.');
         }
       },
       async beforeUpdate(p, options) {
         const prev = p.previous('status');
         if (prev === 'rejected' && p.status === 'accepted') {
-          throw new Error('Cannot accept after rejected');
+          throw new AppError('Cannot accept after rejected');
         }
         if (p.changed('status') && p.status === 'accepted') {
           const existing = await ThesisProposal.findOne({
             where: { studentId: p.studentId, semesterId: p.semesterId, status: 'accepted', id: { [Op.ne]: p.id } },
             transaction: options.transaction,
           });
-          if (existing) throw new Error('Student already has an accepted thesis proposal this semester.');
+          if (existing) throw new AppError('Student already has an accepted thesis proposal this semester.');
         }
         if (p.changed('status') && (p.status === 'accepted' || p.status === 'rejected')) {
           p.decidedAt = new Date();

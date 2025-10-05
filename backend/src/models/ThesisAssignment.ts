@@ -5,7 +5,7 @@ export class ThesisAssignment extends Model<InferAttributes<ThesisAssignment>, I
   declare id: CreationOptional<number>;
   declare thesisId: number;
   declare teacherId: number;
-  declare role: 'reviewer' | 'committee_member' | 'chair' | 'secretary' | 'member'; // Roles for thesis defense committee
+  declare role: 'reviewer' | 'committee_member' | 'chair' | 'secretary' | 'member';
   declare assignedByUserId: number;
   declare assignedAt: CreationOptional<Date>;
 }

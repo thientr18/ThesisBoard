@@ -3,7 +3,7 @@ import { sequelize } from './db';
 
 export class Attachment extends Model<InferAttributes<Attachment>, InferCreationAttributes<Attachment>> {
   declare id: CreationOptional<number>;
-  declare entityType: 'topic' | 'pre_thesis_project' | 'thesis' | 'submission' | 'announcement' | 'topic_application' | 'thesis_proposal';
+  declare entityType: 'topic' | 'submission' | 'announcement' | 'topic_application' | 'thesis_proposal';
   declare entityId: number;
   declare fileUrl: string;
   declare fileName: string | null;
@@ -15,7 +15,7 @@ Attachment.init(
   {
     id: { type: DataTypes.BIGINT, primaryKey: true, autoIncrement: true },
     entityType: {
-      type: DataTypes.ENUM('topic', 'pre_thesis_project', 'thesis', 'submission', 'announcement', 'topic_application', 'thesis_proposal'),
+      type: DataTypes.ENUM('topic', 'submission', 'announcement', 'topic_application', 'thesis_proposal'),
       allowNull: false,
       field: 'entity_type',
     },

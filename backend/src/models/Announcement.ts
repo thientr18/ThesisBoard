@@ -1,5 +1,6 @@
 import { DataTypes, Model, InferAttributes, InferCreationAttributes, CreationOptional } from 'sequelize';
 import { sequelize } from './db';
+import { AppError } from '../utils/AppError';
 
 export class Announcement extends Model<InferAttributes<Announcement>, InferCreationAttributes<Announcement>> {
   declare id: CreationOptional<number>;
@@ -19,7 +20,7 @@ Announcement.init(
     content: { type: DataTypes.TEXT, allowNull: false, 
       validate: { 
         maxLen(value: string) {
-          if (value && value.length > 20000) throw new Error('content too long');
+          if (value && value.length > 20000) throw new AppError('content too long');
         }
       }
     },

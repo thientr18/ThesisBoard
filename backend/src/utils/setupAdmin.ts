@@ -1,9 +1,10 @@
+import axios from 'axios';
 import dotenv from 'dotenv';
 import { sequelize } from '../models/db';
 import { Role } from '../models/Role';
 import { User } from '../models/User';
 import { UserRole } from '../models/UserRole';
-import axios from 'axios';
+import { AppError } from '../utils/AppError';
 
 dotenv.config();
 /**
@@ -153,7 +154,7 @@ async function setupAuth0Admin(): Promise<{ userId: string; roleId: string; user
     // Get management API token
     const token = await getAuth0ManagementToken();
     if (!token) {
-      throw new Error('No Auth0 management token obtained');
+      throw new AppError('No Auth0 management token obtained', 401);
     }
     console.log('Token: ', token);
     const headers = {

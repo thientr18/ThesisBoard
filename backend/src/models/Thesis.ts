@@ -8,7 +8,7 @@ export class Thesis extends Model<InferAttributes<Thesis>, InferCreationAttribut
   declare semesterId: number;
   declare title: string | null;
   declare abstract: string | null;
-  declare status: 'draft' | 'in_progress' | 'defense_scheduled' | 'completed' | 'cancelled';
+  declare status: 'in_progress' | 'defense_scheduled' | 'completed' | 'cancelled';
 }
 
 Thesis.init(
@@ -19,7 +19,7 @@ Thesis.init(
     semesterId: { type: DataTypes.BIGINT, allowNull: false, field: 'semester_id' },
     title: { type: DataTypes.STRING(255), allowNull: true },
     abstract: { type: DataTypes.TEXT, allowNull: true },
-    status: { type: DataTypes.ENUM('draft', 'in_progress', 'defense_scheduled', 'completed', 'cancelled'), defaultValue: 'in_progress' },
+    status: { type: DataTypes.ENUM('in_progress', 'defense_scheduled', 'completed', 'cancelled'), defaultValue: 'in_progress' },
   },
   { 
     sequelize,

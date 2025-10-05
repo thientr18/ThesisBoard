@@ -19,5 +19,12 @@ DefenseSession.init(
     status: { type: DataTypes.ENUM('scheduled', 'completed', 'cancelled'), defaultValue: 'scheduled' },
     notes: { type: DataTypes.STRING(255), allowNull: true },
   },
-  { sequelize, tableName: 'defense_sessions', modelName: 'DefenseSession', underscored: true, timestamps: true, paranoid: true }
+  { 
+    sequelize,
+    tableName: 'defense_sessions',
+    modelName: 'DefenseSession',
+    underscored: true,
+    timestamps: true,
+    paranoid: true
+  }
 );

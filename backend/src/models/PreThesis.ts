@@ -7,7 +7,7 @@ export class PreThesis extends Model<InferAttributes<PreThesis>, InferCreationAt
   declare topicId: number;
   declare semesterId: number;
   declare supervisorTeacherId: number;
-  declare status: 'ongoing' | 'completed' | 'cancelled';
+  declare status: 'in_progress' | 'completed' | 'cancelled';
   declare finalScore: number | null;
 }
 
@@ -18,7 +18,7 @@ PreThesis.init(
     topicId: { type: DataTypes.BIGINT, allowNull: false, field: 'topic_id' },
     semesterId: { type: DataTypes.BIGINT, allowNull: false, field: 'semester_id' },
     supervisorTeacherId: { type: DataTypes.BIGINT, allowNull: false, field: 'supervisor_teacher_id' },
-    status: { type: DataTypes.ENUM('ongoing', 'completed', 'cancelled'), defaultValue: 'ongoing' },
+    status: { type: DataTypes.ENUM('in_progress', 'completed', 'cancelled'), defaultValue: 'in_progress' },
     finalScore: { type: DataTypes.DECIMAL(5, 2), allowNull: true, field: 'final_score' },
   },
   { sequelize,

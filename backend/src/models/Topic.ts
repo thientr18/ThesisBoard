@@ -9,7 +9,7 @@ export class Topic extends Model<InferAttributes<Topic>, InferCreationAttributes
   declare description: string | null;
   declare requirements: string | null;
   declare tags: object | null;
-  declare maxSlots: number;
+  declare maxSlots: number | null;
   declare status: 'open' | 'closed';
 }
 
@@ -22,7 +22,7 @@ Topic.init(
     description: { type: DataTypes.TEXT, allowNull: true },
     requirements: { type: DataTypes.TEXT, allowNull: true },
     tags: { type: DataTypes.JSON, allowNull: true },
-    maxSlots: { type: DataTypes.INTEGER, allowNull: false, field: 'max_slots' },
+    maxSlots: { type: DataTypes.INTEGER, allowNull: true, field: 'max_slots' },
     status: { type: DataTypes.ENUM('open', 'closed'), defaultValue: 'open' },
   },
   { sequelize, tableName: 'topics', modelName: 'Topic', underscored: true, timestamps: true, paranoid: true }

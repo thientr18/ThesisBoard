@@ -1,5 +1,6 @@
 import { DataTypes, Model, InferAttributes, InferCreationAttributes, CreationOptional, Op } from 'sequelize';
 import { sequelize } from './db';
+import { AppError } from '../utils/AppError';
 
 export class TopicApplication extends Model<InferAttributes<TopicApplication>, InferCreationAttributes<TopicApplication>> {
   declare id: CreationOptional<number>;
@@ -40,13 +41,13 @@ TopicApplication.init(
             where: { studentId: app.studentId, status: 'accepted' },
             transaction: options.transaction,
           });
-          if (existing) throw new Error('Student already has an accepted topic.');
+          if (existing) throw new AppError('Student already has an accepted topic.');
         }
       },
       async beforeUpdate(app, options) {
         const prev = app.previous('status');
         if (prev === 'rejected' && app.status === 'accepted') {
-          throw new Error('Cannot accept after rejected');
+          throw new AppError('Cannot accept after rejected');
         }
         if (app.changed('status') && app.status === 'accepted') {
           const existing = await TopicApplication.findOne({
@@ -57,7 +58,7 @@ TopicApplication.init(
             },
             transaction: options.transaction,
           });
-          if (existing) throw new Error('Student already has an accepted topic.');
+          if (existing) throw new AppError('Student already has an accepted topic.');
         }
         if (app.changed('status') && (app.status === 'accepted' || app.status === 'rejected')) {
           app.decidedAt = new Date();

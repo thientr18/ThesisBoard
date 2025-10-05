@@ -8,14 +8,14 @@ import { Teacher } from './Teacher';
 import { TeacherAvailability } from './TeacherAvailability';
 import { Topic } from './Topic';
 import { TopicApplication } from './TopicApplication';
-import { PreThesisProject } from './PreThesisProject';
+import { PreThesis } from './PreThesis';
+import { ThesisProposal } from './ThesisProposal';
 import { ThesisRegistration } from './ThesisRegistration';
 import { Thesis } from './Thesis';
 import { ThesisAssignment } from './ThesisAssignment';
 import { DefenseSession } from './DefenseSession';
 import { ThesisEvaluation } from './ThesisEvaluation';
 import { ThesisFinalGrade } from './ThesisFinalGrade';
-import { ThesisProposal } from './ThesisProposal';
 import { Announcement } from './Announcement';
 import { Notification } from './Notification';
 import { Attachment } from './Attachment';
@@ -32,7 +32,7 @@ const models = {
     TeacherAvailability,
     Topic,
     TopicApplication,
-    PreThesisProject,
+    PreThesis,
     ThesisRegistration,
     Thesis,
     ThesisAssignment,
@@ -91,17 +91,17 @@ function applyAssociations() {
     Student.hasMany(TopicApplication, { foreignKey: 'studentId' });
 
     // pre_thesis_projects
-    PreThesisProject.belongsTo(Student, { foreignKey: 'studentId' });
-    Student.hasMany(PreThesisProject, { foreignKey: 'studentId' });
+    PreThesis.belongsTo(Student, { foreignKey: 'studentId' });
+    Student.hasMany(PreThesis, { foreignKey: 'studentId' });
 
-    PreThesisProject.belongsTo(Topic, { foreignKey: 'topicId' });
-    Topic.hasMany(PreThesisProject, { foreignKey: 'topicId' });
+    PreThesis.belongsTo(Topic, { foreignKey: 'topicId' });
+    Topic.hasMany(PreThesis, { foreignKey: 'topicId' });
 
-    PreThesisProject.belongsTo(Semester, { foreignKey: 'semesterId' });
-    Semester.hasMany(PreThesisProject, { foreignKey: 'semesterId' });
+    PreThesis.belongsTo(Semester, { foreignKey: 'semesterId' });
+    Semester.hasMany(PreThesis, { foreignKey: 'semesterId' });
 
-    PreThesisProject.belongsTo(Teacher, { as: 'supervisorTeacher', foreignKey: 'supervisorTeacherId' });
-    Teacher.hasMany(PreThesisProject, { as: 'supervisions', foreignKey: 'supervisorTeacherId' });
+    PreThesis.belongsTo(Teacher, { as: 'supervisorTeacher', foreignKey: 'supervisorTeacherId' });
+    Teacher.hasMany(PreThesis, { as: 'supervisions', foreignKey: 'supervisorTeacherId' });
 
     // thesis_proposals (student -> available teacher)
     ThesisProposal.belongsTo(Student, { foreignKey: 'studentId' });

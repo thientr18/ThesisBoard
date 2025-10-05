@@ -9,6 +9,7 @@ export class Submission extends Model<InferAttributes<Submission>, InferCreation
   declare description: string | null;
   declare fileUrl: string;
   declare uploadedByUserId: number;
+  declare type: 'report' | 'source_code' | 'demo' | 'other';
 }
 
 Submission.init(
@@ -20,6 +21,7 @@ Submission.init(
     description: { type: DataTypes.TEXT, allowNull: true },
     fileUrl: { type: DataTypes.STRING(1024), allowNull: false, field: 'file_url' },
     uploadedByUserId: { type: DataTypes.BIGINT, allowNull: false, field: 'uploaded_by_user_id' },
+    type: { type: DataTypes.ENUM('report', 'code', 'demo', 'other'), allowNull: false },
   },
   { sequelize, tableName: 'submissions', modelName: 'Submission', underscored: true, timestamps: true, paranoid: true }
 );
