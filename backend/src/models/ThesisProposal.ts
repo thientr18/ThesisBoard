@@ -9,7 +9,6 @@ export class ThesisProposal extends Model<InferAttributes<ThesisProposal>, Infer
   declare semesterId: number;
   declare title: string;
   declare abstract: string | null;
-  declare fileUrl: string | null;
   declare status: 'submitted' | 'accepted' | 'rejected' | 'cancelled';
   declare note: string | null;
   declare decidedAt: Date | null;
@@ -23,7 +22,6 @@ ThesisProposal.init(
     semesterId: { type: DataTypes.BIGINT, allowNull: false, field: 'semester_id' },
     title: { type: DataTypes.STRING(255), allowNull: false },
     abstract: { type: DataTypes.TEXT, allowNull: true },
-    fileUrl: { type: DataTypes.STRING(1024), allowNull: true, field: 'file_url' },
     status: { type: DataTypes.ENUM('submitted', 'accepted', 'rejected', 'cancelled'), defaultValue: 'submitted' },
     note: { type: DataTypes.STRING(255), allowNull: true },
     decidedAt: { type: DataTypes.DATE, allowNull: true, field: 'decided_at' },

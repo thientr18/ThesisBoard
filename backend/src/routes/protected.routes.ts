@@ -1,9 +1,9 @@
 import { Router } from 'express';
 import { checkJwt, requireAdmin } from '../middlewares/authMiddleware';
 import { roleMiddleware, requireAllPermissions } from '../middlewares/roleMiddleware';
-import * as userController from '../controllers/userController';
-import * as thesisController from '../controllers/thesisController';
-import * as prethesisController from '../controllers/prethesisController';
+import * as UserController from '../controllers/UserController';
+import * as ThesisController from '../controllers/ThesisController';
+import * as PreThesisController from '../controllers/PreThesisController';
 
 
 const router = Router();
@@ -33,46 +33,46 @@ router.get('/admin',
 // Route requiring specific roles or permissions
 router.get('/me', 
   checkJwt,
-  userController.getMe
+  UserController.getMe
 );
 
 // Route accessible to users with either read:users OR update:users permission
 router.get('/users', 
   checkJwt, 
   roleMiddleware(['read:users', 'update:users']), 
-  userController.getUsers
+  UserController.getUsers
 );
 
 // Route accessible only to admins
 router.delete('/users/:id', 
   checkJwt, 
   roleMiddleware(['admin:all', 'delete:users']), 
-  userController.deleteUser
+  UserController.deleteUser
 );
 
 router.get('/me/thesis', 
   checkJwt,
-  thesisController.getMyTheses
+  ThesisController.getMyTheses
 );
 
 // Route that requires ALL specified permissions (user must have both)
 router.post('/thesis/review', 
   checkJwt,
-  requireAllPermissions(['teacher:reviewer', 'grade:thesis_reviews']), 
-  thesisController.submitReview
+  requireAllPermissions(['teacher:reviewer', 'grade:thesis_reviews']),
+  ThesisController.submitReview
 );
 
 // Different permissions for different HTTP methods on the same resource
 router.route('/topics/:id')
-  .get(checkJwt, roleMiddleware(['view:topicss']), prethesisController.getTopic)
-  .put(checkJwt, roleMiddleware(['update:topics']), prethesisController.updateTopic)
-  .delete(checkJwt, roleMiddleware(['delete:topics']), prethesisController.deleteTopic);
+  .get(checkJwt, roleMiddleware(['view:topics']), PreThesisController.getTopic)
+  .put(checkJwt, roleMiddleware(['update:topics']), PreThesisController.updateTopic)
+  .delete(checkJwt, roleMiddleware(['delete:topics']), PreThesisController.deleteTopic);
 
 // Complex workflow with role-specific permissions
 router.post('/thesis-proposals/:id/approve',
   checkJwt,
   roleMiddleware(['teacher:supervisor', 'approve:thesis_registrations']),
-  thesisController.approveProposal
+  ThesisController.approveProposal
 );
 
 export default router;
