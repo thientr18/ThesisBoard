@@ -19,5 +19,15 @@ Semester.init(
     endDate: { type: DataTypes.DATEONLY, allowNull: false, field: 'end_date' },
     isActive: { type: DataTypes.BOOLEAN, defaultValue: false, field: 'is_active' },
   },
-  { sequelize, tableName: 'semesters', modelName: 'Semester', underscored: true, timestamps: true }
+  { sequelize,
+    tableName: 'semesters',
+    modelName: 'Semester',
+    underscored: true,
+    timestamps: true,
+    paranoid: true,
+    indexes: [
+      { fields: ['code'], unique: true },
+      { fields: ['is_active'] }
+    ],
+  }
 );

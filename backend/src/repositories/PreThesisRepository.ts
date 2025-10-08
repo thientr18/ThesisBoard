@@ -34,12 +34,9 @@ export class PreThesisRepository extends GenericRepository<PreThesis, number> {
     });
   }
 
-  async findByTopic(topicId: number, semesterId?: number): Promise<PreThesis[]> {
-    return this.model.findAll({
-      where: {
-        topicId,
-        ...(semesterId && { semesterId })
-      }
+  async findByTopicApplication(topicApplicationId: number): Promise<PreThesis | null> {
+    return this.model.findOne({
+      where: { topicApplicationId }
     });
   }
 

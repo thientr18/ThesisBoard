@@ -94,8 +94,8 @@ function applyAssociations() {
     PreThesis.belongsTo(Student, { foreignKey: 'studentId' });
     Student.hasMany(PreThesis, { foreignKey: 'studentId' });
 
-    PreThesis.belongsTo(Topic, { foreignKey: 'topicId' });
-    Topic.hasMany(PreThesis, { foreignKey: 'topicId' });
+    PreThesis.belongsTo(TopicApplication, { foreignKey: 'topicApplicationId' });
+    TopicApplication.hasMany(PreThesis, { foreignKey: 'topicApplicationId' });
 
     PreThesis.belongsTo(Semester, { foreignKey: 'semesterId' });
     Semester.hasMany(PreThesis, { foreignKey: 'semesterId' });

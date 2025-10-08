@@ -7,8 +7,8 @@ export class SemesterRepository extends GenericRepository<Semester, number> {
         super(Semester);
     }
 
-    async findActiveSemesters(): Promise<Semester[]> {
-        return await this.model.findAll({ where: { isActive: true } });
+    async findActiveSemester(): Promise<Semester | null> {
+        return await this.model.findOne({ where: { isActive: true } });
     }
 
     async activateSemester(semesterId: number): Promise<void> {

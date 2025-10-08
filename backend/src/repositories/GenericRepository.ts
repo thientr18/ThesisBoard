@@ -17,41 +17,45 @@ export class GenericRepository<T extends Model, ID> implements BaseRepository<T,
       where: filters || {}
     }) as Promise<T[]>;
   }
-  
-  async create(data: Partial<T>): Promise<T> {
-    return this.model.create(data as any) as unknown as Promise<T>;
+
+  async create(data: Partial<T>, options?: any): Promise<T> {
+    return this.model.create(data as any, options) as unknown as Promise<T>;
   }
   
-  async update(id: ID, data: Partial<T>): Promise<T | null> {
+  async update(id: ID, data: Partial<T>, options?: any): Promise<T | null> {
     const instance = await this.findById(id);
     if (!instance) return null;
-    
-    return (await instance.update(data)) as T;
+
+    return (await instance.update(data, options)) as T;
   }
   
   // Soft delete
-  async delete(id: ID): Promise<boolean> {
+  async delete(id: ID, options?: any): Promise<boolean> {
     const deleted = await this.model.destroy({
-      where: { id: id as any }
+      where: { id: id as any },
+      ...options
     });
     return deleted > 0;
   }
 
     // Hard delete when needed
-  async hardDelete(id: ID): Promise<boolean> {
+  async hardDelete(id: ID, options?: any): Promise<boolean> {
     const deleted = await this.model.destroy({
       where: { id: id as any },
-      force: true // Actually delete the record
+      force: true, // Actually delete the record
+      ...options
     });
     return deleted > 0;
   }
   
   // Restore a soft-deleted record
-  async restore(id: ID): Promise<T | null> {
+  async restore(id: ID, options?: any): Promise<T | null> {
     const instance = await this.model.findByPk(id as any, { paranoid: false });
     if (!instance) return null;
     
-    await instance.restore();
+    await instance.restore(
+      options
+    );
     return instance;
   }
   
