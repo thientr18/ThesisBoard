@@ -6,6 +6,8 @@ import { AttachmentController } from '../controllers/AttachmentController';
 import { upload } from '../config/multer';
 
 const router = Router();
+router.use(checkJwt);
+
 const attachmentController = new AttachmentController();
 
 const handleAttachmentRequest = (req: Request, res: Response, next: NextFunction) => {
@@ -28,15 +30,12 @@ const handleAttachmentRequest = (req: Request, res: Response, next: NextFunction
 };
 
 router.post('/',
-  checkJwt,
   roleMiddleware(['upload:attachments', 'create:attachments']),
   handleAttachmentRequest);
 router.get('/:entityType/:entityId',
-  checkJwt,
   roleMiddleware(['view:attachments', 'download:attachments']),
   attachmentController.getAttachmentsByEntity.bind(attachmentController));
 router.delete('/:id',
-  checkJwt,
   roleMiddleware(['delete:attachments']),
   attachmentController.deleteAttachment.bind(attachmentController));
 
