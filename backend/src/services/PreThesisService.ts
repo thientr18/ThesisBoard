@@ -1,12 +1,13 @@
 import { Transaction } from 'sequelize';
-import { PreThesisRepository } from '../repositories/PreThesisRepository';
-import { TopicApplicationRepository } from '../repositories/TopicApplicationRepository';
-import { TopicRepository } from '../repositories/TopicRepository';
 import { sequelize } from '../models/db';
-import { AppError } from '../utils/AppError';
 import { PreThesis } from '../models/PreThesis';
 import { Topic } from '../models/Topic';
 import { TopicApplication } from '../models/TopicApplication';
+import { AppError } from '../utils/AppError';
+
+import { PreThesisRepository } from '../repositories/PreThesisRepository';
+import { TopicApplicationRepository } from '../repositories/TopicApplicationRepository';
+import { TopicRepository } from '../repositories/TopicRepository';
 import { SemesterRepository } from '../repositories/SemesterRepository';
 
 export class PreThesisService {

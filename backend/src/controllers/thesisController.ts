@@ -1,46 +1,582 @@
 import { Request, Response, NextFunction } from 'express';
+import { ThesisService } from '../services/ThesisService';
 import { AppError } from '../utils/AppError';
 
-export const getMyTheses = async (req: Request, res: Response, next: NextFunction) => {
-    try {
-        if (!req.user) {
-            throw new AppError('User not authenticated', 401, 'UNAUTHORIZED');
-        }
-        const user = req.user as { id: number; roles: string[]; permissions: string[] };
-        
-        // Query tất cả thesis mà user này tham gia
-        // const theses = await thesisRepository.findAll({
-        // where: { studentId: user.id },
-        // });
-        
-        // Simulate fetching theses from a database
-        const theses = [
-            { id: 1, title: 'Thesis 1', ownerId: user.id },
-            { id: 2, title: 'Thesis 2', ownerId: user.id }
-        ];
-        return res.status(200).json({ status: 'success', data: theses });
-    }
-    catch (error) {
-        next(error);
-    }
-};
+export class ThesisController {
+  private thesisService: ThesisService;
 
-export const submitReview = async (req: Request, res: Response, next: NextFunction) => {
-    try {
-        // Simulate submitting a thesis review
-        return res.status(200).json({ status: 'success', message: 'Review submitted successfully' });
-    }
-    catch (error) {
-        next(error);
-    }
-};
+  constructor() {
+    this.thesisService = new ThesisService();
+  }
 
-export const approveProposal = async (req: Request, res: Response, next: NextFunction) => {
+  // ============= THESIS PROPOSAL ENDPOINTS =============
+
+  /**
+   * Create a new thesis proposal
+   */
+  createThesisProposal = async (req: Request, res: Response, next: NextFunction) => {
     try {
-        // Simulate approving a thesis proposal
-        return res.status(200).json({ status: 'success', message: 'Thesis proposal approved successfully' });
+      if (!req.user) {
+        throw new AppError('User not authenticated', 401, 'UNAUTHORIZED');
+      }
+      
+      const { title, description, targetTeacherId, semesterId, keywords } = req.body;
+      
+      const proposal = await this.thesisService.createThesisProposal({
+        title,
+        description,
+        studentId: req.user.id,
+        targetTeacherId,
+        semesterId,
+        keywords
+      });
+      
+      return res.status(201).json({
+        status: 'success',
+        data: proposal
+      });
+    } catch (error) {
+      next(error);
     }
-    catch (error) {
-        next(error);
+  };
+
+  /**
+   * Get thesis proposal by ID
+   */
+  getThesisProposal = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const { id } = req.params;
+      
+      const proposal = await this.thesisService.getThesisProposalById(parseInt(id));
+      
+      if (!proposal) {
+        throw new AppError('Thesis proposal not found', 404, 'PROPOSAL_NOT_FOUND');
+      }
+      
+      return res.status(200).json({
+        status: 'success',
+        data: proposal
+      });
+    } catch (error) {
+      next(error);
     }
-};
+  };
+
+  /**
+   * Get thesis proposals for current user (student or teacher)
+   */
+  getMyThesisProposals = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      if (!req.user) {
+        throw new AppError('User not authenticated', 401, 'UNAUTHORIZED');
+      }
+      
+      const { semesterId } = req.query;
+      const userId = req.user.id;
+      const roles = req.user.roles || [];
+      
+      let proposals;
+      
+      if (roles.includes('student')) {
+        proposals = await this.thesisService.getThesisProposalsByStudent(
+          userId, 
+          semesterId ? parseInt(semesterId as string) : undefined
+        );
+      } else if (roles.includes('teacher')) {
+        proposals = await this.thesisService.getThesisProposalsForTeacher(
+          userId,
+          semesterId ? parseInt(semesterId as string) : undefined
+        );
+      } else {
+        throw new AppError('User role not authorized', 403, 'FORBIDDEN');
+      }
+      
+      return res.status(200).json({
+        status: 'success',
+        data: proposals
+      });
+    } catch (error) {
+      next(error);
+    }
+  };
+
+  /**
+   * Process a thesis proposal (accept/reject)
+   */
+  processThesisProposal = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      if (!req.user) {
+        throw new AppError('User not authenticated', 401, 'UNAUTHORIZED');
+      }
+      
+      const { id } = req.params;
+      const { decision, note } = req.body;
+      
+      if (decision !== 'accept' && decision !== 'reject') {
+        throw new AppError('Invalid decision', 400, 'INVALID_DECISION');
+      }
+      
+      const proposal = await this.thesisService.processThesisProposal(
+        parseInt(id),
+        decision,
+        req.user.id,
+        note
+      );
+      
+      return res.status(200).json({
+        status: 'success',
+        data: proposal
+      });
+    } catch (error) {
+      next(error);
+    }
+  };
+
+  // ============= THESIS REGISTRATION ENDPOINTS =============
+
+  /**
+   * Create a thesis registration
+   */
+  createThesisRegistration = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      if (!req.user) {
+        throw new AppError('User not authenticated', 401, 'UNAUTHORIZED');
+      }
+      
+      const { 
+        proposalId,
+        studentId,
+        supervisorTeacherId,
+        semesterId,
+        title,
+        description,
+        expectedResults
+      } = req.body;
+      
+      const registration = await this.thesisService.createThesisRegistration({
+        proposalId,
+        studentId,
+        supervisorTeacherId,
+        semesterId,
+        title,
+        description,
+        expectedResults,
+        submittedByUserId: req.user.id
+      });
+      
+      return res.status(201).json({
+        status: 'success',
+        data: registration
+      });
+    } catch (error) {
+      next(error);
+    }
+  };
+
+  /**
+   * Process a thesis registration (approve/reject)
+   */
+  processThesisRegistration = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      if (!req.user) {
+        throw new AppError('User not authenticated', 401, 'UNAUTHORIZED');
+      }
+      
+      const { id } = req.params;
+      const { decision, decisionReason } = req.body;
+      
+      if (decision !== 'approve' && decision !== 'reject') {
+        throw new AppError('Invalid decision', 400, 'INVALID_DECISION');
+      }
+      
+      const registration = await this.thesisService.processThesisRegistration(
+        parseInt(id),
+        decision,
+        req.user.id,
+        decisionReason
+      );
+      
+      return res.status(200).json({
+        status: 'success',
+        data: registration
+      });
+    } catch (error) {
+      next(error);
+    }
+  };
+
+  /**
+   * Get thesis registrations (filtered)
+   */
+  getThesisRegistrations = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const { studentId, supervisorTeacherId, semesterId, status } = req.query;
+      
+      const filter: any = {};
+      
+      if (studentId) filter.studentId = parseInt(studentId as string);
+      if (supervisorTeacherId) filter.supervisorTeacherId = parseInt(supervisorTeacherId as string);
+      if (semesterId) filter.semesterId = parseInt(semesterId as string);
+      if (status) filter.status = status;
+      
+      const registrations = await this.thesisService.getThesisRegistrations(filter);
+      
+      return res.status(200).json({
+        status: 'success',
+        data: registrations
+      });
+    } catch (error) {
+      next(error);
+    }
+  };
+
+  // ============= THESIS ENDPOINTS =============
+
+  /**
+   * Get a thesis by ID
+   */
+  getThesis = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const { id } = req.params;
+      
+      const thesis = await this.thesisService.getThesisById(parseInt(id));
+      
+      if (!thesis) {
+        throw new AppError('Thesis not found', 404, 'THESIS_NOT_FOUND');
+      }
+      
+      return res.status(200).json({
+        status: 'success',
+        data: thesis
+      });
+    } catch (error) {
+      next(error);
+    }
+  };
+
+  /**
+   * Get all theses (with filters)
+   */
+  getTheses = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const { studentId, supervisorTeacherId, semesterId, status, titleContains } = req.query;
+      
+      const filter: any = {};
+      
+      if (studentId) filter.studentId = parseInt(studentId as string);
+      if (supervisorTeacherId) filter.supervisorTeacherId = parseInt(supervisorTeacherId as string);
+      if (semesterId) filter.semesterId = parseInt(semesterId as string);
+      if (status) filter.status = status;
+      if (titleContains) filter.titleContains = titleContains as string;
+      
+      const theses = await this.thesisService.getTheses(filter);
+      
+      return res.status(200).json({
+        status: 'success',
+        data: theses
+      });
+    } catch (error) {
+      next(error);
+    }
+  };
+
+  /**
+   * Get my theses as a student or supervisor
+   */
+  getMyTheses = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      if (!req.user) {
+        throw new AppError('User not authenticated', 401, 'UNAUTHORIZED');
+      }
+      
+      const { semesterId } = req.query;
+      const userId = req.user.id;
+      const roles = req.user.roles || [];
+      
+      let theses;
+      
+      if (roles.includes('student')) {
+        theses = await this.thesisService.getTheses({
+          studentId: userId,
+          semesterId: semesterId ? parseInt(semesterId as string) : undefined
+        });
+      } else if (roles.includes('teacher')) {
+        theses = await this.thesisService.getTheses({
+          supervisorTeacherId: userId,
+          semesterId: semesterId ? parseInt(semesterId as string) : undefined
+        });
+      } else {
+        throw new AppError('User role not authorized', 403, 'FORBIDDEN');
+      }
+      
+      return res.status(200).json({
+        status: 'success',
+        data: theses
+      });
+    } catch (error) {
+      next(error);
+    }
+  };
+
+  /**
+   * Update thesis status
+   */
+  updateThesisStatus = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      if (!req.user) {
+        throw new AppError('User not authenticated', 401, 'UNAUTHORIZED');
+      }
+      
+      const { id } = req.params;
+      const { status } = req.body;
+      
+      const thesis = await this.thesisService.updateThesisStatus(parseInt(id), status);
+      
+      if (!thesis) {
+        throw new AppError('Thesis not found', 404, 'THESIS_NOT_FOUND');
+      }
+      
+      return res.status(200).json({
+        status: 'success',
+        data: thesis
+      });
+    } catch (error) {
+      next(error);
+    }
+  };
+
+  // ============= THESIS ASSIGNMENT ENDPOINTS =============
+
+  /**
+   * Assign a teacher to a thesis
+   */
+  assignTeacherToThesis = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      if (!req.user) {
+        throw new AppError('User not authenticated', 401, 'UNAUTHORIZED');
+      }
+      
+      const { thesisId } = req.params;
+      const { teacherId, role } = req.body;
+      
+      const assignment = await this.thesisService.assignTeacherToThesis(
+        parseInt(thesisId),
+        teacherId,
+        role,
+        req.user.id
+      );
+      
+      return res.status(201).json({
+        status: 'success',
+        data: assignment
+      });
+    } catch (error) {
+      next(error);
+    }
+  };
+
+  /**
+   * Remove a teacher assignment
+   */
+  removeTeacherAssignment = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const { thesisId } = req.params;
+      const { teacherId, role } = req.body;
+      
+      const removed = await this.thesisService.removeTeacherAssignment(
+        parseInt(thesisId),
+        teacherId,
+        role
+      );
+      
+      if (!removed) {
+        throw new AppError('Assignment not found', 404, 'ASSIGNMENT_NOT_FOUND');
+      }
+      
+      return res.status(200).json({
+        status: 'success',
+        message: 'Assignment removed successfully'
+      });
+    } catch (error) {
+      next(error);
+    }
+  };
+
+  /**
+   * Get assignments for a thesis
+   */
+  getThesisAssignments = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const { thesisId } = req.params;
+      
+      const assignments = await this.thesisService.getAssignmentsByThesis(parseInt(thesisId));
+      
+      return res.status(200).json({
+        status: 'success',
+        data: assignments
+      });
+    } catch (error) {
+      next(error);
+    }
+  };
+
+  // ============= DEFENSE SESSION ENDPOINTS =============
+
+  /**
+   * Schedule a defense session
+   */
+  scheduleDefenseSession = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const { thesisId, scheduledAt, room, notes } = req.body;
+      
+      const session = await this.thesisService.scheduleDefenseSession({
+        thesisId,
+        scheduledAt: new Date(scheduledAt),
+        room,
+        notes
+      });
+      
+      return res.status(201).json({
+        status: 'success',
+        data: session
+      });
+    } catch (error) {
+      next(error);
+    }
+  };
+
+  /**
+   * Reschedule a defense session
+   */
+  rescheduleDefenseSession = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const { id } = req.params;
+      const { scheduledAt, room } = req.body;
+      
+      const session = await this.thesisService.rescheduleDefenseSession(
+        parseInt(id),
+        new Date(scheduledAt),
+        room
+      );
+      
+      if (!session) {
+        throw new AppError('Defense session not found', 404, 'SESSION_NOT_FOUND');
+      }
+      
+      return res.status(200).json({
+        status: 'success',
+        data: session
+      });
+    } catch (error) {
+      next(error);
+    }
+  };
+
+  /**
+   * Complete a defense session
+   */
+  completeDefenseSession = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const { id } = req.params;
+      
+      const session = await this.thesisService.completeDefenseSession(parseInt(id));
+      
+      if (!session) {
+        throw new AppError('Defense session not found', 404, 'SESSION_NOT_FOUND');
+      }
+      
+      return res.status(200).json({
+        status: 'success',
+        data: session
+      });
+    } catch (error) {
+      next(error);
+    }
+  };
+
+  /**
+   * Get upcoming defense sessions
+   */
+  getUpcomingDefenseSessions = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const sessions = await this.thesisService.getUpcomingDefenseSessions();
+      
+      return res.status(200).json({
+        status: 'success',
+        data: sessions
+      });
+    } catch (error) {
+      next(error);
+    }
+  };
+
+  // ============= THESIS EVALUATION ENDPOINTS =============
+
+  /**
+   * Submit a thesis evaluation
+   */
+  submitThesisEvaluation = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      if (!req.user) {
+        throw new AppError('User not authenticated', 401, 'UNAUTHORIZED');
+      }
+      
+      const { thesisId, role, score, feedback } = req.body;
+      
+      const evaluation = await this.thesisService.submitThesisEvaluation({
+        thesisId,
+        evaluatorTeacherId: req.user.id,
+        role,
+        score,
+        feedback
+      });
+      
+      return res.status(201).json({
+        status: 'success',
+        data: evaluation
+      });
+    } catch (error) {
+      next(error);
+    }
+  };
+
+  /**
+   * Get evaluations for a thesis
+   */
+  getThesisEvaluations = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const { thesisId } = req.params;
+      
+      const evaluations = await this.thesisService.getEvaluationsByThesis(parseInt(thesisId));
+      
+      return res.status(200).json({
+        status: 'success',
+        data: evaluations
+      });
+    } catch (error) {
+      next(error);
+    }
+  };
+
+  /**
+   * Get final grade for a thesis
+   */
+  getThesisFinalGrade = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const { thesisId } = req.params;
+      
+      const finalGrade = await this.thesisService.getFinalGrade(parseInt(thesisId));
+      
+      if (!finalGrade) {
+        throw new AppError('Final grade not found', 404, 'GRADE_NOT_FOUND');
+      }
+      
+      return res.status(200).json({
+        status: 'success',
+        data: finalGrade
+      });
+    } catch (error) {
+      next(error);
+    }
+  };
+}
