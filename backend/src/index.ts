@@ -5,7 +5,7 @@ import dotenv from "dotenv";
 import { sequelize } from "./models/db";
 import { applyAssociations } from "./models";
 import routes from "./routes";
-import { errorHandler, notFoundHandler, setupUnhandledErrorHandlers } from './middlewares/errorHandler';
+import { errorHandler, notFoundHandler, setupUnhandledErrorHandlers } from './middlewares/error-handler.middleware';
 
 dotenv.config();
 const app = express();

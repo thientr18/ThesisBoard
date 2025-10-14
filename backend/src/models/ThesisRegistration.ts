@@ -10,7 +10,7 @@ export class ThesisRegistration extends Model<InferAttributes<ThesisRegistration
   declare title: string | null;
   declare abstract: string | null;
   declare status: 'pending_approval' | 'cancelled' | 'approved' | 'rejected';
-  declare submittedByTeacherId: number;
+  declare submittedByTeacherId: number | null;
   declare decisionReason: string | null;
   declare approvedByUserId: number | null;
   declare submittedAt: CreationOptional<Date>;

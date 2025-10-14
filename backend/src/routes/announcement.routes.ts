@@ -1,44 +1,57 @@
 import { Router } from 'express';
-import { checkJwt, requireAdmin } from '../middlewares/authMiddleware';
-import { roleMiddleware, requireAllPermissions } from '../middlewares/roleMiddleware';
-import { AnnouncementController } from '../controllers/AnnouncementController';
+import { checkJwt } from '../middlewares/auth.middleware';
+import { roleMiddleware } from '../middlewares/role.middleware';
+import { AnnouncementController } from '../controllers/announcement.controller';
+
 const router = Router();
 const announcementController = new AnnouncementController();
 
+// Public
+router.get('/public', announcementController.getAnnouncementSlides);
+
+// Protected
+// Get all announcements
 router.get('/',
   checkJwt,
-  roleMiddleware(['read:announcements']),
+  roleMiddleware(['view:announcements', 'admin:all', 'moderator:all', 'teacher:base', 'student:pre_thesis', 'student:thesis']),
   announcementController.getAllAnnouncements
 );
+
+// Get announcement slides
 router.get('/slide',
   checkJwt,
-  roleMiddleware(['read:announcements']),
+  roleMiddleware(['view:announcements', 'admin:all', 'moderator:all', 'teacher:base', 'student:pre_thesis', 'student:thesis']),
   announcementController.getAnnouncementSlides
 );
+
+// Get announcement by ID
 router.get('/:id',
   checkJwt,
-  roleMiddleware(['read:announcements']),
+  roleMiddleware(['view:announcements', 'admin:all', 'moderator:all', 'teacher:base', 'student:pre_thesis', 'student:thesis']),
   announcementController.getAnnouncementById
 );
 
+// Create announcement - restricted to staff
 router.post(
   '/',
   checkJwt,
-  roleMiddleware(['admin:all', 'moderator:all', 'create:announcements']),
+  roleMiddleware(['create:announcements', 'admin:all', 'moderator:all', 'access:admin_dashboard']),
   announcementController.createAnnouncement
 );
 
+// Update announcement - restricted to staff and original creator
 router.put(
   '/:id',
   checkJwt,
-  roleMiddleware(['admin:all', 'moderator:all', 'update:announcements']),
+  roleMiddleware(['update:announcements', 'admin:all', 'moderator:all']),
   announcementController.updateAnnouncement
 );
 
+// Delete announcement - restricted to admin and moderator
 router.delete(
   '/:id',
   checkJwt,
-  roleMiddleware(['admin:all', 'moderator:all', 'delete:announcements']),
+  roleMiddleware(['delete:announcements', 'admin:all', 'moderator:all']),
   announcementController.deleteAnnouncement
 );
 

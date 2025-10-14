@@ -154,7 +154,7 @@ async function setupAuth0Admin(): Promise<{ userId: string; roleId: string; user
     // Get management API token
     const token = await getAuth0ManagementToken();
     if (!token) {
-      throw new AppError('No Auth0 management token obtained', 401);
+      throw new AppError('No Auth0 management token obtained', 401, 'NO_MANAGEMENT_TOKEN');
     }
     console.log('Token: ', token);
     const headers = {

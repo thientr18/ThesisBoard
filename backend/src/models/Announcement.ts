@@ -6,7 +6,7 @@ export class Announcement extends Model<InferAttributes<Announcement>, InferCrea
   declare id: CreationOptional<number>;
   declare title: string;
   declare content: string;
-  declare audience: 'all' | 'students' | 'teachers';
+  declare audience: 'all' | 'students' | 'teachers' | 'public';
   declare audienceFilter: object | null;
   declare publishedByUserId: number;
   declare publishedAt: CreationOptional<Date>;
@@ -28,7 +28,7 @@ Announcement.init(
       type: DataTypes.ENUM('all', 'students', 'teachers'),
       defaultValue: 'all',
       allowNull: false,
-      validate: { isIn: [['all', 'students', 'teachers']] }
+      validate: { isIn: [['all', 'students', 'teachers', 'public']] }
     },
     audienceFilter: { type: DataTypes.JSON, allowNull: true, field: 'audience_filter' },
     publishedByUserId: { type: DataTypes.BIGINT, allowNull: false, field: 'published_by_user_id' },
