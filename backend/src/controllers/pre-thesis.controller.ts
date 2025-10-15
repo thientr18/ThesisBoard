@@ -2,6 +2,9 @@ import { Request, Response, NextFunction } from 'express';
 import { PreThesisService } from '../services/pre-thesis.service';
 import { AppError } from '../utils/AppError';
 
+import { PreThesisReportData } from '../types/report.types';
+import path from 'path';
+
 export class PreThesisController {
   private preThesisService: PreThesisService;
 
@@ -320,6 +323,68 @@ export class PreThesisController {
       });
     } catch (error) {
       next(error);
+    }
+  };
+
+  /**
+   * Controller for generating pre-thesis academic reports as PDF
+   */
+  generatePreThesisReportPDF = async (req: Request, res: Response): Promise<void> => {
+    try {
+      // In a real app, you'd get this data from the database
+      // based on the request parameters (e.g., studentId)
+      const reportData: PreThesisReportData = {
+        student: {
+          name: "",
+          id: "",
+          phone: "",
+          className: "",
+          cohortYear: 0,
+          gpa: 0,
+          accumulatedCredits: 0,
+          preThesisTitle: ""
+        },
+        supervisor: {
+          name: "",
+          academicTitle: "",
+          department: ""
+        },
+        evaluation: {
+          numericGrade: 0,
+          letterGrade: "",
+          comments: "",
+          status: "Pass"
+        },
+        semester: "",
+        date: new Date(),
+        universityInfo: {
+          name: "International University - Vietnam National University HCM City",
+          logo: path.join(__dirname, '../assets/Logo-HCMIU.svg.png'),
+          address: "Quarter 33, Linh Xuan Ward, Ho Chi Minh City, Vietnam",
+          contact: "info@hcmiu.edu.vn | (028) 37244270"
+        },
+        departmentHead: {
+          name: "",
+          title: ""
+        }
+      };
+
+      const pdfBuffer = await this.preThesisService.generatePreThesisReport(reportData);
+      
+      // Set headers for PDF download
+      res.setHeader('Content-Type', 'application/pdf');
+      res.setHeader('Content-Disposition', `attachment; filename=pre-thesis-report-${reportData.student.id}.pdf`);
+      res.setHeader('Content-Length', pdfBuffer.length);
+      
+      // Send PDF buffer as response
+      res.send(pdfBuffer);
+    } catch (error) {
+      console.error('Error generating pre-thesis report:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Failed to generate pre-thesis report',
+        error: error instanceof Error ? error.message : 'Unknown error'
+      });
     }
   };
 }

@@ -159,4 +159,18 @@ router.get(
   thesisController.getThesisFinalGrade
 );
 
+// ============= REPORT ROUTES =============
+router.get(
+  '/reports/thesis-registration/:registrationId',
+  checkJwt,
+  roleMiddleware(['view:reports', 'admin:all', 'moderator:all']),
+  thesisController.generateThesisRegistrationReport
+);
+router.get(
+  '/reports/evaluation/:thesisId',
+  checkJwt,
+  roleMiddleware(['view:reports', 'admin:all', 'moderator:all']),
+  thesisController.generateThesisEvaluationReport
+);
+
 export default router;

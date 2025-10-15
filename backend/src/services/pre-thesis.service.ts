@@ -1,3 +1,8 @@
+import puppeteer from 'puppeteer';
+import ejs from 'ejs';
+import path from 'path';
+import { PreThesisReportData } from '../types/report.types';
+
 import { Transaction } from 'sequelize';
 import { sequelize } from '../models/db';
 import { PreThesis } from '../models/PreThesis';
@@ -274,5 +279,55 @@ export class PreThesisService {
 
   async getApplicationStatsBySemester(semesterId: number) {
     return this.topicApplicationRepository.getSemesterApplicationStats(semesterId);
+  }
+
+  async generatePreThesisReport(data: PreThesisReportData): Promise<Buffer> {
+    try {
+      // Render the template with the provided data
+      const templatePath = path.resolve(__dirname, '../views/pre-thesis-report.ejs');
+      const html = await ejs.renderFile(templatePath, {
+        report: data,
+        formatDate: (date: Date): string => {
+          return date.toLocaleDateString('en-GB', {
+            day: '2-digit',
+            month: '2-digit',
+            year: 'numeric'
+          });
+        }
+      });
+
+      // Launch Puppeteer and create a new page
+      const browser = await puppeteer.launch({
+        headless: true,
+        args: ['--no-sandbox', '--disable-setuid-sandbox']
+      });
+      
+      const page = await browser.newPage();
+      
+      // Set the HTML content of the page
+      await page.setContent(html, {
+        waitUntil: 'networkidle0'
+      });
+
+      // Generate PDF in A4 format
+      const pdfData = await page.pdf({
+        format: 'A4',
+        printBackground: true,
+        margin: {
+          top: '20mm',
+          right: '20mm',
+          bottom: '20mm',
+          left: '20mm'
+        }
+      });
+
+      // Close the browser
+      await browser.close();
+
+      return Buffer.from(pdfData);
+    } catch (error) {
+      console.error('Error in PDF generation service:', error);
+      throw new Error(`Failed to generate PDF: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
   }
 }

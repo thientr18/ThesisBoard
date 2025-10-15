@@ -1,6 +1,10 @@
 import { Transaction } from 'sequelize';
 import { sequelize } from '../models/db';
 import { AppError } from '../utils/AppError';
+import * as path from 'path';
+import * as fs from 'fs';
+import * as ejs from 'ejs';
+import puppeteer from 'puppeteer';
 
 // Import repositories
 import { DefenseSessionRepository } from '../repositories/defense-session-repository';
@@ -22,6 +26,9 @@ import { ThesisAssignment } from '../models/ThesisAssignment';
 import { ThesisEvaluation } from '../models/ThesisEvaluation';
 import { Thesis } from '../models/Thesis';
 import { DefenseSession } from '../models/DefenseSession';
+
+import { ThesisRegistrationReportData } from '../types/report.types';
+import { ThesisEvaluationReportData } from '../types/report.types';
 
 export class ThesisService {
   private defenseSessionRepository: DefenseSessionRepository;
@@ -916,5 +923,267 @@ export class ThesisService {
       finalScore: finalGrade.finalScore,
       evaluations
     };
+  }
+
+  // ============= THESIS REPORT METHODS =============
+
+  /**
+ * Generate a thesis registration report as PDF
+ * @param registrationId ID of the thesis registration
+ * @param includeUniversityInfo Whether to include university info in the report
+ */
+  async generateThesisRegistrationReport(
+    registrationId: number, 
+    includeUniversityInfo: boolean = true
+  ): Promise<Buffer> {
+    // Get registration details
+    const registration = await this.thesisRegistrationRepository.findById(registrationId);
+    
+    if (!registration) {
+      throw new AppError('Thesis registration not found', 404, 'REGISTRATION_NOT_FOUND');
+    }
+    
+    // Map the registration status to an allowed value for the report
+    // This ensures compatibility with ThesisRegistrationReportData type
+    const mappedStatus = registration.status === 'cancelled' 
+      ? 'rejected' // Map 'cancelled' to 'rejected' for report purposes
+      : registration.status as 'pending_approval' | 'approved' | 'rejected';
+    
+    // TODO: These would typically come from repositories or services
+    // For this example, we're using mock data to demonstrate the report generation
+    
+    // Fetch related data from repositories (student, supervisor, etc.)
+    // In a real implementation, you would use actual data from the database
+    const mockReportData: ThesisRegistrationReportData = {
+      university: {
+        name: 'International University - HCMC',
+        logo: 'data:image/png;base64,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'
+      },
+      document: {
+        title: 'Thesis Registration Report',
+        semester: 'Fall 2025',
+        department: 'Computer Science',
+        generatedAt: new Date()
+      },
+      student: {
+        fullName: 'John Smith',
+        id: 'ST12345',
+        major: 'Computer Science',
+        faculty: 'School of Engineering',
+        gpa: 3.75,
+        accumulatedCredits: 110
+      },
+      thesis: {
+        title: registration.title || 'Untitled Thesis',
+        type: 'Research',
+        abstract: registration.abstract || 'No abstract provided',
+        keywords: ['Machine Learning', 'Neural Networks', 'Computer Vision']
+      },
+      supervisor: {
+        fullName: 'Dr. Jane Davis',
+        academicTitle: 'Associate Professor',
+        department: 'Computer Science',
+        email: 'jane.davis@university.edu'
+      },
+      registration: {
+        date: registration.submittedAt,
+        status: mappedStatus, // Use the mapped status here
+        notes: registration.decisionReason || ''
+      },
+      footer: {
+        universityContactInfo: 'International University, Quarter 6, Linh Trung Ward, Thu Duc City, Ho Chi Minh City',
+        websiteUrl: 'www.university.edu'
+      }
+    };
+
+    // Render the EJS template with the data
+    const templatePath = path.join(__dirname, '../views/thesis-registration-report.ejs');
+    const html = await ejs.renderFile(templatePath, { data: mockReportData });
+
+    // Launch Puppeteer and generate PDF
+    // Fix the headless option to use boolean instead of string
+    const browser = await puppeteer.launch({ headless: true });
+    const page = await browser.newPage();
+    await page.setContent(html, { waitUntil: 'networkidle0' });
+    
+    const pdfData = await page.pdf({
+      format: 'A4',
+      printBackground: true,
+      margin: {
+        top: '1cm',
+        right: '1cm',
+        bottom: '1cm',
+        left: '1cm'
+      }
+    });
+    
+    await browser.close();
+    
+    // Convert Uint8Array to Buffer before returning
+    return Buffer.from(pdfData);
+  }
+  
+  /**
+   * Generate a thesis evaluation report as PDF
+   * @param thesisId ID of the thesis
+   * @param includeUniversityInfo Whether to include university info in the report
+   */
+  async generateThesisEvaluationReport(
+    thesisId: number,
+    includeUniversityInfo: boolean = true
+  ): Promise<Buffer> {
+    // Get thesis details
+    const thesis = await this.thesisRepository.findById(thesisId);
+    
+    if (!thesis) {
+      throw new AppError('Thesis not found', 404, 'THESIS_NOT_FOUND');
+    }
+    
+    // Get evaluations
+    const evaluations = await this.thesisEvaluationRepository.findByThesisId(thesisId);
+    
+    if (!evaluations || evaluations.length === 0) {
+      throw new AppError('Thesis evaluations not found', 404, 'EVALUATIONS_NOT_FOUND');
+    }
+    
+    // Get final grade
+    const finalGrade = await this.thesisFinalGradeRepository.findByThesisId(thesisId);
+    
+    if (!finalGrade) {
+      throw new AppError('Thesis final grade not found', 404, 'FINAL_GRADE_NOT_FOUND');
+    }
+    
+    // Get defense session
+    const defenseSession = await this.defenseSessionRepository.findByThesisId(thesisId);
+    
+    // Get committee assignments
+    const assignments = await this.thesisAssignmentRepository.findByThesisId(thesisId);
+    
+    // TODO: In a real implementation, you would fetch the actual data from the database
+    // For this example, we're using mock data to demonstrate the report generation
+    
+    // Convert numeric grade to letter grade
+    const getLetterGrade = (score: number): string => {
+      if (score >= 9.0) return 'A+';
+      if (score >= 8.5) return 'A';
+      if (score >= 8.0) return 'B+';
+      if (score >= 7.0) return 'B';
+      if (score >= 6.5) return 'C+';
+      if (score >= 5.5) return 'C';
+      if (score >= 5.0) return 'D';
+      return 'F';
+    };
+    
+    // Prepare the report data
+    const reportData: ThesisEvaluationReportData = {
+      university: {
+        name: 'International University - HCMC',
+        logo: 'data:image/png;base64,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',
+        referenceNumber: `TE${thesisId}-${new Date().getFullYear()}`
+      },
+      document: {
+        title: 'Thesis Evaluation Report',
+        semester: 'Fall 2025',
+        department: 'Computer Science',
+        generatedAt: new Date()
+      },
+      student: {
+        fullName: 'John Smith',
+        id: 'ST12345',
+        major: 'Computer Science',
+        faculty: 'School of Engineering',
+        gpa: 3.75,
+        accumulatedCredits: 110
+      },
+      thesis: {
+        title: thesis.title || 'Untitled Thesis',
+        type: 'Research',
+        abstract: thesis.abstract || 'No abstract provided',
+        defenseDate: defenseSession ? defenseSession.scheduledAt : undefined
+      },
+      supervisor: {
+        fullName: 'Dr. Jane Davis',
+        academicTitle: 'Associate Professor',
+        department: 'Computer Science',
+        email: 'jane.davis@university.edu',
+        comments: 'The student has shown excellent progress and dedication throughout the thesis work.',
+        grade: 8.5
+      },
+      reviewer: {
+        fullName: 'Dr. Michael Johnson',
+        academicTitle: 'Professor',
+        department: 'Computer Science',
+        email: 'michael.johnson@university.edu',
+        comments: 'The literature review is comprehensive, but the methodology could be improved.',
+        grade: 7.8
+      },
+      committee: [
+        {
+          fullName: 'Dr. Sarah Wilson',
+          role: 'Chair',
+          department: 'Computer Science',
+          grade: 8.7,
+          comments: 'Excellent presentation and defense of research findings.'
+        },
+        {
+          fullName: 'Dr. Robert Garcia',
+          role: 'Member',
+          department: 'Computer Science',
+          grade: 8.2,
+          comments: 'Good technical implementation but could use more testing.'
+        },
+        {
+          fullName: 'Dr. Elizabeth Taylor',
+          role: 'Member',
+          department: 'Computer Science',
+          grade: 8.5,
+          comments: 'Strong conceptual framework and well-structured thesis.'
+        }
+      ],
+      evaluation: {
+        averageGrade: finalGrade.finalScore,
+        letterGrade: getLetterGrade(finalGrade.finalScore),
+        status: finalGrade.finalScore >= 5.0 ? 'Pass' : 'Fail',
+        remarks: 'The student has successfully completed the thesis requirements.'
+      },
+      signatures: {
+        supervisorName: 'Dr. Jane Davis',
+        committeeName: 'Dr. Sarah Wilson',
+        departmentHeadName: 'Prof. David Brown',
+        date: new Date()
+      },
+      footer: {
+        universityContactInfo: 'International University, Quarter 6, Linh Trung Ward, Thu Duc City, Ho Chi Minh City',
+        websiteUrl: 'www.university.edu'
+      }
+    };
+
+    // Render the EJS template with the data
+    const templatePath = path.join(__dirname, '../views/thesis-report.ejs');
+    const html = await ejs.renderFile(templatePath, { data: reportData });
+
+    // Launch Puppeteer and generate PDF
+    const browser = await puppeteer.launch({ 
+      headless: true,
+      args: ['--no-sandbox', '--disable-setuid-sandbox']
+    });
+    const page = await browser.newPage();
+    await page.setContent(html, { waitUntil: 'networkidle0' });
+    
+    const pdfData = await page.pdf({
+      format: 'A4',
+      printBackground: true,
+      margin: {
+        top: '0.5cm',
+        right: '0.5cm',
+        bottom: '0.5cm',
+        left: '0.5cm'
+      }
+    });
+    
+    await browser.close();
+    
+    // Convert Uint8Array to Buffer before returning
+    return Buffer.from(pdfData);
   }
 }

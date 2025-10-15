@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pre-Thesis Evaluation Report</title>
+  <style>
+    body {
+      font-family: 'Times New Roman', Times, serif;
+      margin: 0;
+      padding: 0;
+      color: #333;
+      font-size: 12pt;
+      line-height: 1.5;
+    }
+    
+    .container {
+      width: 100%;
+      max-width: 100%;
+    }
+    
+    /* Header styles */
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 30px;
+      border-bottom: 2px solid #2c3e50;
+      padding-bottom: 15px;
+    }
+    
+    .header-left {
+      display: flex;
+      align-items: center;
+    }
+    
+    .logo {
+      width: 100px;
+      margin-right: 20px;
+    }
+    
+    .university-name {
+      font-size: 14pt;
+      font-weight: bold;
+    }
+    
+    .header-right {
+      text-align: right;
+    }
+    
+    .report-title {
+      text-align: center;
+      font-size: 18pt;
+      font-weight: bold;
+      margin: 30px 0;
+      text-transform: uppercase;
+    }
+    
+    /* Information sections */
+    .section {
+      margin-bottom: 30px;
+    }
+    
+    .section-title {
+      font-size: 14pt;
+      font-weight: bold;
+      margin-bottom: 10px;
+      color: #2c3e50;
+      border-bottom: 1px solid #ddd;
+      padding-bottom: 5px;
+    }
+    
+    .info-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 15px;
+    }
+    
+    .info-item {
+      margin-bottom: 8px;
+    }
+    
+    .label {
+      font-weight: bold;
+      margin-right: 8px;
+    }
+    
+    /* Evaluation section */
+    .evaluation-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 10px;
+    }
+    
+    .evaluation-table th,
+    .evaluation-table td {
+      border: 1px solid #ddd;
+      padding: 8px;
+      text-align: left;
+    }
+    
+    .evaluation-table th {
+      background-color: #f2f2f2;
+    }
+    
+    .comments {
+      margin-top: 15px;
+      border: 1px solid #ddd;
+      padding: 15px;
+      background-color: #f9f9f9;
+    }
+    
+    /* Signature section */
+    .signature-section {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 50px;
+    }
+    
+    .signature {
+      text-align: center;
+      width: 45%;
+    }
+    
+    .signature-line {
+      border-top: 1px solid #333;
+      margin-top: 50px;
+      margin-bottom: 5px;
+      width: 80%;
+      display: inline-block;
+    }
+    
+    /* Footer */
+    .footer {
+      margin-top: 50px;
+      text-align: center;
+      font-size: 10pt;
+      color: #666;
+      border-top: 1px solid #ddd;
+      padding-top: 10px;
+      position: fixed;
+      bottom: 0;
+      width: 100%;
+    }
+    
+    .page-number {
+      font-style: italic;
+    }
+    
+    /* Status styles */
+    .status {
+      display: inline-block;
+      padding: 5px 15px;
+      font-weight: bold;
+      border-radius: 5px;
+    }
+    
+    .status-pass {
+      background-color: #dff0d8;
+      color: #3c763d;
+    }
+    
+    .status-fail {
+      background-color: #f2dede;
+      color: #a94442;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <!-- Header Section -->
+    <div class="header">
+      <div class="header-left">
+        <img src="<%= report.universityInfo.logo %>" alt="University Logo" class="logo">
+        <div class="university-name">
+          <%= report.universityInfo.name %>
+        </div>
+      </div>
+      <div class="header-right">
+        <div>Semester: <%= report.semester %></div>
+        <div>Date: <%= formatDate(report.date) %></div>
+      </div>
+    </div>
+    
+    <!-- Report Title -->
+    <h1 class="report-title">Pre-Thesis Evaluation Report</h1>
+    
+    <!-- Student Information Section -->
+    <div class="section">
+      <h2 class="section-title">Student Information</h2>
+      <div class="info-grid">
+        <div class="info-item">
+          <span class="label">Student Name:</span>
+          <span><%= report.student.name %></span>
+        </div>
+        <div class="info-item">
+          <span class="label">Student ID:</span>
+          <span><%= report.student.id %></span>
+        </div>
+        <div class="info-item">
+          <span class="label">Phone:</span>
+          <span><%= report.student.phone %></span>
+        </div>
+        <div class="info-item">
+          <span class="label">Class Name:</span>
+          <span><%= report.student.className %></span>
+        </div>
+        <div class="info-item">
+          <span class="label">Cohort Year:</span>
+          <span><%= report.student.cohortYear %></span>
+        </div>
+        <div class="info-item">
+          <span class="label">GPA:</span>
+          <span><%= report.student.gpa.toFixed(2) %></span>
+        </div>
+        <div class="info-item">
+          <span class="label">Accumulated Credits:</span>
+          <span><%= report.student.accumulatedCredits %></span>
+        </div>
+      </div>
+      <div class="info-item" style="margin-top: 15px;">
+        <span class="label">Pre-Thesis Title:</span>
+        <span><strong><%= report.student.preThesisTitle %></strong></span>
+      </div>
+    </div>
+    
+    <!-- Supervisor Information Section -->
+    <div class="section">
+      <h2 class="section-title">Supervisor Information</h2>
+      <div class="info-grid">
+        <div class="info-item">
+          <span class="label">Supervisor Name:</span>
+          <span><%= report.supervisor.name %></span>
+        </div>
+        <div class="info-item">
+          <span class="label">Academic Title:</span>
+          <span><%= report.supervisor.academicTitle %></span>
+        </div>
+        <div class="info-item">
+          <span class="label">Department:</span>
+          <span><%= report.supervisor.department %></span>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Evaluation Section -->
+    <div class="section">
+      <h2 class="section-title">Evaluation</h2>
+      <table class="evaluation-table">
+        <thead>
+          <tr>
+            <th>Numeric Grade</th>
+            <th>Letter Grade</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><%= report.evaluation.numericGrade.toFixed(1) %></td>
+            <td><%= report.evaluation.letterGrade %></td>
+            <td>
+              <span class="status <%= report.evaluation.status === 'Pass' ? 'status-pass' : 'status-fail' %>">
+                <%= report.evaluation.status %>
+              </span>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+      
+      <div class="comments">
+        <div class="label">Comments / Remarks:</div>
+        <p><%= report.evaluation.comments %></p>
+      </div>
+    </div>
+    
+    <!-- Signature Section -->
+    <div class="signature-section">
+      <div class="signature">
+        <div>Prepared by:</div>
+        <div><strong><%= report.supervisor.name %></strong></div>
+        <div><%= report.supervisor.academicTitle %></div>
+        <span class="signature-line"></span>
+        <div>Date: <%= formatDate(report.date) %></div>
+      </div>
+      
+      <div class="signature">
+        <div>Approved by:</div>
+        <div><strong><%= report.departmentHead.name %></strong></div>
+        <div><%= report.departmentHead.title %></div>
+        <span class="signature-line"></span>
+        <div>Date: <%= formatDate(report.date) %></div>
+      </div>
+    </div>
+    
+    <!-- Footer -->
+    <div class="footer">
+      <div><%= report.universityInfo.address %></div>
+      <div><%= report.universityInfo.contact %></div>
+      <div class="page-number">Page 1 of 1</div>
+    </div>
+  </div>
+</body>
+</html>

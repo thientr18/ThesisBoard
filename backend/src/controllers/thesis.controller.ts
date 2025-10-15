@@ -579,4 +579,64 @@ export class ThesisController {
       next(error);
     }
   };
+
+  // ============= THESIS REPORT ENDPOINTS =============
+  
+  /**
+   * Generate and download a thesis registration report
+   */
+  generateThesisRegistrationReport = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const { registrationId } = req.params;
+      const { includeUniversityInfo } = req.query;
+      
+      if (!registrationId || isNaN(parseInt(registrationId))) {
+        throw new AppError('Valid registration ID is required', 400, 'INVALID_REGISTRATION_ID');
+      }
+      
+      const pdfBuffer = await this.thesisService.generateThesisRegistrationReport(
+        parseInt(registrationId),
+        includeUniversityInfo === 'true'
+      );
+      
+      // Set headers for file download
+      res.setHeader('Content-Type', 'application/pdf');
+      res.setHeader('Content-Disposition', `attachment; filename=thesis-registration-${registrationId}.pdf`);
+      res.setHeader('Content-Length', pdfBuffer.length);
+      
+      // Send the PDF as response
+      res.send(pdfBuffer);
+    } catch (error) {
+      next(error);
+    }
+  };
+
+  /**
+   * Generate and download a thesis evaluation report
+   */
+  generateThesisEvaluationReport = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const { thesisId } = req.params;
+      const { includeUniversityInfo } = req.query;
+      
+      if (!thesisId || isNaN(parseInt(thesisId))) {
+        throw new AppError('Valid thesis ID is required', 400, 'INVALID_THESIS_ID');
+      }
+      
+      const pdfBuffer = await this.thesisService.generateThesisEvaluationReport(
+        parseInt(thesisId),
+        includeUniversityInfo === 'true'
+      );
+      
+      // Set headers for file download
+      res.setHeader('Content-Type', 'application/pdf');
+      res.setHeader('Content-Disposition', `attachment; filename=thesis-evaluation-${thesisId}.pdf`);
+      res.setHeader('Content-Length', pdfBuffer.length);
+      
+      // Send the PDF as response
+      res.send(pdfBuffer);
+    } catch (error) {
+      next(error);
+    }
+  };
 }

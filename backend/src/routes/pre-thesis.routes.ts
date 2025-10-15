@@ -103,5 +103,9 @@ router.get(
 );
 
 // Report routes: EXPORT
+router.get('/reports/evaluation/:preThesisId',
+  roleMiddleware(['export:pre_thesis_reports', 'teacher:supervisor', 'moderator:all']),
+  preThesisController.generatePreThesisReportPDF
+);
 
 export default router;
