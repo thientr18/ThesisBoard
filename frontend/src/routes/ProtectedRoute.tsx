@@ -9,7 +9,6 @@ interface ProtectedRouteProps {
 const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
   const { isAuthenticated } = useAuth0();
 
-  // Don't redirect here - let App.tsx handle authentication flow
   if (!isAuthenticated) {
     return <Navigate to="/login" replace />;
   }

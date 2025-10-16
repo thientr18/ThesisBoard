@@ -1,10 +1,9 @@
 import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { useAuth0 } from '@auth0/auth0-react';
-import './App.css';
 import Callback from './pages/Callback';
-import Dashboard from './pages/Dashboard'; // Import the new Dashboard component
+import Dashboard from './pages/Dashboard';
 import { useEffect } from 'react';
-import ProtectedRoute from './routes/ProtectedRoute'; // Use the one from routes folder
+import ProtectedRoute from './routes/ProtectedRoute';
 
 function App() {
   const { isLoading, isAuthenticated, loginWithRedirect } = useAuth0();
@@ -55,7 +54,7 @@ function App() {
           <ProtectedRoute>
             <Dashboard />
           </ProtectedRoute>
-        } 
+        }
       />
       {/* Redirect root to dashboard */}
       <Route path="/" element={<Navigate to="/dashboard" replace />} />

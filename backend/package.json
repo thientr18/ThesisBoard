@@ -16,11 +16,13 @@
     "axios": "^1.12.2",
     "cors": "^2.8.5",
     "dotenv": "^17.2.2",
+    "ejs": "^3.1.10",
     "express": "^5.1.0",
     "express-oauth2-jwt-bearer": "^1.7.1",
     "http-status-codes": "^2.3.0",
+    "multer": "^2.0.2",
     "mysql2": "^3.15.0",
-    "puppeteer": "^24.24.1",
+    "puppeteer": "^24.25.0",
     "sequelize": "^6.37.7"
   },
   "devDependencies": {

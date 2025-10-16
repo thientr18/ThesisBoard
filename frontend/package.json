@@ -10,8 +10,10 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@ant-design/icons": "^6.1.0",
     "@auth0/auth0-react": "^2.5.0",
     "@tailwindcss/vite": "^4.1.13",
+    "antd": "^5.27.5",
     "axios": "^1.12.2",
     "react": "^19.1.1",
     "react-dom": "^19.1.1",

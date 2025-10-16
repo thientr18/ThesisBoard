@@ -1,6 +1,5 @@
-import { api } from './axios0Instance';
+import { api } from '../config';
 
-// For public endpoints (no auth required)
 export const fetchPublicData = async () => {
   try {
     const response = await api.get('/api/public');
@@ -11,8 +10,6 @@ export const fetchPublicData = async () => {
   }
 };
 
-// For protected endpoints (auth required)
-// This should be used within components that have access to the useAuth0 hook
 export const fetchProtectedData = async (getToken: () => Promise<string>) => {
   try {
     const token = await getToken();
@@ -28,5 +25,4 @@ export const fetchProtectedData = async (getToken: () => Promise<string>) => {
   }
 };
 
-// Legacy function - you can adapt this to use the new approach
 export const fetchUsers = fetchProtectedData;
