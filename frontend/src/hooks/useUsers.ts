@@ -1,54 +1,104 @@
-import { useState, useEffect } from 'react';
-import { useAuth0 } from '@auth0/auth0-react';
-import { fetchPublicData } from '../api/endpoints/user.api';
+import { useState, useEffect, useCallback } from 'react';
+import type { User, SearchUsersParams } from '../types/user.types';
+import { useUserApi } from '../api/endpoints/user.api';
 
-export function useUsers() {
-  const [protectedData, setProtectedData] = useState<any>(null);
-  const [publicData, setPublicData] = useState<any>(null);
-  const [loading, setLoading] = useState<boolean>(true);
-  const [error, setError] = useState<Error | null>(null);
-  
-  const { isAuthenticated, getAccessTokenSilently } = useAuth0();
-
-  useEffect(() => {
-    // Fetch public data regardless of authentication
-    fetchPublicData()
-      .then(data => setPublicData(data))
-      .catch(err => console.error('Error fetching public data:', err));
-    
-    // Only fetch protected data if authenticated
-    if (isAuthenticated) {
-      setLoading(true);
-      
-      const fetchProtectedData = async () => {
-        try {
-          const token = await getAccessTokenSilently();
-          const response = await fetch(`${import.meta.env.VITE_API_URL}/api/protected`, {
-            headers: {
-              Authorization: `Bearer ${token}`
-            }
-          });
-  
-          if (!response.ok) {
-            throw new Error('Failed to fetch protected data');
-          }
-  
-          const data = await response.json();
-          setProtectedData(data);
-          setError(null);
-        } catch (err) {
-          console.error('Error in useUsers hook:', err);
-          setError(err as Error);
-        } finally {
-          setLoading(false);
-        }
-      };
-      
-      fetchProtectedData();
-    } else {
-      setLoading(false);
-    }
-  }, [isAuthenticated, getAccessTokenSilently]);
-
-  return { protectedData, publicData, loading, error };
+interface UseUsersReturn {
+  users: User[];
+  loading: boolean;
+  error: string | null;
+  fetchUsers: () => Promise<void>;
+  searchUsers: (params: SearchUsersParams) => Promise<void>;
+  deleteUser: (id: number) => Promise<boolean>;
+  toggleUserStatus: (id: number, activate: boolean) => Promise<boolean>;
 }
+
+export const useUsers = (): UseUsersReturn => {
+  const [users, setUsers] = useState<User[]>([]);
+  const [loading, setLoading] = useState<boolean>(false);
+  const [error, setError] = useState<string | null>(null);
+  const userApi = useUserApi();
+
+  const fetchUsers = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    
+    const result = await userApi.getAll();
+    setLoading(false);
+    
+    if (result.error) {
+      setError(result.error);
+      return;
+    }
+    
+    if (result.data) {
+      setUsers(result.data);
+    }
+  }, [userApi]);
+
+  const searchUsers = useCallback(async (params: SearchUsersParams) => {
+    setLoading(true);
+    setError(null);
+    
+    const result = await userApi.search(params);
+    setLoading(false);
+    
+    if (result.error) {
+      setError(result.error);
+      return;
+    }
+    
+    if (result.data) {
+      setUsers(result.data);
+    }
+  }, [userApi]);
+
+  const deleteUser = useCallback(async (id: number): Promise<boolean> => {
+    setLoading(true);
+    setError(null);
+    
+    const result = await userApi.delete(id);
+    setLoading(false);
+    
+    if (result.error) {
+      setError(result.error);
+      return false;
+    }
+    
+    await fetchUsers();
+    return true;
+  }, [userApi, fetchUsers]);
+
+  const toggleUserStatus = useCallback(async (id: number, activate: boolean): Promise<boolean> => {
+    setLoading(true);
+    setError(null);
+    
+    const result = activate 
+      ? await userApi.activate(id)
+      : await userApi.deactivate(id);
+    
+    setLoading(false);
+    
+    if (result.error) {
+      setError(result.error);
+      return false;
+    }
+    
+    await fetchUsers();
+    return true;
+  }, [userApi, fetchUsers]);
+
+  // Load users on initial mount
+  useEffect(() => {
+    fetchUsers();
+  }, [fetchUsers]);
+
+  return {
+    users,
+    loading,
+    error,
+    fetchUsers,
+    searchUsers,
+    deleteUser,
+    toggleUserStatus
+  };
+};

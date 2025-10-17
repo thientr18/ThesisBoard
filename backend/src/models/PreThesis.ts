@@ -9,6 +9,7 @@ export class PreThesis extends Model<InferAttributes<PreThesis>, InferCreationAt
   declare supervisorTeacherId: number;
   declare status: 'in_progress' | 'completed' | 'cancelled';
   declare finalScore: number | null;
+  declare feedback: string | null;
   declare readonly createdAt: CreationOptional<Date>;
   declare readonly updatedAt: CreationOptional<Date>;
 }
@@ -22,6 +23,7 @@ PreThesis.init(
     supervisorTeacherId: { type: DataTypes.BIGINT, allowNull: false, field: 'supervisor_teacher_id' },
     status: { type: DataTypes.ENUM('in_progress', 'completed', 'cancelled'), defaultValue: 'in_progress' },
     finalScore: { type: DataTypes.DECIMAL(5, 2), allowNull: true, field: 'final_score' },
+    feedback: { type: DataTypes.TEXT, allowNull: true },
     createdAt: { type: DataTypes.DATE, allowNull: false, defaultValue: DataTypes.NOW, field: 'created_at' },
     updatedAt: { type: DataTypes.DATE, allowNull: false, defaultValue: DataTypes.NOW, field: 'updated_at' }
   },

@@ -4,6 +4,8 @@ import Callback from './pages/Callback';
 import Dashboard from './pages/Dashboard';
 import { useEffect } from 'react';
 import ProtectedRoute from './routes/ProtectedRoute';
+import Users from './pages/Users';
+import Protected from './pages/Protected';
 
 function App() {
   const { isLoading, isAuthenticated, loginWithRedirect } = useAuth0();
@@ -53,6 +55,22 @@ function App() {
         element={
           <ProtectedRoute>
             <Dashboard />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/users"
+        element={
+          <ProtectedRoute>
+            <Users />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/protected"
+        element={
+          <ProtectedRoute>
+            <Protected />
           </ProtectedRoute>
         }
       />

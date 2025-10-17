@@ -8,11 +8,11 @@ const userController = new UserController();
 
 router.use(checkJwt);
 
-// User listing and search - accessible to users with 'read:users' permission
+// User listing and search
 router.get('/', roleMiddleware(['admin:all', 'moderator:all', 'read:users']), userController.getUsers);
 router.get('/search', roleMiddleware(['admin:all', 'moderator:all', 'read:users']), userController.searchUsers);
 
-// User statistics - admin dashboard access required
+// User statistics
 router.get('/statistics', roleMiddleware(['admin:all', 'access:admin_dashboard', 'view:logs']), userController.getUserStatistics);
 
 // Role-based user queries
@@ -32,5 +32,7 @@ router.patch('/:id/deactivate', roleMiddleware(['admin:all', 'update:users']), u
 router.get('/:id/roles', roleMiddleware(['admin:all', 'read:users', 'manage:roles']), userController.getUserWithRoles);
 router.post('/roles', roleMiddleware(['admin:all', 'manage:roles']), userController.assignRoleToUser);
 router.delete('/roles', roleMiddleware(['admin:all', 'manage:roles']), userController.removeRoleFromUser);
+
+// Auth0 User Management API Integration
 
 export default router;

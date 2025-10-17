@@ -11,21 +11,24 @@ router.get('/public', announcementController.getAnnouncementSlides);
 
 // Protected
 // Get all announcements
-router.get('/',
+router.get(
+  '/',
   checkJwt,
   roleMiddleware(['view:announcements', 'admin:all', 'moderator:all', 'teacher:base', 'student:pre_thesis', 'student:thesis']),
   announcementController.getAllAnnouncements
 );
 
 // Get announcement slides
-router.get('/slide',
+router.get(
+  '/slide',
   checkJwt,
   roleMiddleware(['view:announcements', 'admin:all', 'moderator:all', 'teacher:base', 'student:pre_thesis', 'student:thesis']),
   announcementController.getAnnouncementSlides
 );
 
 // Get announcement by ID
-router.get('/:id',
+router.get(
+  '/:id',
   checkJwt,
   roleMiddleware(['view:announcements', 'admin:all', 'moderator:all', 'teacher:base', 'student:pre_thesis', 'student:thesis']),
   announcementController.getAnnouncementById
