@@ -127,21 +127,15 @@ export function errorHandler(err: any, req: Request, res: Response, _next: NextF
 // Additional error handling utilities
 // ==========================================
 
-/**
- * Middleware for handling 404 Not Found for unhandled routes
- */
 export function notFoundHandler(req: Request, res: Response, next: NextFunction) {
   const error = new AppError(`Resource not found: ${req.originalUrl}`, 404, 'NOT_FOUND');
   next(error);
 }
 
-/**
- * Configure global handlers for uncaught exceptions and unhandled rejections
- */
 export function setupUnhandledErrorHandlers() {
   process.on('unhandledRejection', (reason: any) => {
     console.error('UNHANDLED PROMISE REJECTION:', reason);
-    // In production, you might want to log this to a monitoring service
+    // In production, log this to a monitoring service
   });
   
   process.on('uncaughtException', (error: Error) => {
@@ -164,7 +158,7 @@ export function setupUnhandledErrorHandlers() {
 function logError(err: any): void {
   if (isProduction()) {
     // In production, use structured logging
-    // Replace with your preferred logging solution (Winston, Bunyan, etc.)
+    // Replace with preferred logging solution (Winston, Bunyan, etc.)
     const logData = {
       timestamp: new Date().toISOString(),
       error: err.name || 'Error',

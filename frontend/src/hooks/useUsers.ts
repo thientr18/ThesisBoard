@@ -1,104 +1,155 @@
-import { useState, useEffect, useCallback } from 'react';
-import type { User, SearchUsersParams } from '../types/user.types';
+import { useCallback, useEffect, useState } from 'react';
+import type { User, CreateUserRequest } from '../types/user.types';
 import { useUserApi } from '../api/endpoints/user.api';
 
-interface UseUsersReturn {
+interface UseUsersState {
   users: User[];
   loading: boolean;
   error: string | null;
-  fetchUsers: () => Promise<void>;
-  searchUsers: (params: SearchUsersParams) => Promise<void>;
-  deleteUser: (id: number) => Promise<boolean>;
-  toggleUserStatus: (id: number, activate: boolean) => Promise<boolean>;
 }
 
-export const useUsers = (): UseUsersReturn => {
+interface UseUsersActions {
+  fetchUsers: () => Promise<void>;
+  searchUsers: (keyword: string) => Promise<void>;
+  addUser: (payload: CreateUserRequest) => Promise<User | null>;
+  deleteUser: (id: number) => Promise<void>;
+}
+
+export const useUsers = (): {
+  state: UseUsersState;
+  actions: UseUsersActions;
+} => {
+  const userApi = useUserApi();
+
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
-  const userApi = useUserApi();
 
   const fetchUsers = useCallback(async () => {
     setLoading(true);
     setError(null);
-    
-    const result = await userApi.getAll();
-    setLoading(false);
-    
-    if (result.error) {
-      setError(result.error);
-      return;
-    }
-    
-    if (result.data) {
-      setUsers(result.data);
-    }
-  }, [userApi]);
-
-  const searchUsers = useCallback(async (params: SearchUsersParams) => {
-    setLoading(true);
-    setError(null);
-    
-    const result = await userApi.search(params);
-    setLoading(false);
-    
-    if (result.error) {
-      setError(result.error);
-      return;
-    }
-    
-    if (result.data) {
-      setUsers(result.data);
+    try {
+      const { data, error } = await userApi.getAll();
+      if (error) {
+        setError(error);
+        setUsers([]);
+      } else if (data) {
+        setUsers(data);
+      }
+    } catch (err: any) {
+      setError(err.message || 'Failed to fetch users');
+      setUsers([]);
+    } finally {
+      setLoading(false);
     }
   }, [userApi]);
 
-  const deleteUser = useCallback(async (id: number): Promise<boolean> => {
+  const searchUsers = useCallback(async (keyword: string) => {
     setLoading(true);
     setError(null);
-    
-    const result = await userApi.delete(id);
-    setLoading(false);
-    
-    if (result.error) {
-      setError(result.error);
-      return false;
+    try {
+      const { data, error } = await userApi.search({ query: keyword });
+      if (error) {
+        setError(error);
+        setUsers([]);
+      } else if (data) {
+        setUsers(data);
+      }
+    } catch (err: any) {
+      setError(err.message || 'Failed to search users');
+      setUsers([]);
+    } finally {
+      setLoading(false);
     }
-    
-    await fetchUsers();
-    return true;
-  }, [userApi, fetchUsers]);
+  }, [userApi]);
 
-  const toggleUserStatus = useCallback(async (id: number, activate: boolean): Promise<boolean> => {
+  const addUser = useCallback(
+    async (payload: CreateUserRequest): Promise<User | null> => {
+      setLoading(true);
+      setError(null);
+      try {
+        const { data, error } = await userApi.create(payload);
+        if (error || !data) {
+          setError(error || 'Failed to add user');
+          return null;
+        }
+        setUsers(prev => [data, ...prev]);
+        return data;
+      } catch (err: any) {
+        setError(err.message || 'Failed to add user');
+        return null;
+      } finally {
+        setLoading(false);
+      }
+    },
+    [userApi]
+  );
+
+  const deleteUser = useCallback(async (id: number) => {
     setLoading(true);
     setError(null);
-    
-    const result = activate 
-      ? await userApi.activate(id)
-      : await userApi.deactivate(id);
-    
-    setLoading(false);
-    
-    if (result.error) {
-      setError(result.error);
-      return false;
+    try {
+      const { data, error } = await userApi.delete(id);
+      if (error || !data) {
+        setError(error || 'Failed to delete user');
+      } else {
+        setUsers(prev => prev.filter(user => user.id !== id));
+      }
+    } catch (err: any) {
+      setError(err.message || 'Failed to delete user');
+    } finally {
+      setLoading(false);
     }
-    
-    await fetchUsers();
-    return true;
-  }, [userApi, fetchUsers]);
+  }, [userApi]);
 
-  // Load users on initial mount
   useEffect(() => {
     fetchUsers();
   }, [fetchUsers]);
 
   return {
-    users,
-    loading,
-    error,
-    fetchUsers,
-    searchUsers,
-    deleteUser,
-    toggleUserStatus
+    state: { users, loading, error },
+    actions: { fetchUsers, searchUsers, addUser, deleteUser },
   };
 };
+
+// Example usage in a component:
+
+/*
+import React, { useState } from 'react';
+import { useUsers } from '../hooks/useUsers';
+
+const UserList: React.FC = () => {
+  const { state, actions } = useUsers();
+  const { users, loading, error } = state;
+  const [search, setSearch] = useState('');
+
+  const handleSearch = () => {
+    actions.searchUsers(search);
+  };
+
+  return (
+    <div>
+      <h2>User List</h2>
+      <input
+        value={search}
+        onChange={e => setSearch(e.target.value)}
+        placeholder="Search users"
+      />
+      <button onClick={handleSearch}>Search</button>
+      {loading && <p>Loading...</p>}
+      {error && <p style={{ color: 'red' }}>{error}</p>}
+      <ul>
+        {users.map(user => (
+          <li key={user.id}>
+            {user.displayName} ({user.email})
+            <button onClick={() => actions.deleteUser(user.id)}>Delete</button>
+          </li>
+        ))}
+      </ul>
+      <button onClick={actions.fetchUsers}>Refresh</button>
+    </div>
+  );
+};
+
+export default UserList;
+*/

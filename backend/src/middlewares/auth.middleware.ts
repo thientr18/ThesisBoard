@@ -2,7 +2,7 @@ import { auth, AuthResult, requiredScopes } from 'express-oauth2-jwt-bearer';
 import { Request, Response, NextFunction } from 'express';
 import 'dotenv/config';
 
-// Define interface to extend the Auth0 JWT verification result with expected properties
+// Auth0 JWT verification result with properties
 interface ExtendedJwtPayload extends AuthResult {
   permissions?: string[];
   roles?: string[];
@@ -19,7 +19,6 @@ export const requireAdmin = (req: Request, res: Response, next: NextFunction) =>
   try {
     const user = req.auth as ExtendedJwtPayload;
     
-    // Check if user object exists
     if (!user) {
       return res.status(401).json({
         error: 'Unauthorized',
