@@ -160,7 +160,6 @@ function applyAssociations() {
     ThesisFinalGrade.belongsTo(Thesis, { foreignKey: 'thesisId' });
     Thesis.hasOne(ThesisFinalGrade, { foreignKey: 'thesisId' });
 
-    // content/notifications/files
     Announcement.belongsTo(User, { as: 'publishedBy', foreignKey: 'publishedByUserId' });
     User.hasMany(Announcement, { as: 'announcements', foreignKey: 'publishedByUserId' });
 

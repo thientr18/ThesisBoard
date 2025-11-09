@@ -115,7 +115,6 @@ export const signup = async (
  */
 export const logout = async (): Promise<AuthResponse<boolean>> => {
   try {
-    const idToken = getIdToken();
     
     // Call Auth0 logout endpoint
     await auth0Api.get('/v2/logout', {

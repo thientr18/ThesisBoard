@@ -1,113 +1,119 @@
 import { useAuthenticatedApi } from '../config';
-import type { 
-  ApiResponse, 
-  Semester, 
+import { useCallback, useMemo } from 'react';
+import type {
+  ApiResponse,
+  Semester,
   CreateSemesterRequest,
-  UpdateSemesterRequest, 
-  SemesterAttachment 
+  UpdateSemesterRequest,
+  SemesterAttachment
 } from '../../types/semester.types';
 
+const BASE_PATH = '/api/semesters';
+
 export const useSemesterApi = () => {
-  const api = useAuthenticatedApi();
+  const authApi = useAuthenticatedApi();
 
-  // Get all semesters
-  const getAll = async (): Promise<ApiResponse<Semester[]>> => {
+  const getAll = useCallback(async (): Promise<ApiResponse<Semester[]>> => {
     try {
-      const response = await api.get('/api/semesters');
-      return { data: response.data as Semester[], error: null };
-    } catch (error) {
-      return { data: null, error: error instanceof Error ? error.message : 'Unknown error' };
+      const res = await authApi.get(BASE_PATH);
+      return { data: res.data as Semester[], error: null };
+    } catch (e) {
+      return { data: null, error: e instanceof Error ? e.message : 'Failed to fetch semesters' };
     }
-  };
+  }, [authApi]);
 
-  // Get semester by ID
-  const getById = async (id: number): Promise<ApiResponse<Semester>> => {
+  const getById = useCallback(async (id: number): Promise<ApiResponse<Semester>> => {
     try {
-      const response = await api.get(`/api/semesters/${id}`);
-      return { data: response.data as Semester, error: null };
-    } catch (error) {
-      return { data: null, error: error instanceof Error ? error.message : 'Unknown error' };
+      const res = await authApi.get(`${BASE_PATH}/${id}`);
+      return { data: res.data as Semester, error: null };
+    } catch (e) {
+      return { data: null, error: e instanceof Error ? e.message : 'Failed to fetch semester' };
     }
-  };
+  }, [authApi]);
 
-  // Create semester with possible attachments
-  const create = async (formData: FormData): Promise<ApiResponse<Semester>> => {
+  const create = useCallback(async (payload: CreateSemesterRequest | FormData): Promise<ApiResponse<Semester>> => {
     try {
-      const response = await api.post('/api/semesters', formData, {
-        headers: { 'Content-Type': 'multipart/form-data' }
-      });
-      return { data: response.data as Semester, error: null };
-    } catch (error) {
-      return { data: null, error: error instanceof Error ? error.message : 'Unknown error' };
+      // Nếu là FormData (có file) thì để browser tự set boundary
+      const res = await authApi.post(BASE_PATH, payload);
+      return { data: res.data as Semester, error: null };
+    } catch (e) {
+      return { data: null, error: e instanceof Error ? e.message : 'Failed to create semester' };
     }
-  };
+  }, [authApi]);
 
-  // Update semester
-  const update = async (id: number, payload: UpdateSemesterRequest): Promise<ApiResponse<Semester>> => {
+  const update = useCallback(async (id: number, payload: UpdateSemesterRequest): Promise<ApiResponse<Semester>> => {
     try {
-      const response = await api.put(`/api/semesters/${id}`, payload);
-      return { data: response.data as Semester, error: null };
-    } catch (error) {
-      return { data: null, error: error instanceof Error ? error.message : 'Unknown error' };
+      const res = await authApi.put(`${BASE_PATH}/${id}`, payload);
+      return { data: res.data as Semester, error: null };
+    } catch (e) {
+      return { data: null, error: e instanceof Error ? e.message : 'Failed to update semester' };
     }
-  };
+  }, [authApi]);
 
-  // Delete semester
-  const remove = async (id: number): Promise<ApiResponse<boolean>> => {
+  const deleteOne = useCallback(async (id: number): Promise<ApiResponse<boolean>> => {
     try {
-      await api.delete(`/api/semesters/${id}`);
+      await authApi.delete(`${BASE_PATH}/${id}`);
       return { data: true, error: null };
-    } catch (error) {
-      return { data: null, error: error instanceof Error ? error.message : 'Unknown error' };
+    } catch (e) {
+      return { data: null, error: e instanceof Error ? e.message : 'Failed to delete semester' };
     }
-  };
+  }, [authApi]);
 
-  // Add attachment to a semester
-  const addAttachment = async (semesterId: number, file: File): Promise<ApiResponse<SemesterAttachment>> => {
+  const addAttachment = useCallback(async (
+    semesterId: number,
+    file: File
+  ): Promise<ApiResponse<SemesterAttachment>> => {
     const formData = new FormData();
     formData.append('file', file);
-    
     try {
-      const response = await api.post(`/api/semesters/${semesterId}/attachments`, formData, {
-        headers: { 'Content-Type': 'multipart/form-data' }
-      });
-      return { data: response.data as SemesterAttachment, error: null };
-    } catch (error) {
-      return { data: null, error: error instanceof Error ? error.message : 'Unknown error' };
+      const res = await authApi.post(`${BASE_PATH}/${semesterId}/attachments`, formData);
+      return { data: res.data as SemesterAttachment, error: null };
+    } catch (e) {
+      return { data: null, error: e instanceof Error ? e.message : 'Failed to add attachment' };
     }
-  };
+  }, [authApi]);
 
-  // Add external URL as attachment
-  const addExternalAttachment = async (
-    semesterId: number, 
-    attachment: { name: string, url: string, type: string }
+  const addExternalAttachment = useCallback(async (
+    semesterId: number,
+    attachment: { name: string; url: string; type: string }
   ): Promise<ApiResponse<SemesterAttachment>> => {
     try {
-      const response = await api.post(`/api/semesters/${semesterId}/attachments/external`, attachment);
-      return { data: response.data as SemesterAttachment, error: null };
-    } catch (error) {
-      return { data: null, error: error instanceof Error ? error.message : 'Unknown error' };
+      const res = await authApi.post(`${BASE_PATH}/${semesterId}/attachments/external`, attachment);
+      return { data: res.data as SemesterAttachment, error: null };
+    } catch (e) {
+      return { data: null, error: e instanceof Error ? e.message : 'Failed to add external attachment' };
     }
-  };
+  }, [authApi]);
 
-  // Remove attachment
-  const removeAttachment = async (semesterId: number, attachmentId: number): Promise<ApiResponse<boolean>> => {
+  const removeAttachment = useCallback(async (
+    semesterId: number,
+    attachmentId: number
+  ): Promise<ApiResponse<boolean>> => {
     try {
-      await api.delete(`/api/semesters/${semesterId}/attachments/${attachmentId}`);
+      await authApi.delete(`${BASE_PATH}/${semesterId}/attachments/${attachmentId}`);
       return { data: true, error: null };
-    } catch (error) {
-      return { data: null, error: error instanceof Error ? error.message : 'Unknown error' };
+    } catch (e) {
+      return { data: null, error: e instanceof Error ? e.message : 'Failed to remove attachment' };
     }
-  };
+  }, [authApi]);
 
-  return {
+  return useMemo(() => ({
     getAll,
     getById,
     create,
     update,
-    remove,
+    delete: deleteOne,
     addAttachment,
     addExternalAttachment,
     removeAttachment
-  };
+  }), [
+    getAll,
+    getById,
+    create,
+    update,
+    deleteOne,
+    addAttachment,
+    addExternalAttachment,
+    removeAttachment
+  ]);
 };

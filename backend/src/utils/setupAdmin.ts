@@ -5,7 +5,7 @@ import { Role } from '../models/Role';
 import { User } from '../models/User';
 import { UserRole } from '../models/UserRole';
 import { AppError } from '../utils/AppError';
-
+// npx ts-node src/utils/setupAdmin.ts
 dotenv.config();
 /**
  * Email: admin@thesisboard.com

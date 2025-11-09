@@ -4,8 +4,6 @@ import Callback from './pages/Callback';
 import Dashboard from './pages/Dashboard';
 import { useEffect } from 'react';
 import ProtectedRoute from './routes/ProtectedRoute';
-import Users from './pages/Users';
-import Protected from './pages/Protected';
 
 function App() {
   const { isLoading, isAuthenticated, loginWithRedirect } = useAuth0();
@@ -58,22 +56,7 @@ function App() {
           </ProtectedRoute>
         }
       />
-      <Route
-        path="/users"
-        element={
-          <ProtectedRoute>
-            <Users />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/protected"
-        element={
-          <ProtectedRoute>
-            <Protected />
-          </ProtectedRoute>
-        }
-      />
+
       {/* Redirect root to dashboard */}
       <Route path="/" element={<Navigate to="/dashboard" replace />} />
       {/* Catch-all route for any other paths */}

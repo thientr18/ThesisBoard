@@ -2,11 +2,13 @@ import { Router } from 'express';
 import { checkJwt, requireAdmin } from '../middlewares/auth.middleware';
 import { roleMiddleware, requireAllPermissions } from '../middlewares/role.middleware';
 import { NotificationController } from '../controllers/notification.controller';
+import { attachUserFromJwt } from '../middlewares/user.middleware';
 
 const router = Router();
 const notificationController = new NotificationController();
 
 router.use(checkJwt);
+router.use(attachUserFromJwt);
 
 router.get('/',
     roleMiddleware(['view:notifications']),

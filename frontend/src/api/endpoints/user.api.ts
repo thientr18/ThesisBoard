@@ -1,3 +1,5 @@
+import { useCallback, useMemo } from 'react';
+import { useAuthenticatedApi } from '../config';
 import type { 
   ApiResponse,
   User,
@@ -8,144 +10,156 @@ import type {
   AssignRoleRequest,
   SearchUsersParams
 } from '../../types/user.types';
-import { useAuthenticatedApi } from '../config';
 
-/**
- * Hook that provides API functions for user management
- * Must be used within React components or custom hooks
- */
+const BASE_PATH = '/api/users';
+
 export const useUserApi = () => {
   const authApi = useAuthenticatedApi();
-  
-  return {
-    // Get all users
-    getAll: async (): Promise<ApiResponse<User[]>> => {
-      try {
-        const response = await authApi.get('/api/users');
-        return { data: response.data as User[], error: null };
-      } catch (error: any) {
-        return { data: null, error: error.message || 'Failed to fetch users' };
-      }
-    },
 
-    // Get user by ID
-    getById: async (id: number): Promise<ApiResponse<User>> => {
-      try {
-        const response = await authApi.get(`/api/users/${id}`);
-        return { data: response.data as User, error: null };
-      } catch (error: any) {
-        return { data: null, error: error.message || `Failed to fetch user with ID ${id}` };
-      }
-    },
+  const getAll = useCallback(async (): Promise<ApiResponse<User[]>> => {
+    try {
+      const response = await authApi.get(BASE_PATH);
+      return { data: response.data as User[], error: null };
+    } catch (error) {
+      return { data: null, error: error instanceof Error ? error.message : 'Failed to fetch users' };
+    }
+  }, [authApi]);
 
-    // Create new user
-    create: async (payload: CreateUserRequest): Promise<ApiResponse<User>> => {
-      try {
-        const response = await authApi.post('/api/users', payload);
-        return { data: response.data as User, error: null };
-      } catch (error: any) {
-        return { data: null, error: error.message || 'Failed to create user' };
-      }
-    },
+  const getById = useCallback(async (id: number): Promise<ApiResponse<User>> => {
+    try {
+      const response = await authApi.get(`${BASE_PATH}/${id}`);
+      return { data: response.data as User, error: null };
+    } catch (error) {
+      return { data: null, error: error instanceof Error ? error.message : `Failed to fetch user with ID ${id}` };
+    }
+  }, [authApi]);
 
-    // Update existing user
-    update: async (id: number, payload: UpdateUserRequest): Promise<ApiResponse<User>> => {
-      try {
-        const response = await authApi.put(`/api/users/${id}`, payload);
-        return { data: response.data as User, error: null };
-      } catch (error: any) {
-        return { data: null, error: error.message || `Failed to update user with ID ${id}` };
-      }
-    },
+  const create = useCallback(async (payload: CreateUserRequest): Promise<ApiResponse<User>> => {
+    try {
+      const response = await authApi.post(BASE_PATH, payload);
+      return { data: response.data as User, error: null };
+    } catch (error) {
+      return { data: null, error: error instanceof Error ? error.message : 'Failed to create user' };
+    }
+  }, [authApi]);
 
-    // Delete user
-    delete: async (id: number): Promise<ApiResponse<boolean>> => {
-      try {
-        await authApi.delete(`/api/users/${id}`);
-        return { data: true, error: null };
-      } catch (error: any) {
-        return { data: null, error: error.message || `Failed to delete user with ID ${id}` };
-      }
-    },
+  const update = useCallback(async (id: number, payload: UpdateUserRequest): Promise<ApiResponse<User>> => {
+    try {
+      const response = await authApi.put(`${BASE_PATH}/${id}`, payload);
+      return { data: response.data as User, error: null };
+    } catch (error) {
+      return { data: null, error: error instanceof Error ? error.message : `Failed to update user with ID ${id}` };
+    }
+  }, [authApi]);
 
-    // Search users with filters
-    search: async (params: SearchUsersParams): Promise<ApiResponse<User[]>> => {
-      try {
-        const response = await authApi.get('/api/users/search', { params });
-        return { data: response.data as User[], error: null };
-      } catch (error: any) {
-        return { data: null, error: error.message || 'Failed to search users' };
-      }
-    },
+  const deleteOne = useCallback(async (id: number): Promise<ApiResponse<boolean>> => {
+    try {
+      await authApi.delete(`${BASE_PATH}/${id}`);
+      return { data: true, error: null };
+    } catch (error) {
+      return { data: null, error: error instanceof Error ? error.message : `Failed to delete user with ID ${id}` };
+    }
+  }, [authApi]);
 
-    // Get user statistics
-    getStatistics: async (): Promise<ApiResponse<UserStatistics>> => {
-      try {
-        const response = await authApi.get('/api/users/statistics');
-        return { data: response.data as UserStatistics, error: null };
-      } catch (error: any) {
-        return { data: null, error: error.message || 'Failed to fetch user statistics' };
-      }
-    },
+  const search = useCallback(async (params: SearchUsersParams): Promise<ApiResponse<User[]>> => {
+    try {
+      const response = await authApi.get(`${BASE_PATH}/search`, { params });
+      return { data: response.data as User[], error: null };
+    } catch (error) {
+      return { data: null, error: error instanceof Error ? error.message : 'Failed to search users' };
+    }
+  }, [authApi]);
 
-    // Get users by role
-    getByRole: async (roleName: string): Promise<ApiResponse<User[]>> => {
-      try {
-        const response = await authApi.get(`/api/users/role/${roleName}`);
-        return { data: response.data as User[], error: null };
-      } catch (error: any) {
-        return { data: null, error: error.message || `Failed to fetch users with role ${roleName}` };
-      }
-    },
+  const getStatistics = useCallback(async (): Promise<ApiResponse<UserStatistics>> => {
+    try {
+      const response = await authApi.get(`${BASE_PATH}/statistics`);
+      return { data: response.data as UserStatistics, error: null };
+    } catch (error) {
+      return { data: null, error: error instanceof Error ? error.message : 'Failed to fetch user statistics' };
+    }
+  }, [authApi]);
 
-    // Activate user
-    activate: async (id: number): Promise<ApiResponse<User>> => {
-      try {
-        const response = await authApi.patch(`/api/users/${id}/activate`);
-        return { data: response.data as User, error: null };
-      } catch (error: any) {
-        return { data: null, error: error.message || `Failed to activate user with ID ${id}` };
-      }
-    },
+  const getByRole = useCallback(async (roleName: string): Promise<ApiResponse<User[]>> => {
+    try {
+      const response = await authApi.get(`${BASE_PATH}/role/${roleName}`);
+      return { data: response.data as User[], error: null };
+    } catch (error) {
+      return { data: null, error: error instanceof Error ? error.message : `Failed to fetch users with role ${roleName}` };
+    }
+  }, [authApi]);
 
-    // Deactivate user
-    deactivate: async (id: number): Promise<ApiResponse<User>> => {
-      try {
-        const response = await authApi.patch(`/api/users/${id}/deactivate`);
-        return { data: response.data as User, error: null };
-      } catch (error: any) {
-        return { data: null, error: error.message || `Failed to deactivate user with ID ${id}` };
-      }
-    },
+  const activate = useCallback(async (id: number): Promise<ApiResponse<User>> => {
+    try {
+      const response = await authApi.patch(`${BASE_PATH}/${id}/activate`);
+      return { data: response.data as User, error: null };
+    } catch (error) {
+      return { data: null, error: error instanceof Error ? error.message : `Failed to activate user with ID ${id}` };
+    }
+  }, [authApi]);
 
-    // Get user with roles
-    getUserWithRoles: async (id: number): Promise<ApiResponse<UserWithRoles>> => {
-      try {
-        const response = await authApi.get(`/api/users/${id}/roles`);
-        return { data: response.data as UserWithRoles, error: null };
-      } catch (error: any) {
-        return { data: null, error: error.message || `Failed to fetch roles for user with ID ${id}` };
-      }
-    },
+  const deactivate = useCallback(async (id: number): Promise<ApiResponse<User>> => {
+    try {
+      const response = await authApi.patch(`${BASE_PATH}/${id}/deactivate`);
+      return { data: response.data as User, error: null };
+    } catch (error) {
+      return { data: null, error: error instanceof Error ? error.message : `Failed to deactivate user with ID ${id}` };
+    }
+  }, [authApi]);
 
-    // Assign role to user
-    assignRole: async (payload: AssignRoleRequest): Promise<ApiResponse<boolean>> => {
-      try {
-        await authApi.post('/api/users/roles', payload);
-        return { data: true, error: null };
-      } catch (error: any) {
-        return { data: null, error: error.message || 'Failed to assign role to user' };
-      }
-    },
+  const getUserWithRoles = useCallback(async (id: number): Promise<ApiResponse<UserWithRoles>> => {
+    try {
+      const response = await authApi.get(`${BASE_PATH}/${id}/roles`);
+      return { data: response.data as UserWithRoles, error: null };
+    } catch (error) {
+      return { data: null, error: error instanceof Error ? error.message : `Failed to fetch roles for user with ID ${id}` };
+    }
+  }, [authApi]);
 
-    // Remove role from user
-    removeRole: async (payload: AssignRoleRequest): Promise<ApiResponse<boolean>> => {
-      try {
-        await authApi.delete('/api/users/roles', { data: payload } as any);
-        return { data: true, error: null };
-      } catch (error: any) {
-        return { data: null, error: error.message || 'Failed to remove role from user' };
-      }
-    },
-  };
+  const assignRole = useCallback(async (payload: AssignRoleRequest): Promise<ApiResponse<boolean>> => {
+    try {
+      await authApi.post(`${BASE_PATH}/roles`, payload);
+      return { data: true, error: null };
+    } catch (error) {
+      return { data: null, error: error instanceof Error ? error.message : 'Failed to assign role to user' };
+    }
+  }, [authApi]);
+
+  const removeRole = useCallback(async (payload: AssignRoleRequest): Promise<ApiResponse<boolean>> => {
+    try {
+      await authApi.delete(`${BASE_PATH}/roles`, { data: payload } as any);
+      return { data: true, error: null };
+    } catch (error) {
+      return { data: null, error: error instanceof Error ? error.message : 'Failed to remove role from user' };
+    }
+  }, [authApi]);
+
+  return useMemo(() => ({
+    getAll,
+    getById,
+    create,
+    update,
+    delete: deleteOne,
+    search,
+    getStatistics,
+    getByRole,
+    activate,
+    deactivate,
+    getUserWithRoles,
+    assignRole,
+    removeRole
+  }), [
+    getAll,
+    getById,
+    create,
+    update,
+    deleteOne,
+    search,
+    getStatistics,
+    getByRole,
+    activate,
+    deactivate,
+    getUserWithRoles,
+    assignRole,
+    removeRole
+  ]);
 };

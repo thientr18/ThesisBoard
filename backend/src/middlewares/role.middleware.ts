@@ -1,27 +1,27 @@
 import { Request, Response, NextFunction } from 'express';
+import { AuthResult } from 'express-oauth2-jwt-bearer';
 import { AppError } from '../utils/AppError';
 
-declare global {
-  namespace Express {
-    interface Request {
-      user?: {
-        id: number;
-        roles: string[];
-        permissions: string[];
-      };
-    }
-  }
+interface RequestWithAuth extends Request {
+  auth?: AuthResult & {
+    payload?: {
+      permissions?: string[];
+      [key: string]: any;
+    };
+  };
 }
 
 export const roleMiddleware = (allowedRolesOrPermissions: string[]) => {
-  return (req: Request, res: Response, next: NextFunction) => {
-    if (!req.user) {
+  return (req: RequestWithAuth, res: Response, next: NextFunction) => {
+    console.log('Role Middleware Invoked');
+    
+    if (!req.auth || !req.auth.payload) {
       return next(
         new AppError('You are not logged in. Please log in to access this resource', 401, 'UNAUTHORIZED')
       );
     }
 
-    const { roles = [], permissions = [] } = req.user;
+    const { roles = [], permissions = [] } = req.auth.payload;
     
     if (roles.includes('admin:all')) {
       return next();
@@ -44,14 +44,14 @@ export const roleMiddleware = (allowedRolesOrPermissions: string[]) => {
 };
 
 export const requireAllPermissions = (requiredRolesOrPermissions: string[]) => {
-  return (req: Request, res: Response, next: NextFunction) => {
-    if (!req.user) {
+  return (req: RequestWithAuth, res: Response, next: NextFunction) => {
+    if (!req.auth || !req.auth.payload) {
       return next(
         new AppError('You are not logged in. Please log in to access this resource', 401, 'UNAUTHORIZED')
       );
     }
 
-    const { roles = [], permissions = [] } = req.user;
+    const { roles = [], permissions = [] } = req.auth.payload;
     
     if (roles.includes('admin:all')) {
       return next();

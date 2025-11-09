@@ -10,8 +10,8 @@ export class PreThesis extends Model<InferAttributes<PreThesis>, InferCreationAt
   declare status: 'in_progress' | 'completed' | 'cancelled';
   declare finalScore: number | null;
   declare feedback: string | null;
-  declare readonly createdAt: CreationOptional<Date>;
-  declare readonly updatedAt: CreationOptional<Date>;
+  declare createdAt: CreationOptional<Date>;
+  declare updatedAt: CreationOptional<Date>;
 }
 
 PreThesis.init(

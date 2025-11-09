@@ -1,82 +1,85 @@
-import axios from 'axios';
+import axios, { type InternalAxiosRequestConfig } from 'axios';
 import { useAuth0 } from '@auth0/auth0-react';
+import { useEffect, useMemo } from 'react';
 
 // Base API instance without authentication
 export const api = axios.create({
   baseURL: import.meta.env.VITE_API_URL ?? 'http://localhost:8080',
 });
 
-// Hook to get authenticated API instance
 export const useAuthenticatedApi = () => {
   const { getAccessTokenSilently, logout } = useAuth0();
-  
-  const authApi = axios.create({
-    baseURL: import.meta.env.VITE_API_URL ?? 'http://localhost:8080',
-  });
+  const baseURL = import.meta.env.VITE_API_URL ?? 'http://localhost:8080';
 
-  authApi.interceptors.request.use(function(config) {
-    const promise = new Promise((resolve) => {
-      getAccessTokenSilently()
-        .then(token => {
-          config.headers = config.headers || {};
-          config.headers.Authorization = `Bearer ${token}`;
-          resolve(config);
-        })
-        .catch(error => {
-          console.error('Error getting access token', error);
-          resolve(config);
-        });
-    });
-    
-    return promise as unknown as typeof config;
-  });
+  // Create the axios instance once per baseURL
+  const authApi = useMemo(() => axios.create({ baseURL }), [baseURL]);
 
-  authApi.interceptors.response.use(
-    (response) => response,
-    (error) => {
-      const { response } = error;
-      
-      if (response) {
-        // Authentication errors
-        if (response.status === 401) {
-          // Token expired or invalid - redirect to login
-          logout({ 
-            logoutParams: {
-              returnTo: window.location.origin
+  // Attach interceptors once, and clean up on deps change/unmount
+  useEffect(() => {
+    const reqId = authApi.interceptors.request.use(
+      async (config: InternalAxiosRequestConfig) => {
+        try {
+          const token = await getAccessTokenSilently();
+          if (token) {
+            config.headers = config.headers || {};
+              if (typeof (config.headers as any).set === 'function') {
+              (config.headers as any).set('Authorization', `Bearer ${token}`);
+            } else {
+              (config.headers as Record<string, string>).Authorization = `Bearer ${token}`;
             }
-          });
-          return Promise.reject(new Error('Your session has expired. Please log in again.'));
+          }
+          return config;
+        } catch (error) {
+          console.error('Error getting access token, aborting request', error);
+          return Promise.reject(error);
         }
-        
-        // Authorization errors
-        if (response.status === 403) {
-          return Promise.reject(new Error('You do not have permission to perform this action.'));
+      },
+      (error) => Promise.reject(error)
+    );
+
+    const resId = authApi.interceptors.response.use(
+      (response) => response,
+      (error) => {
+        const { response } = error;
+
+        if (response) {
+          if (response.status === 401) {
+            console.log('Session expired, logging out user');
+            logout({
+              logoutParams: { returnTo: window.location.origin },
+            });
+            return Promise.reject(new Error('Your session has expired. Please log in again.'));
+          }
+
+          if (response.status === 403) {
+            return Promise.reject(new Error('You do not have permission to perform this action.'));
+          }
+
+          if (response.status === 404) {
+            return Promise.reject(new Error('The requested resource was not found.'));
+          }
+
+          if (response.status >= 500) {
+            return Promise.reject(new Error('A server error occurred. Please try again later.'));
+          }
+
+          const errorMessage = response.data?.message || 'An unexpected error occurred';
+          return Promise.reject(new Error(errorMessage));
         }
-        
-        // Not found errors
-        if (response.status === 404) {
-          return Promise.reject(new Error('The requested resource was not found.'));
+
+        if (error.request) {
+          return Promise.reject(new Error('Network error. Please check your connection.'));
         }
-        
-        // Server errors
-        if (response.status >= 500) {
-          return Promise.reject(new Error('A server error occurred. Please try again later.'));
-        }
-        
-        // Get error message from the API if available
-        const errorMessage = response.data?.message || 'An unexpected error occurred';
-        return Promise.reject(new Error(errorMessage));
+
+        return Promise.reject(error);
       }
-      
-      // Network errors (no response)
-      if (error.request) {
-        return Promise.reject(new Error('Network error. Please check your connection.'));
-      }
-      
-      // Unknown errors
-      return Promise.reject(error);
-    }
-  );
+    );
+
+    return () => {
+      authApi.interceptors.request.eject(reqId);
+      authApi.interceptors.response.eject(resId);
+    };
+  }, [authApi, getAccessTokenSilently, logout]);
 
   return authApi;
 };

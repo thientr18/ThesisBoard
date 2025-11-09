@@ -1,115 +1,87 @@
 import { useAuthenticatedApi } from '../config';
+import { useCallback, useMemo } from 'react';
 import type { 
   ApiResponse,
   Attachment,
   ExternalAttachmentRequest
 } from '../../types/attachment.types';
 
-// Hook to use authenticated attachment API
+const BASE_PATH = '/api/attachments';
+
 export const useAttachmentApi = () => {
   const authApi = useAuthenticatedApi();
-  
-  return {
-    // Get attachments by entity type and ID
-    getByEntity: async (
-      entityType: string, 
-      entityId: string
-    ): Promise<ApiResponse<Attachment[]>> => {
-      try {
-        const response = await authApi.get(`/api/attachments/${entityType}/${entityId}`);
-        return { data: response.data as Attachment[], error: null };
-      } catch (error) {
-        console.error('Error fetching attachments:', error);
-        return { 
-          data: null, 
-          error: error instanceof Error ? error.message : 'Failed to fetch attachments' 
-        };
-      }
-    },
-    
-    // Get a specific attachment by ID
-    getById: async (id: string): Promise<ApiResponse<Attachment>> => {
-      try {
-        const response = await authApi.get(`/api/attachments/${id}`);
-        return { data: response.data as Attachment, error: null };
-      } catch (error) {
-        console.error('Error fetching attachment:', error);
-        return { 
-          data: null, 
-          error: error instanceof Error ? error.message : 'Failed to fetch attachment' 
-        };
-      }
-    },
-    
-    // Upload files as attachments
-    uploadFiles: async (
-      files: File | File[], 
-      entityType: string, 
-      entityId: string
-    ): Promise<ApiResponse<Attachment[]>> => {
-      try {
-        const formData = new FormData();
-        
-        // Add files to form data
-        if (Array.isArray(files)) {
-          files.forEach(file => formData.append('files', file));
-        } else {
-          formData.append('files', files);
-        }
-        
-        // Add entity metadata
-        formData.append('entityType', entityType);
-        formData.append('entityId', entityId);
-        
-        const response = await authApi.post('/api/attachments', formData, {
-          headers: {
-            'Content-Type': 'multipart/form-data',
-          },
-        });
-        
-        return { data: response.data as Attachment[], error: null };
-      } catch (error) {
-        console.error('Error uploading files:', error);
-        return { 
-          data: null, 
-          error: error instanceof Error ? error.message : 'Failed to upload files' 
-        };
-      }
-    },
-    
-    // Create external attachment (URL)
-    createExternalLink: async (
-      request: ExternalAttachmentRequest
-    ): Promise<ApiResponse<Attachment>> => {
-      try {
-        const response = await authApi.post('/api/attachments', request, {
-          headers: {
-            'Content-Type': 'application/json',
-          },
-        });
-        
-        return { data: response.data as Attachment, error: null };
-      } catch (error) {
-        console.error('Error creating external link:', error);
-        return { 
-          data: null, 
-          error: error instanceof Error ? error.message : 'Failed to create external link' 
-        };
-      }
-    },
-    
-    // Delete an attachment
-    deleteAttachment: async (id: string): Promise<ApiResponse<void>> => {
-      try {
-        await authApi.delete(`/api/attachments/${id}`);
-        return { data: null, error: null };
-      } catch (error) {
-        console.error('Error deleting attachment:', error);
-        return { 
-          data: null, 
-          error: error instanceof Error ? error.message : 'Failed to delete attachment' 
-        };
-      }
+
+  const getByEntity = useCallback(async (
+    entityType: string,
+    entityId: string
+  ): Promise<ApiResponse<Attachment[]>> => {
+    try {
+      const res = await authApi.get(`${BASE_PATH}/${entityType}/${entityId}`);
+      return { data: res.data as Attachment[], error: null };
+    } catch (e) {
+      return { data: null, error: e instanceof Error ? e.message : 'Failed to fetch attachments' };
     }
-  };
+  }, [authApi]);
+
+  const getById = useCallback(async (id: string): Promise<ApiResponse<Attachment>> => {
+    try {
+      const res = await authApi.get(`${BASE_PATH}/${id}`);
+      return { data: res.data as Attachment, error: null };
+    } catch (e) {
+      return { data: null, error: e instanceof Error ? e.message : 'Failed to fetch attachment' };
+    }
+  }, [authApi]);
+
+  const uploadFiles = useCallback(async (
+    files: File | File[],
+    entityType: string,
+    entityId: string
+  ): Promise<ApiResponse<Attachment[]>> => {
+    try {
+      const formData = new FormData();
+      if (Array.isArray(files)) {
+        files.forEach(f => formData.append('files', f));
+      } else {
+        formData.append('files', files);
+      }
+      formData.append('entityType', entityType);
+      formData.append('entityId', entityId);
+
+      // Let browser set multipart boundary automatically
+      const res = await authApi.post(BASE_PATH, formData);
+      return { data: res.data as Attachment[], error: null };
+    } catch (e) {
+      return { data: null, error: e instanceof Error ? e.message : 'Failed to upload files' };
+    }
+  }, [authApi]);
+
+  const createExternalLink = useCallback(async (
+    request: ExternalAttachmentRequest
+  ): Promise<ApiResponse<Attachment>> => {
+    try {
+      const res = await authApi.post(BASE_PATH, request, {
+        headers: { 'Content-Type': 'application/json' },
+      });
+      return { data: res.data as Attachment, error: null };
+    } catch (e) {
+      return { data: null, error: e instanceof Error ? e.message : 'Failed to create external link' };
+    }
+  }, [authApi]);
+
+  const deleteAttachment = useCallback(async (id: string): Promise<ApiResponse<void>> => {
+    try {
+      await authApi.delete(`${BASE_PATH}/${id}`);
+      return { data: null, error: null };
+    } catch (e) {
+      return { data: null, error: e instanceof Error ? e.message : 'Failed to delete attachment' };
+    }
+  }, [authApi]);
+
+  return useMemo(() => ({
+    getByEntity,
+    getById,
+    uploadFiles,
+    createExternalLink,
+    delete: deleteAttachment
+  }), [getByEntity, getById, uploadFiles, createExternalLink, deleteAttachment]);
 };

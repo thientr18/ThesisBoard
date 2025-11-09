@@ -2,11 +2,13 @@ import { Router } from 'express';
 import UserController from '../controllers/user.controller';
 import { checkJwt } from '../middlewares/auth.middleware';
 import { roleMiddleware } from '../middlewares/role.middleware';
+import { attachUserFromJwt } from '../middlewares/user.middleware';
 
 const router = Router();
 const userController = new UserController();
 
 router.use(checkJwt);
+router.use(attachUserFromJwt);
 
 // User listing and search
 router.get('/', roleMiddleware(['admin:all', 'moderator:all', 'read:users']), userController.getUsers);

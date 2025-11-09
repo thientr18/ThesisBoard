@@ -8,8 +8,8 @@ export class User extends Model< InferAttributes<User>, InferCreationAttributes<
   declare email: string;
   declare fullName: string;
   declare status: 'active' | 'inactive';
-  declare readonly createdAt: CreationOptional<Date>;
-  declare readonly updatedAt: CreationOptional<Date>;
+  declare createdAt: CreationOptional<Date>;
+  declare updatedAt: CreationOptional<Date>;
 }
 
 User.init(

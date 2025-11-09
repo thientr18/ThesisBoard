@@ -11,8 +11,8 @@ export class NotificationController {
 
   getNotifications = async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const userId = req.user?.id;
-      if (!userId) {
+      const userId = Number(req.user?.id);
+      if (!req.user?.id || Number.isNaN(userId)) {
         return next(new AppError('User not authenticated', 401, 'NOT_AUTHENTICATED'));
       }
 
@@ -44,8 +44,10 @@ export class NotificationController {
 
   getUnreadCount = async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const userId = req.user?.id;
-      if (!userId) {
+      const userId = Number(req.user?.id);
+      console.log('Request User:', req.user);
+      console.log('User ID:', userId);
+      if (!req.user?.id || Number.isNaN(userId)) {
         return next(new AppError('User not authenticated', 401, 'NOT_AUTHENTICATED'));
       }
 
@@ -62,8 +64,8 @@ export class NotificationController {
 
   markAsRead = async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const userId = req.user?.id;
-      if (!userId) {
+      const userId = Number(req.user?.id);
+      if (!req.user?.id || Number.isNaN(userId)) {
         return next(new AppError('User not authenticated', 401, 'NOT_AUTHENTICATED'));
       }
 
@@ -85,8 +87,8 @@ export class NotificationController {
 
   markAllAsRead = async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const userId = req.user?.id;
-      if (!userId) {
+      const userId = Number(req.user?.id);
+      if (!req.user?.id || Number.isNaN(userId)) {
         return next(new AppError('User not authenticated', 401, 'NOT_AUTHENTICATED'));
       }
 
@@ -103,8 +105,8 @@ export class NotificationController {
 
   deleteNotification = async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const userId = req.user?.id;
-      if (!userId) {
+      const userId = Number(req.user?.id);
+      if (!req.user?.id || Number.isNaN(userId)) {
         return next(new AppError('User not authenticated', 401, 'NOT_AUTHENTICATED'));
       }
 
@@ -126,8 +128,8 @@ export class NotificationController {
 
   deleteAllNotifications = async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const userId = req.user?.id;
-      if (!userId) {
+      const userId = Number(req.user?.id);
+      if (!req.user?.id || Number.isNaN(userId)) {
         return next(new AppError('User not authenticated', 401, 'NOT_AUTHENTICATED'));
       }
 

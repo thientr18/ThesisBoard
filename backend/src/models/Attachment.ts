@@ -25,5 +25,5 @@ Attachment.init(
     mimeType: { type: DataTypes.STRING(128), allowNull: true, field: 'mime_type' },
     uploadedByUserId: { type: DataTypes.BIGINT, allowNull: false, field: 'uploaded_by_user_id' },
   },
-  { sequelize, tableName: 'attachments', modelName: 'Attachment', underscored: true, timestamps: true, paranoid: true }
+  { sequelize,tableName: 'attachments',modelName: 'Attachment',underscored: true,timestamps: true,paranoid: true }
 );

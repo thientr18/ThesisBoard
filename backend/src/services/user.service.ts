@@ -24,6 +24,24 @@ export class UserService {
     return user;
   }
 
+  async findByAuth0UserId(auth0UserId: string): Promise<User | null> {
+    return User.findOne({ where: { auth0UserId } });
+  }
+
+  async getOrCreateByAuth0UserId(auth0UserId: string, defaults?: Partial<User>): Promise<User> {
+    const [user] = await User.findOrCreate({
+      where: { auth0UserId },
+      defaults: {
+        username: defaults?.username ?? auth0UserId,
+        email: defaults?.email ?? `${auth0UserId}@placeholder.local`,
+        fullName: defaults?.fullName ?? 'Unnamed User',
+        status: defaults?.status ?? 'active',
+        auth0UserId,
+      } as any,
+    });
+    return user;
+  }
+
   // Create a new user
   async createUser(userData: Partial<User>) {
     // Check if username or email already exists

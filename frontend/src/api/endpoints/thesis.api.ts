@@ -1,4 +1,5 @@
 import { useAuthenticatedApi } from '../config';
+import { useCallback, useMemo } from 'react';
 import type {
   ApiResponse,
   AssignTeacherRequest,
@@ -12,13 +13,17 @@ import type {
   UpdateThesisRequest
 } from '../../types/thesis.types';
 
-// Helper function to handle API errors
+const BASE = '/api/theses';
+const PROPOSALS_PATH = `${BASE}/proposals`;
+const THESES_PATH = `${BASE}/theses`;
+const REGISTRATIONS_PATH = `${BASE}/registrations`;
+const DEFENSE_PATH = `${BASE}/defense-sessions`;
+const REPORTS_PATH = `${BASE}/reports`;
+
 const handleApiError = (error: unknown): string => {
   if (error instanceof Error) {
-    if (error && typeof error === 'object' && 'isAxiosError' in error && 'response' in error) {
-      const axiosError = error as any; // Cast to any since we can't use AxiosError
-      return axiosError.response?.data?.message || axiosError.message || 'An unexpected error occurred';
-    }
+    const anyErr = error as any;
+    if (anyErr?.response?.data?.message) return anyErr.response.data.message;
     return error.message;
   }
   return 'An unexpected error occurred';
@@ -28,360 +33,358 @@ const handleApiError = (error: unknown): string => {
 export const useThesisProposals = () => {
   const api = useAuthenticatedApi();
 
-  // Get all thesis proposals
-  const getAll = async (): Promise<ApiResponse<ThesisProposal[]>> => {
+  const getAll = useCallback(async (): Promise<ApiResponse<ThesisProposal[]>> => {
     try {
-      const response = await api.get('/api/theses/proposals/my');
-      return { data: response.data as ThesisProposal[], error: null };
-    } catch (error) {
-      return { data: null, error: handleApiError(error) };
+      const res = await api.get(`${PROPOSALS_PATH}/my`);
+      return { data: res.data as ThesisProposal[], error: null };
+    } catch (e) {
+      return { data: null, error: handleApiError(e) };
     }
-  };
+  }, [api]);
 
-  // Get thesis proposal by ID
-  const getById = async (id: string): Promise<ApiResponse<ThesisProposal>> => {
+  const getById = useCallback(async (id: string): Promise<ApiResponse<ThesisProposal>> => {
     try {
-      const response = await api.get(`/api/theses/proposals/${id}`);
-      return { data: response.data as ThesisProposal, error: null };
-    } catch (error) {
-      return { data: null, error: handleApiError(error) };
+      const res = await api.get(`${PROPOSALS_PATH}/${id}`);
+      return { data: res.data as ThesisProposal, error: null };
+    } catch (e) {
+      return { data: null, error: handleApiError(e) };
     }
-  };
+  }, [api]);
 
-  // Create thesis proposal (supports file upload)
-    const create = async (data: CreateThesisProposalRequest, files?: File[]): Promise<ApiResponse<ThesisProposal>> => {
+  const create = useCallback(async (
+    data: CreateThesisProposalRequest,
+    files?: File[]
+  ): Promise<ApiResponse<ThesisProposal>> => {
     try {
-        const formData = new FormData();
-        
-        // Add form fields
-        Object.entries(data).forEach(([key, value]) => {
-        if (value !== undefined) {
-            formData.append(key, value);
-        }
-        });
-        
-        // Add files if any
-        if (files?.length) {
-        files.forEach(file => {
-            formData.append('attachments', file);
-        });
-        }
-        
-        const response = await api.post('/api/theses/proposals', formData, {
-        headers: { 'Content-Type': 'multipart/form-data' }
-        });
-        return { data: response.data as ThesisProposal, error: null };
-    } catch (error) {
-        return { data: null, error: handleApiError(error) };
+      const formData = new FormData();
+      Object.entries(data).forEach(([k, v]) => {
+        if (v !== undefined && v !== null) formData.append(k, v as any);
+      });
+      if (files?.length) files.forEach(f => formData.append('attachments', f));
+      const res = await api.post(PROPOSALS_PATH, formData);
+      return { data: res.data as ThesisProposal, error: null };
+    } catch (e) {
+      return { data: null, error: handleApiError(e) };
     }
-    };
+  }, [api]);
 
-  // Process (approve/reject) a thesis proposal
-  const process = async (
-    id: string, 
-    status: 'APPROVED' | 'REJECTED', 
+  const process = useCallback(async (
+    id: string,
+    status: 'APPROVED' | 'REJECTED',
     feedbackNote?: string
   ): Promise<ApiResponse<ThesisProposal>> => {
     try {
-      const response = await api.patch(`/api/theses/proposals/${id}/process`, {
-        status,
-        feedbackNote
-      });
-      return { data: response.data as ThesisProposal, error: null };
-    } catch (error) {
-      return { data: null, error: handleApiError(error) };
+      const res = await api.patch(`${PROPOSALS_PATH}/${id}/process`, { status, feedbackNote });
+      return { data: res.data as ThesisProposal, error: null };
+    } catch (e) {
+      return { data: null, error: handleApiError(e) };
     }
-  };
+  }, [api]);
 
-  return { getAll, getById, create, process };
+  return useMemo(() => ({
+    getAll,
+    getById,
+    create,
+    process
+  }), [getAll, getById, create, process]);
 };
 
-// ========== THESIS MANAGEMENT ==========
+// ========== THESES ==========
 export const useTheses = () => {
   const api = useAuthenticatedApi();
 
-  // Get all theses
-  const getAll = async (): Promise<ApiResponse<Thesis[]>> => {
+  const getAll = useCallback(async (): Promise<ApiResponse<Thesis[]>> => {
     try {
-      const response = await api.get('/api/theses/theses');
-      return { data: response.data as Thesis[], error: null };
-    } catch (error) {
-      return { data: null, error: handleApiError(error) };
+      const res = await api.get(THESES_PATH);
+      return { data: res.data as Thesis[], error: null };
+    } catch (e) {
+      return { data: null, error: handleApiError(e) };
     }
-  };
+  }, [api]);
 
-  // Get my theses (as student or supervisor)
-  const getMyTheses = async (): Promise<ApiResponse<Thesis[]>> => {
+  const getMyTheses = useCallback(async (): Promise<ApiResponse<Thesis[]>> => {
     try {
-      const response = await api.get('/api/theses/theses/my');
-      return { data: response.data as Thesis[], error: null };
-    } catch (error) {
-      return { data: null, error: handleApiError(error) };
+      const res = await api.get(`${THESES_PATH}/my`);
+      return { data: res.data as Thesis[], error: null };
+    } catch (e) {
+      return { data: null, error: handleApiError(e) };
     }
-  };
+  }, [api]);
 
-  // Get thesis by ID
-  const getById = async (id: string): Promise<ApiResponse<Thesis>> => {
+  const getById = useCallback(async (id: string): Promise<ApiResponse<Thesis>> => {
     try {
-      const response = await api.get(`/api/theses/theses/${id}`);
-      return { data: response.data as Thesis, error: null };
-    } catch (error) {
-      return { data: null, error: handleApiError(error) };
+      const res = await api.get(`${THESES_PATH}/${id}`);
+      return { data: res.data as Thesis, error: null };
+    } catch (e) {
+      return { data: null, error: handleApiError(e) };
     }
-  };
+  }, [api]);
 
-  // Update thesis details
-  const update = async (id: string, payload: UpdateThesisRequest): Promise<ApiResponse<Thesis>> => {
+  const update = useCallback(async (id: string, payload: UpdateThesisRequest): Promise<ApiResponse<Thesis>> => {
     try {
-      const response = await api.patch(`/api/theses/theses/${id}/status`, payload);
-      return { data: response.data as Thesis, error: null };
-    } catch (error) {
-      return { data: null, error: handleApiError(error) };
+      const res = await api.patch(`${THESES_PATH}/${id}/status`, payload);
+      return { data: res.data as Thesis, error: null };
+    } catch (e) {
+      return { data: null, error: handleApiError(e) };
     }
-  };
+  }, [api]);
 
-  // Submit thesis with attachments
-  const submitThesis = async (id: string, formData: FormData): Promise<ApiResponse<Thesis>> => {
+  const submitThesis = useCallback(async (id: string, formData: FormData): Promise<ApiResponse<Thesis>> => {
     try {
-      const response = await api.post(`/api/theses/theses/${id}/submit`, formData, {
-        headers: { 'Content-Type': 'multipart/form-data' }
-      });
-      return { data: response.data as Thesis, error: null };
-    } catch (error) {
-      return { data: null, error: handleApiError(error) };
+      const res = await api.post(`${THESES_PATH}/${id}/submit`, formData);
+      return { data: res.data as Thesis, error: null };
+    } catch (e) {
+      return { data: null, error: handleApiError(e) };
     }
-  };
+  }, [api]);
 
-  return { getAll, getMyTheses, getById, update, submitThesis };
+  return useMemo(() => ({
+    getAll,
+    getMyTheses,
+    getById,
+    update,
+    submitThesis
+  }), [getAll, getMyTheses, getById, update, submitThesis]);
 };
 
 // ========== THESIS REGISTRATIONS ==========
 export const useThesisRegistrations = () => {
   const api = useAuthenticatedApi();
 
-  // Get all thesis registrations
-  const getAll = async (): Promise<ApiResponse<ThesisRegistration[]>> => {
+  const getAll = useCallback(async (): Promise<ApiResponse<ThesisRegistration[]>> => {
     try {
-      const response = await api.get('/api/theses/registrations');
-      return { data: response.data as ThesisRegistration[], error: null };
-    } catch (error) {
-      return { data: null, error: handleApiError(error) };
+      const res = await api.get(REGISTRATIONS_PATH);
+      return { data: res.data as ThesisRegistration[], error: null };
+    } catch (e) {
+      return { data: null, error: handleApiError(e) };
     }
-  };
+  }, [api]);
 
-  // Get thesis registration by ID
-  const getById = async (id: string): Promise<ApiResponse<ThesisRegistration>> => {
+  const getById = useCallback(async (id: string): Promise<ApiResponse<ThesisRegistration>> => {
     try {
-      const response = await api.get(`/api/theses/registrations/${id}`);
-      return { data: response.data as ThesisRegistration, error: null };
-    } catch (error) {
-      return { data: null, error: handleApiError(error) };
+      const res = await api.get(`${REGISTRATIONS_PATH}/${id}`);
+      return { data: res.data as ThesisRegistration, error: null };
+    } catch (e) {
+      return { data: null, error: handleApiError(e) };
     }
-  };
+  }, [api]);
 
-  // Create thesis registration
-  const create = async (thesisProposalId: string, semesterId: string): Promise<ApiResponse<ThesisRegistration>> => {
+  const create = useCallback(async (
+    thesisProposalId: string,
+    semesterId: string
+  ): Promise<ApiResponse<ThesisRegistration>> => {
     try {
-      const response = await api.post('/api/theses/registrations', { 
-        thesisProposalId,
-        semesterId
-      });
-      return { data: response.data as ThesisRegistration, error: null };
-    } catch (error) {
-      return { data: null, error: handleApiError(error) };
+      const res = await api.post(REGISTRATIONS_PATH, { thesisProposalId, semesterId });
+      return { data: res.data as ThesisRegistration, error: null };
+    } catch (e) {
+      return { data: null, error: handleApiError(e) };
     }
-  };
+  }, [api]);
 
-  // Process (approve/reject) a thesis registration
-  const process = async (
-    id: string, 
-    status: 'APPROVED' | 'REJECTED', 
+  const process = useCallback(async (
+    id: string,
+    status: 'APPROVED' | 'REJECTED',
     rejectionReason?: string
   ): Promise<ApiResponse<ThesisRegistration>> => {
     try {
-      const response = await api.patch(`/api/theses/registrations/${id}/process`, {
-        status,
-        rejectionReason
-      });
-      return { data: response.data as ThesisRegistration, error: null };
-    } catch (error) {
-      return { data: null, error: handleApiError(error) };
+      const res = await api.patch(`${REGISTRATIONS_PATH}/${id}/process`, { status, rejectionReason });
+      return { data: res.data as ThesisRegistration, error: null };
+    } catch (e) {
+      return { data: null, error: handleApiError(e) };
     }
-  };
+  }, [api]);
 
-  // Get registration report
-  const getReport = async (registrationId: string): Promise<ApiResponse<Blob>> => {
+  const getReport = useCallback(async (registrationId: string): Promise<ApiResponse<Blob>> => {
     try {
-      const response = await api.get(`/api/theses/reports/thesis-registration/${registrationId}`, {
+      const res = await api.get(`${REPORTS_PATH}/thesis-registration/${registrationId}`, {
         responseType: 'blob'
       });
-      return { data: response.data as Blob, error: null };
-    } catch (error) {
-      return { data: null, error: handleApiError(error) };
+      return { data: res.data as Blob, error: null };
+    } catch (e) {
+      return { data: null, error: handleApiError(e) };
     }
-  };
+  }, [api]);
 
-  return { getAll, getById, create, process, getReport };
+  return useMemo(() => ({
+    getAll,
+    getById,
+    create,
+    process,
+    getReport
+  }), [getAll, getById, create, process, getReport]);
 };
 
 // ========== THESIS ASSIGNMENTS ==========
 export const useThesisAssignments = () => {
   const api = useAuthenticatedApi();
 
-  // Get assignments for a thesis
-  const getByThesisId = async (thesisId: string): Promise<ApiResponse<ThesisAssignment[]>> => {
+  const getByThesisId = useCallback(async (thesisId: string): Promise<ApiResponse<ThesisAssignment[]>> => {
     try {
-      const response = await api.get(`/api/theses/theses/${thesisId}/assignments`);
-      return { data: response.data as ThesisAssignment[], error: null };
-    } catch (error) {
-      return { data: null, error: handleApiError(error) };
+      const res = await api.get(`${THESES_PATH}/${thesisId}/assignments`);
+      return { data: res.data as ThesisAssignment[], error: null };
+    } catch (e) {
+      return { data: null, error: handleApiError(e) };
     }
-  };
+  }, [api]);
 
-  // Assign teacher to thesis
-  const assign = async (thesisId: string, request: AssignTeacherRequest): Promise<ApiResponse<ThesisAssignment>> => {
+  const assign = useCallback(async (
+    thesisId: string,
+    request: AssignTeacherRequest
+  ): Promise<ApiResponse<ThesisAssignment>> => {
     try {
-      const response = await api.post(`/api/theses/theses/${thesisId}/assignments`, request);
-      return { data: response.data as ThesisAssignment, error: null };
-    } catch (error) {
-      return { data: null, error: handleApiError(error) };
+      const res = await api.post(`${THESES_PATH}/${thesisId}/assignments`, request);
+      return { data: res.data as ThesisAssignment, error: null };
+    } catch (e) {
+      return { data: null, error: handleApiError(e) };
     }
-  };
+  }, [api]);
 
-  // Remove teacher assignment
-  const remove = async (thesisId: string, teacherId: string, role: string): Promise<ApiResponse<void>> => {
+  const remove = useCallback(async (
+    thesisId: string,
+    teacherId: string,
+    role: string
+  ): Promise<ApiResponse<void>> => {
     try {
-      await api.delete(`/api/theses/theses/${thesisId}/assignments`, {
-        data: { teacherId: teacherId as string, role: role as string }
-      } as any );
+      await api.delete(`${THESES_PATH}/${thesisId}/assignments`, {
+        data: { teacherId, role }
+      });
       return { data: null, error: null };
-    } catch (error) {
-      return { data: null, error: handleApiError(error) };
+    } catch (e) {
+      return { data: null, error: handleApiError(e) };
     }
-  };
+  }, [api]);
 
-  return { getByThesisId, assign, remove };
+  return useMemo(() => ({
+    getByThesisId,
+    assign,
+    remove
+  }), [getByThesisId, assign, remove]);
 };
 
 // ========== DEFENSE SESSIONS ==========
 export const useDefenseSessions = () => {
   const api = useAuthenticatedApi();
 
-  // Get upcoming defense sessions
-  const getUpcoming = async (): Promise<ApiResponse<DefenseSession[]>> => {
+  const getUpcoming = useCallback(async (): Promise<ApiResponse<DefenseSession[]>> => {
     try {
-      const response = await api.get('/api/theses/defense-sessions/upcoming');
-      return { data: response.data as DefenseSession[], error: null };
-    } catch (error) {
-      return { data: null, error: handleApiError(error) };
+      const res = await api.get(`${DEFENSE_PATH}/upcoming`);
+      return { data: res.data as DefenseSession[], error: null };
+    } catch (e) {
+      return { data: null, error: handleApiError(e) };
     }
-  };
+  }, [api]);
 
-  // Schedule defense session
-  const schedule = async (
-    thesisId: string, 
-    scheduledDate: string, 
+  const schedule = useCallback(async (
+    thesisId: string,
+    scheduledDate: string,
     location: string,
     committeeMembers: string[]
   ): Promise<ApiResponse<DefenseSession>> => {
     try {
-      const response = await api.post('/api/theses/defense-sessions', {
+      const res = await api.post(DEFENSE_PATH, {
         thesisId,
         scheduledDate,
         location,
         committeeMembers
       });
-      return { data: response.data as DefenseSession, error: null };
-    } catch (error) {
-      return { data: null, error: handleApiError(error) };
+      return { data: res.data as DefenseSession, error: null };
+    } catch (e) {
+      return { data: null, error: handleApiError(e) };
     }
-  };
+  }, [api]);
 
-  // Reschedule defense session
-  const reschedule = async (
-    id: string, 
-    scheduledDate: string, 
+  const reschedule = useCallback(async (
+    id: string,
+    scheduledDate: string,
     location: string
   ): Promise<ApiResponse<DefenseSession>> => {
     try {
-      const response = await api.patch(`/api/theses/defense-sessions/${id}/reschedule`, {
+      const res = await api.patch(`${DEFENSE_PATH}/${id}/reschedule`, {
         scheduledDate,
         location
       });
-      return { data: response.data as DefenseSession, error: null };
-    } catch (error) {
-      return { data: null, error: handleApiError(error) };
+      return { data: res.data as DefenseSession, error: null };
+    } catch (e) {
+      return { data: null, error: handleApiError(e) };
     }
-  };
+  }, [api]);
 
-  // Complete defense session
-  const complete = async (id: string, notes?: string): Promise<ApiResponse<DefenseSession>> => {
+  const complete = useCallback(async (
+    id: string,
+    notes?: string
+  ): Promise<ApiResponse<DefenseSession>> => {
     try {
-      const response = await api.patch(`/api/theses/defense-sessions/${id}/complete`, { notes });
-      return { data: response.data as DefenseSession, error: null };
-    } catch (error) {
-      return { data: null, error: handleApiError(error) };
+      const res = await api.patch(`${DEFENSE_PATH}/${id}/complete`, { notes });
+      return { data: res.data as DefenseSession, error: null };
+    } catch (e) {
+      return { data: null, error: handleApiError(e) };
     }
-  };
+  }, [api]);
 
-  return { getUpcoming, schedule, reschedule, complete };
+  return useMemo(() => ({
+    getUpcoming,
+    schedule,
+    reschedule,
+    complete
+  }), [getUpcoming, schedule, reschedule, complete]);
 };
 
 // ========== THESIS EVALUATIONS ==========
 export const useThesisEvaluations = () => {
   const api = useAuthenticatedApi();
 
-  // Get evaluations for a thesis
-  const getByThesisId = async (thesisId: string): Promise<ApiResponse<ThesisEvaluation[]>> => {
+  const getByThesisId = useCallback(async (thesisId: string): Promise<ApiResponse<ThesisEvaluation[]>> => {
     try {
-      const response = await api.get(`/api/theses/theses/${thesisId}/evaluations`);
-      return { data: response.data as ThesisEvaluation[], error: null };
-    } catch (error) {
-      return { data: null, error: handleApiError(error) };
+      const res = await api.get(`${THESES_PATH}/${thesisId}/evaluations`);
+      return { data: res.data as ThesisEvaluation[], error: null };
+    } catch (e) {
+      return { data: null, error: handleApiError(e) };
     }
-  };
+  }, [api]);
 
-  // Submit evaluation
-  const submit = async (
+  const submit = useCallback(async (
     thesisId: string,
     evaluationType: string,
     grade: number,
     comments: string
   ): Promise<ApiResponse<ThesisEvaluation>> => {
     try {
-      const response = await api.post('/api/theses/theses/evaluations', {
+      const res = await api.post(`${THESES_PATH}/evaluations`, {
         thesisId,
         evaluationType,
         grade,
         comments
       });
-      return { data: response.data as ThesisEvaluation, error: null };
-    } catch (error) {
-      return { data: null, error: handleApiError(error) };
+      return { data: res.data as ThesisEvaluation, error: null };
+    } catch (e) {
+      return { data: null, error: handleApiError(e) };
     }
-  };
+  }, [api]);
 
-  // Get final grade for a thesis
-  const getFinalGrade = async (thesisId: string): Promise<ApiResponse<number>> => {
+  const getFinalGrade = useCallback(async (thesisId: string): Promise<ApiResponse<number>> => {
     try {
-      const response = await api.get(`/api/theses/theses/${thesisId}/final-grade`);
-      return { data: response.data as number, error: null };
-    } catch (error) {
-      return { data: null, error: handleApiError(error) };
+      const res = await api.get(`${THESES_PATH}/${thesisId}/final-grade`);
+      return { data: res.data as number, error: null };
+    } catch (e) {
+      return { data: null, error: handleApiError(e) };
     }
-  };
+  }, [api]);
 
-  // Get evaluation report
-  const getReport = async (thesisId: string): Promise<ApiResponse<Blob>> => {
+  const getReport = useCallback(async (thesisId: string): Promise<ApiResponse<Blob>> => {
     try {
-      const response = await api.get(`/api/theses/reports/evaluation/${thesisId}`, {
+      const res = await api.get(`${REPORTS_PATH}/evaluation/${thesisId}`, {
         responseType: 'blob'
       });
-      return { data: response.data as Blob, error: null };
-    } catch (error) {
-      return { data: null, error: handleApiError(error) };
+      return { data: res.data as Blob, error: null };
+    } catch (e) {
+      return { data: null, error: handleApiError(e) };
     }
-  };
+  }, [api]);
 
-  return { getByThesisId, submit, getFinalGrade, getReport };
+  return useMemo(() => ({
+    getByThesisId,
+    submit,
+    getFinalGrade,
+    getReport
+  }), [getByThesisId, submit, getFinalGrade, getReport]);
 };

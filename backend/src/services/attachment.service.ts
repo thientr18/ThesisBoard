@@ -1,3 +1,4 @@
+import { AttachmentRepository } from "../repositories/attachment-repository";
 import { Attachment } from "../models/Attachment";
 import { AppError } from "../utils/AppError";
 import fs from "fs";
@@ -7,6 +8,12 @@ import path from "path";
 export type EntityType = "topic" | "submission" | "announcement" | "topic_application" | "thesis_proposal";
 
 export class AttachmentService {
+  private attachmentRepository: AttachmentRepository;
+
+  constructor() {
+    this.attachmentRepository = new AttachmentRepository();
+  }
+
   /**
    * Create attachment records for uploaded files (with multer)
    */
@@ -20,6 +27,13 @@ export class AttachmentService {
 
     for (const file of files) {
       const fileUrl = `/uploads/${file.filename}`;
+
+      const filePath = path.join(process.cwd(), 'uploads', file.filename);
+      if (!fs.existsSync(filePath)) {
+        throw new AppError(`Uploaded file not found: ${file.filename}`, 500, 'FILE_NOT_FOUND');
+      }
+
+      await fs.promises.writeFile(filePath, file.buffer);
       
       const attachment = await Attachment.create({
         entityType,

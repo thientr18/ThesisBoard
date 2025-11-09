@@ -1,60 +1,95 @@
 import { useAuthenticatedApi } from '../config';
-import type { ApiResponse, Announcement, CreateAnnouncementRequest, UpdateAnnouncementRequest } from '../../types/announcement.types';
+import { useCallback, useMemo } from 'react';
+import type {
+  ApiResponse,
+  Announcement,
+  CreateAnnouncementRequest,
+  UpdateAnnouncementRequest
+} from '../../types/announcement.types';
 
 const BASE_PATH = '/api/announcements';
 
-// Custom hook for announcement API operations
 export const useAnnouncementApi = () => {
   const authApi = useAuthenticatedApi();
 
-  // Helper function to handle API responses consistently
-  const handleApiResponse = async <T>(apiCall: Promise<any>): Promise<ApiResponse<T>> => {
+  const getAll = useCallback(async (): Promise<ApiResponse<Announcement[]>> => {
     try {
-      const response = await apiCall;
-      return { data: response.data, error: null };
-    } catch (error) {
-      console.error('API Error:', error);
-      return { 
-        data: null, 
-        error: error instanceof Error ? error.message : 'An unknown error occurred' 
-      };
+      const res = await authApi.get(BASE_PATH);
+      return { data: res.data as Announcement[], error: null };
+    } catch (e) {
+      return { data: null, error: e instanceof Error ? e.message : 'Failed to fetch announcements' };
     }
-  };
+  }, [authApi]);
 
-  return {
-    // Get all announcements
-    getAll: async (): Promise<ApiResponse<Announcement[]>> => {
-      return handleApiResponse<Announcement[]>(authApi.get(BASE_PATH) as Promise<any>);
-    },
+  const getSlides = useCallback(async (): Promise<ApiResponse<Announcement[]>> => {
+    try {
+      const res = await authApi.get(`${BASE_PATH}/slide`);
+      return { data: res.data as Announcement[], error: null };
+    } catch (e) {
+      return { data: null, error: e instanceof Error ? e.message : 'Failed to fetch slides' };
+    }
+  }, [authApi]);
 
-    // Get announcement slides
-    getSlides: async (): Promise<ApiResponse<Announcement[]>> => {
-      return handleApiResponse<Announcement[]>(authApi.get(`${BASE_PATH}/slide`) as Promise<any>);
-    },
+  const getPublicSlides = useCallback(async (): Promise<ApiResponse<Announcement[]>> => {
+    try {
+      const res = await authApi.get(`${BASE_PATH}/public`);
+      return { data: res.data as Announcement[], error: null };
+    } catch (e) {
+      return { data: null, error: e instanceof Error ? e.message : 'Failed to fetch public slides' };
+    }
+  }, [authApi]);
 
-    // Get public announcement slides (no auth required)
-    getPublicSlides: async (): Promise<ApiResponse<Announcement[]>> => {
-      return handleApiResponse<Announcement[]>(authApi.get(`${BASE_PATH}/public`) as Promise<any>);
-    },
+  const getById = useCallback(async (id: number): Promise<ApiResponse<Announcement>> => {
+    try {
+      const res = await authApi.get(`${BASE_PATH}/${id}`);
+      return { data: res.data as Announcement, error: null };
+    } catch (e) {
+      return { data: null, error: e instanceof Error ? e.message : 'Failed to fetch announcement' };
+    }
+  }, [authApi]);
 
-    // Get announcement by ID
-    getById: async (id: number): Promise<ApiResponse<Announcement>> => {
-      return handleApiResponse<Announcement>(authApi.get(`${BASE_PATH}/${id}`) as Promise<any>);
-    },
+  const create = useCallback(async (payload: CreateAnnouncementRequest): Promise<ApiResponse<Announcement>> => {
+    try {
+      const res = await authApi.post(BASE_PATH, payload);
+      return { data: res.data as Announcement, error: null };
+    } catch (e) {
+      return { data: null, error: e instanceof Error ? e.message : 'Failed to create announcement' };
+    }
+  }, [authApi]);
 
-    // Create a new announcement
-    create: async (payload: CreateAnnouncementRequest): Promise<ApiResponse<Announcement>> => {
-      return handleApiResponse<Announcement>(authApi.post(BASE_PATH, payload) as Promise<any>);
-    },
+  const update = useCallback(async (id: number, payload: UpdateAnnouncementRequest): Promise<ApiResponse<Announcement>> => {
+    try {
+      const res = await authApi.put(`${BASE_PATH}/${id}`, payload);
+      return { data: res.data as Announcement, error: null };
+    } catch (e) {
+      return { data: null, error: e instanceof Error ? e.message : 'Failed to update announcement' };
+    }
+  }, [authApi]);
 
-    // Update an existing announcement
-    update: async (id: number, payload: UpdateAnnouncementRequest): Promise<ApiResponse<Announcement>> => {
-      return handleApiResponse<Announcement>(authApi.put(`${BASE_PATH}/${id}`, payload) as Promise<any>);
-    },
+  const deleteOne = useCallback(async (id: number): Promise<ApiResponse<void>> => {
+    try {
+      await authApi.delete(`${BASE_PATH}/${id}`);
+      return { data: null, error: null };
+    } catch (e) {
+      return { data: null, error: e instanceof Error ? e.message : 'Failed to delete announcement' };
+    }
+  }, [authApi]);
 
-    // Delete an announcement
-    delete: async (id: number): Promise<ApiResponse<void>> => {
-      return handleApiResponse<void>(authApi.delete(`${BASE_PATH}/${id}`) as Promise<any>);
-    },
-  };
+  return useMemo(() => ({
+    getAll,
+    getSlides,
+    getPublicSlides,
+    getById,
+    create,
+    update,
+    delete: deleteOne,
+  }), [
+    getAll,
+    getSlides,
+    getPublicSlides,
+    getById,
+    create,
+    update,
+    deleteOne
+  ]);
 };

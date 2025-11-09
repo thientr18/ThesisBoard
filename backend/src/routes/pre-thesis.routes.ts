@@ -1,12 +1,14 @@
 import { Router } from 'express';
 import { roleMiddleware } from '../middlewares/role.middleware';
 import { checkJwt } from '../middlewares/auth.middleware';
+import { attachUserFromJwt } from '../middlewares/user.middleware';
 import { PreThesisController } from '../controllers/pre-thesis.controller';
 
 const router = Router();
 const preThesisController = new PreThesisController();
 
 router.use(checkJwt);
+router.use(attachUserFromJwt);
 
 // Topic routes
 router.get(

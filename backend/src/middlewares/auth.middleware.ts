@@ -15,6 +15,7 @@ export const checkJwt = auth({
   tokenSigningAlg: 'RS256',
 });
 
+
 export const requireAdmin = (req: Request, res: Response, next: NextFunction) => {
   try {
     const user = req.auth as ExtendedJwtPayload;

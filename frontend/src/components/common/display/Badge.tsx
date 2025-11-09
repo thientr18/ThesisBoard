@@ -11,13 +11,20 @@ export interface BadgeProps {
   dot?: boolean;
   size?: "small" | "default" | "large";
   className?: string;
+
+  // overlay support
+  children?: React.ReactNode;
+  offset?: [number, number];
+  overflowCount?: number;
+  showZero?: boolean;
 }
 
 /**
  * Reusable Badge component built on Ant Design's Badge + TailwindCSS.
+ * - Supports overlay mode when `children` is provided.
  * - Count mode: when `count` is provided (unless `dot` is true).
  * - Status mode: when `status` is provided (or fallback to default).
- * - `color` overrides the dot/count background color when supplied.
+ * - `color` overrides the dot/status color when supplied.
  */
 const Badge: React.FC<BadgeProps> = ({
   status = "default",
@@ -27,11 +34,14 @@ const Badge: React.FC<BadgeProps> = ({
   dot = false,
   size = "default",
   className = "",
+  children,
+  offset,
+  overflowCount = 999,
+  showZero = true,
 }) => {
   const isCountMode = typeof count === "number" && !dot;
   const useDot = dot && !isCountMode;
 
-  // sensible defaults for status colors (used when color isn't provided)
   const defaultStatusColors: Record<StatusType, string> = {
     success: "#52c41a",
     error: "#ff4d4f",
@@ -48,56 +58,64 @@ const Badge: React.FC<BadgeProps> = ({
 
   const antBadgeSizeProp = size === "large" ? "default" : (size as "small" | "default");
 
-  // helper to render label text consistently
-  const renderLabel = (children?: React.ReactNode) =>
-    children ? (
-      <span className={`select-none ${wrapperSizeClass} text-gray-700`}>{children}</span>
+  const renderLabel = (childrenNode?: React.ReactNode) =>
+    childrenNode ? (
+      <span className={`select-none ${wrapperSizeClass} text-gray-700`}>{childrenNode}</span>
     ) : null;
 
-  // Props that are passed to AntBadge for count-mode/style
   const commonBadgeClass = `inline-flex items-center gap-2 ${className}`;
 
   if (useDot) {
-    // dot-only mode (can accept custom color)
-    // AntBadge supports `color` (custom dot color) and `status` (preset status)
+    const badgeEl = (
+      <AntBadge
+        dot
+        color={color ? resolvedColor : undefined}
+        status={!color ? (status === "default" ? undefined : status) : undefined}
+        className="align-middle"
+        offset={offset}
+      >
+        {children}
+      </AntBadge>
+    );
+
+    if (children) return badgeEl;
     return (
       <span className={commonBadgeClass}>
-        <AntBadge
-          dot
-          color={color ? resolvedColor : undefined}
-          status={!color ? (status === "default" ? undefined : status) : undefined}
-          className="align-middle"
-        />
+        {badgeEl}
         {renderLabel(text)}
       </span>
     );
   }
 
   if (isCountMode) {
-    // numeric count mode — style the count bubble via `style` (Ant badge applies it to the count)
+    const badgeEl = (
+      <AntBadge
+        count={count}
+        overflowCount={overflowCount}
+        showZero={showZero}
+        size={antBadgeSizeProp as "small" | "default"}
+        className="align-middle"
+        offset={offset}
+      >
+        {children}
+      </AntBadge>
+    );
+
+    if (children) return badgeEl;
     return (
       <span className={commonBadgeClass}>
-        <AntBadge
-          count={count}
-          overflowCount={999}
-          showZero
-          size={antBadgeSizeProp as "small" | "default"}
-          className="align-middle"
-          style={{ backgroundColor: resolvedColor }}
-        />
+        {badgeEl}
         {renderLabel(text)}
       </span>
     );
   }
 
   // status mode (no count, no dot)
-  // If a custom color is provided, use `color`, otherwise pass Ant's `status` preset
   return (
     <span className={commonBadgeClass}>
       <AntBadge
         color={color ? resolvedColor : undefined}
         status={!color ? (status === "default" ? undefined : status) : undefined}
-        text={text ? undefined : undefined} // use our own label rendering below for consistent styling
         className="align-middle"
       />
       {renderLabel(text)}

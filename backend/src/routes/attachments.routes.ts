@@ -41,10 +41,10 @@ router.post('/',
   
 router.get('/:entityType/:entityId',
   roleMiddleware(['download:attachments']),
-  attachmentController.getAttachmentsByEntity.bind(attachmentController));
+  attachmentController.getAttachmentsByEntity);
   
 router.delete('/:id',
   roleMiddleware(['delete:attachments']),
-  attachmentController.deleteAttachment.bind(attachmentController));
+  attachmentController.deleteAttachment);
 
 export default router;

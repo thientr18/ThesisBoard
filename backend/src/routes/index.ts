@@ -10,13 +10,13 @@ import userRouter from './user.routes';
 
 const router = Router();
 
-router.use('/api/announcements', announcementRouter);
-router.use('/api/auth', authRoutes);
-router.use('/api/attachments', attachmentsRouter);
-router.use('/api/notifications', notificationRouter);
-router.use('/api/pre-theses', preThesisRouter);
-router.use('/api/semesters', semesterRouter);
-router.use('/api/theses', thesisRouter);
-router.use('/api/users', userRouter);
+router.use('/announcements', announcementRouter);
+router.use('/auth', authRoutes);
+router.use('/attachments', attachmentsRouter);
+router.use('/notifications', notificationRouter);
+router.use('/pre-theses', preThesisRouter);
+router.use('/semesters', semesterRouter);
+router.use('/theses', thesisRouter);
+router.use('/users', userRouter);
 
 export default router;
