@@ -1,5 +1,5 @@
 import { Op, Transaction } from 'sequelize';
-import { GenericRepository } from './generic-repository';
+import { GenericRepository } from './generic.repository';
 import { ThesisRegistration } from '../models/ThesisRegistration';
 import { AppError } from '../utils/AppError';
 

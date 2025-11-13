@@ -1,6 +1,6 @@
 import { Op } from 'sequelize';
 import { DefenseSession } from '../models/DefenseSession';
-import { GenericRepository } from './generic-repository';
+import { GenericRepository } from './generic.repository';
 
 export class DefenseSessionRepository extends GenericRepository<DefenseSession, number> {
   constructor() {

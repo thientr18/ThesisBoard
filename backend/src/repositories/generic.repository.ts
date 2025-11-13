@@ -1,5 +1,5 @@
 import { Model, ModelStatic, Op } from 'sequelize';
-import { BaseRepository } from './base-repository.interface';
+import { BaseRepository } from './base.repository.interface';
 
 export class GenericRepository<T extends Model, ID> implements BaseRepository<T, ID> {
   protected model: ModelStatic<T>;

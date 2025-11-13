@@ -7,14 +7,14 @@ import * as ejs from 'ejs';
 import puppeteer from 'puppeteer';
 
 // Import repositories
-import { DefenseSessionRepository } from '../repositories/defense-session-repository';
-import { TeacherAvailabilityRepository } from '../repositories/teacher-availability-repository';
-import { ThesisAssignmentRepository } from '../repositories/thesis-assignment-repository';
-import { ThesisEvaluationRepository } from '../repositories/thesis-evaluation-repository';
-import { ThesisFinalGradeRepository } from '../repositories/thesis-final-grade-repository';
-import { ThesisProposalRepository } from '../repositories/thesis-proposal-repository';
-import { ThesisRegistrationRepository } from '../repositories/thesis-registration-repository';
-import { ThesisRepository } from '../repositories/thesis-repository';
+import { DefenseSessionRepository } from '../repositories/defense-session.repository';
+import { TeacherAvailabilityRepository } from '../repositories/teacher-availability.repository';
+import { ThesisAssignmentRepository } from '../repositories/thesis-assignment.repository';
+import { ThesisEvaluationRepository } from '../repositories/thesis-evaluation.repository';
+import { ThesisFinalGradeRepository } from '../repositories/thesis-final-grade.repository';
+import { ThesisProposalRepository } from '../repositories/thesis-proposal.repository';
+import { ThesisRegistrationRepository } from '../repositories/thesis-registration.repository';
+import { ThesisRepository } from '../repositories/thesis.repository';
 
 // Import notification service
 import { NotificationService } from './notification.service';

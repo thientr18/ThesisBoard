@@ -1,6 +1,6 @@
 import { Op, Transaction } from 'sequelize';
 import { TopicApplication } from '../models/TopicApplication';
-import { GenericRepository } from './generic-repository';
+import { GenericRepository } from './generic.repository';
 import { Topic } from '../models/Topic';
 import { Student } from '../models/Student';
 import { User } from '../models/User';

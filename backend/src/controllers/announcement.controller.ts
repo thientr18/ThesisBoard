@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import { AnnouncementService } from '../services/announcement.service';
-import { AnnouncementRepository } from '../repositories/announcement-repository';
+import { AnnouncementRepository } from '../repositories/announcement.repository';
 import { AppError } from '../utils/AppError';
 
 export class AnnouncementController {

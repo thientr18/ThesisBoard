@@ -1,4 +1,4 @@
-import { GenericRepository } from './generic-repository';
+import { GenericRepository } from './generic.repository';
 import { Semester } from '../models/Semester';
 import { UpdateOptions, FindOptions } from 'sequelize';
 

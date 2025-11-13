@@ -1,4 +1,4 @@
-import { AnnouncementRepository } from '../repositories/announcement-repository';
+import { AnnouncementRepository } from '../repositories/announcement.repository';
 import { Announcement } from '../models/Announcement';
 import { AppError } from '../utils/AppError';
 

@@ -1,6 +1,6 @@
 import { Op } from 'sequelize';
 import { Announcement } from '../models/Announcement';
-import { GenericRepository } from './generic-repository';
+import { GenericRepository } from './generic.repository';
 
 export class AnnouncementRepository extends GenericRepository<Announcement, number> {
   constructor() {

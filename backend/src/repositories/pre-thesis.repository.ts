@@ -1,6 +1,6 @@
 import { Op } from 'sequelize';
 import { PreThesis } from '../models/PreThesis';
-import { GenericRepository } from './generic-repository';
+import { GenericRepository } from './generic.repository';
 
 export class PreThesisRepository extends GenericRepository<PreThesis, number> {
   constructor() {

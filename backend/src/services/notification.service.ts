@@ -1,4 +1,4 @@
-import { NotificationRepository } from '../repositories/notification-repository';
+import { NotificationRepository } from '../repositories/notification.repository';
 import { Notification } from '../models/Notification';
 import { AppError } from '../utils/AppError';
 import e from 'express';

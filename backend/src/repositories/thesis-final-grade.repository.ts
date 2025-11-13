@@ -1,6 +1,6 @@
 import { Op } from 'sequelize';
 import { ThesisFinalGrade } from '../models/ThesisFinalGrade';
-import { GenericRepository } from './generic-repository';
+import { GenericRepository } from './generic.repository';
 
 export class ThesisFinalGradeRepository extends GenericRepository<ThesisFinalGrade, number> {
   constructor() {

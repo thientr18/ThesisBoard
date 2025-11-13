@@ -1,4 +1,4 @@
-import { SemesterRepository } from '../repositories/semester-repository';
+import { SemesterRepository } from '../repositories/semester.repository';
 import { Semester } from '../models/Semester';
 import { AppError } from '../utils/AppError';
 

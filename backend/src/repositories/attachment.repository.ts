@@ -1,4 +1,4 @@
-import { GenericRepository } from './generic-repository';
+import { GenericRepository } from './generic.repository';
 import { Attachment } from '../models/Attachment';
 import { Op } from 'sequelize';
 

@@ -1,5 +1,5 @@
 import { Notification } from '../models/Notification';
-import { GenericRepository } from './generic-repository';
+import { GenericRepository } from './generic.repository';
 import { Op } from 'sequelize';
 
 export class NotificationRepository extends GenericRepository<Notification, number> {

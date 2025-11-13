@@ -10,10 +10,10 @@ import { Topic } from '../models/Topic';
 import { TopicApplication } from '../models/TopicApplication';
 import { AppError } from '../utils/AppError';
 
-import { PreThesisRepository } from '../repositories/pre-thesis-repository';
-import { TopicApplicationRepository } from '../repositories/topic-application-repository';
-import { TopicRepository } from '../repositories/topic-repository';
-import { SemesterRepository } from '../repositories/semester-repository';
+import { PreThesisRepository } from '../repositories/pre-thesis.repository';
+import { TopicApplicationRepository } from '../repositories/topic-application.repository';
+import { TopicRepository } from '../repositories/topic.repository';
+import { SemesterRepository } from '../repositories/semester.repository';
 
 export class PreThesisService {
   private preThesisRepository: PreThesisRepository;

@@ -1,4 +1,4 @@
-import { AttachmentRepository } from "../repositories/attachment-repository";
+import { AttachmentRepository } from "../repositories/attachment.repository";
 import { Attachment } from "../models/Attachment";
 import { AppError } from "../utils/AppError";
 import fs from "fs";

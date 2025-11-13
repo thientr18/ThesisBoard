@@ -1,5 +1,5 @@
 import { Teacher } from '../models/Teacher';
-import { GenericRepository } from './generic-repository';
+import { GenericRepository } from './generic.repository';
 
 export class TeacherRepository extends GenericRepository<Teacher, number> {
   constructor() {

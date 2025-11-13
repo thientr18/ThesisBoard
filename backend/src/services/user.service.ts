@@ -1,4 +1,4 @@
-import { UserRepository } from '../repositories/user-repository';
+import { UserRepository } from '../repositories/user.repository';
 import { User } from '../models/User';
 import { AppError } from '../utils/AppError';
 import type { StudentDetails, TeacherDetails } from '../types/user.types';

@@ -1,5 +1,5 @@
 import { Op } from 'sequelize';
-import { GenericRepository } from './generic-repository';
+import { GenericRepository } from './generic.repository';
 import { Topic } from '../models/Topic';
 
 export class TopicRepository extends GenericRepository<Topic, number> {

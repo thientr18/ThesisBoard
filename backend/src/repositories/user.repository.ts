@@ -1,6 +1,6 @@
 import { sequelize } from '../models/db';
 import { Op } from 'sequelize';
-import { GenericRepository } from './generic-repository';
+import { GenericRepository } from './generic.repository';
 import { User } from '../models/User';
 import { Student } from '../models/Student';
 import { Teacher } from '../models/Teacher';
