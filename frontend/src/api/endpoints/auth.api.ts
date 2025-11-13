@@ -85,30 +85,30 @@ export const login = async (
 /**
  * Sign up new user
  */
-export const signup = async (
-  email: string, 
-  password: string
-): Promise<AuthResponse<{ email: string }>> => {
-  try {
-    const response = await auth0Api.post('/dbconnections/signup', {
-      client_id: AUTH0_CLIENT_ID,
-      email,
-      password,
-      connection: AUTH0_CONNECTION
-    });
+// export const signup = async (
+//   email: string, 
+//   password: string
+// ): Promise<AuthResponse<{ email: string }>> => {
+//   try {
+//     const response = await auth0Api.post('/dbconnections/signup', {
+//       client_id: AUTH0_CLIENT_ID,
+//       email,
+//       password,
+//       connection: AUTH0_CONNECTION
+//     });
     
-    return {
-      data: response.data as { email: string },
-      error: null,
-    };
-  } catch (error: any) {
-    console.error('Signup error:', error);
-    return {
-      data: null,
-      error: error.response?.data?.error_description || 'Signup failed. Please try again.',
-    };
-  }
-};
+//     return {
+//       data: response.data as { email: string },
+//       error: null,
+//     };
+//   } catch (error: any) {
+//     console.error('Signup error:', error);
+//     return {
+//       data: null,
+//       error: error.response?.data?.error_description || 'Signup failed. Please try again.',
+//     };
+//   }
+// };
 
 /**
  * Logout user
@@ -140,41 +140,6 @@ export const logout = async (): Promise<AuthResponse<boolean>> => {
     return {
       data: true,
       error: 'Logout from server failed, but local session was cleared.',
-    };
-  }
-};
-
-/**
- * Get user profile information
- */
-export const getUserInfo = async (
-  accessToken?: string
-): Promise<AuthResponse<UserInfo>> => {
-  try {
-    const token = accessToken || getAccessToken();
-    
-    if (!token) {
-      return {
-        data: null,
-        error: 'No access token available',
-      };
-    }
-    
-    const response = await auth0Api.get<UserInfo>('/userinfo', {
-      headers: {
-        Authorization: `Bearer ${token}`
-      }
-    });
-    
-    return {
-      data: response.data,
-      error: null,
-    };
-  } catch (error: any) {
-    console.error('Get user info error:', error);
-    return {
-      data: null,
-      error: error.response?.data?.error_description || 'Failed to fetch user information.',
     };
   }
 };

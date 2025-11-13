@@ -2,8 +2,9 @@ import { sequelize } from '../models/db';
 import { Op } from 'sequelize';
 import { GenericRepository } from './generic-repository';
 import { User } from '../models/User';
-import { Role } from '../models/Role';
-import { UserRole } from '../models/UserRole';
+import { Student } from '../models/Student';
+import { Teacher } from '../models/Teacher';
+import type { StudentDetails, TeacherDetails } from '../types/user.types';
 
 export class UserRepository extends GenericRepository<User, number> {
   constructor() {
@@ -12,21 +13,15 @@ export class UserRepository extends GenericRepository<User, number> {
   
   // Basic user lookups
   async findByUsername(username: string): Promise<User | null> {
-    return User.findOne({
-      where: { username }
-    });
+    return User.findOne({ where: { username } });
   }
   
   async findByEmail(email: string): Promise<User | null> {
-    return User.findOne({
-      where: { email }
-    });
+    return User.findOne({ where: { email } });
   }
   
   async findByAuth0Id(auth0UserId: string): Promise<User | null> {
-    return User.findOne({
-      where: { auth0UserId }
-    });
+    return User.findOne({ where: { auth0UserId } });
   }
   
   // User search and filtering
@@ -53,6 +48,15 @@ export class UserRepository extends GenericRepository<User, number> {
       where: { status: 'inactive' }
     });
   }
+
+  /**
+   * Update user status by auth0UserId.
+   */
+  async updateUserStatus(auth0UserId: string, status: 'active' | 'inactive'): Promise<User | null> {
+    const user = await this.findByAuth0Id(auth0UserId);
+    if (!user) return null;
+    return user.update({ status });
+  }
   
   // User status management
   async activateUser(id: number): Promise<User | null> {
@@ -68,55 +72,49 @@ export class UserRepository extends GenericRepository<User, number> {
     
     return user.update({ status: 'inactive' });
   }
-  
-  // Role-based user operations
-  async findUsersByRole(roleName: string): Promise<User[]> {
-    return User.findAll({
-      include: [{
-        model: Role,
-        where: { name: roleName },
-        through: { attributes: [] }
-      }]
-    });
-  }
-  
-  async getUserWithRoles(userId: number): Promise<User | null> {
-    return User.findByPk(userId, {
-      include: [{
-        model: Role,
-        through: { attributes: [] }
-      }]
-    });
-  }
-  
-  async assignRoleToUser(userId: number, roleId: number): Promise<boolean> {
-    try {
-      await UserRole.create({ 
-        userId, 
-        roleId 
+
+    /**
+   * Create or update a user record based on auth0UserId (preferred) or email.
+   * Performs minimal field synchronization.
+   */
+  async createOrUpdateUser(userData: {
+    auth0UserId: string;
+    email?: string;
+    username?: string;
+    fullName?: string;
+    status?: 'active' | 'inactive';
+  }): Promise<User> {
+    const { auth0UserId, email } = userData;
+
+    let existing = await this.findByAuth0Id(auth0UserId);
+
+    // Fallback: try match by email if no auth0UserId stored yet
+    if (!existing && email) {
+      existing = await this.findByEmail(email);
+    }
+
+    if (!existing) {
+      return User.create({
+        auth0UserId,
+        email: email ?? `${auth0UserId}@placeholder.local`,
+        username: userData.username ?? auth0UserId,
+        fullName: userData.fullName ?? userData.username ?? 'Unnamed User',
+        status: userData.status ?? 'active',
       } as any);
-      return true;
-    } catch (error) {
-      console.error('Error assigning role to user:', error);
-      return false;
     }
-  }
-  
-  async removeRoleFromUser(userId: number, roleId: number): Promise<boolean> {
-    try {
-      const deleted = await UserRole.destroy({
-        where: { userId, roleId }
-      });
-      return deleted > 0;
-    } catch (error) {
-      console.error('Error removing role from user:', error);
-      return false;
+
+    // Update only changed fields to avoid overwriting local edits inadvertently
+    const updates: Partial<User> = {};
+    if (userData.email && userData.email !== existing.email) updates.email = userData.email;
+    if (userData.username && userData.username !== existing.username) updates.username = userData.username;
+    if (userData.fullName && userData.fullName !== existing.fullName) updates.fullName = userData.fullName;
+    if (userData.status && userData.status !== existing.status) updates.status = userData.status;
+
+    if (Object.keys(updates).length) {
+      await existing.update(updates);
     }
-  }
-  
-  // Bulk operations
-  async bulkCreateUsers(users: Partial<User>[]): Promise<User[]> {
-    return User.bulkCreate(users as any);
+
+    return existing;
   }
   
   // Advanced queries
@@ -124,17 +122,6 @@ export class UserRepository extends GenericRepository<User, number> {
     const active = await User.count({ where: { status: 'active' } });
     const inactive = await User.count({ where: { status: 'inactive' } });
     return { active, inactive };
-  }
-
-  // Admin dashboard
-  async findAdministrativeUsers(): Promise<User[]> {
-    return User.findAll({
-      include: [{
-        model: Role,
-        where: { name: { [Op.in]: ['admin', 'moderator'] } },
-        through: { attributes: [] }
-      }]
-    });
   }
 
   // Pagination
@@ -153,10 +140,9 @@ export class UserRepository extends GenericRepository<User, number> {
     sortOrder?: 'ASC' | 'DESC',
     page?: number,
     limit?: number,
-    includeRoles?: boolean
   }): Promise<{rows: User[], count: number}> {
-    const { filters, sortBy = 'id', sortOrder = 'ASC', page = 1, limit = 10, includeRoles = false } = options;
-    
+    const { filters, sortBy = 'id', sortOrder = 'ASC', page = 1, limit = 10 } = options;
+
     const queryOptions: any = {
       where: filters || {},
       order: [[sortBy, sortOrder]],
@@ -164,37 +150,8 @@ export class UserRepository extends GenericRepository<User, number> {
       offset: (page - 1) * limit
     };
     
-    if (includeRoles) {
-      queryOptions.include = [{
-        model: Role,
-        through: { attributes: [] }
-      }];
-    }
-    
     return User.findAndCountAll(queryOptions);
   }
-
-  // Role distribution statistics
-async getRoleDistribution(): Promise<{role: string, count: number}[]> {
-  const result = await Role.findAll({
-    attributes: [
-      'name',
-      [sequelize.fn('COUNT', sequelize.col('users.id')), 'userCount']
-    ],
-    include: [{
-      model: User,
-      through: { attributes: [] },
-      attributes: []
-    }],
-    group: ['Role.name'],
-    raw: true
-  });
-  
-  return result.map((item: any) => ({
-    role: item.name,
-    count: parseInt(item.userCount, 10)
-  }));
-}
 
   // User creation over time
   async getUserGrowthByPeriod(period: 'day' | 'week' | 'month' | 'year', limit: number = 10): Promise<{period: string, count: number}[]> {
@@ -229,5 +186,23 @@ async getRoleDistribution(): Promise<{role: string, count: number}[]> {
       period: item.period,
       count: parseInt(item.count, 10)
     }));
+  }
+
+  // STUDENT
+  async getStudentDetails(userId: number): Promise<StudentDetails | null> {
+    return Student.findOne({ where: { userId } }) as unknown as StudentDetails | null;
+  }
+
+  async getStudentById(userId: number): Promise<StudentDetails | null> {
+    return Student.findOne({ where: { userId } }) as unknown as StudentDetails | null;
+  }
+
+  // TEACHER
+  async getTeacherDetails(userId: number): Promise<TeacherDetails | null> {
+    return Teacher.findOne({ where: { userId } }) as unknown as TeacherDetails | null;
+  }
+
+  async getTeacherById(userId: number): Promise<TeacherDetails | null> {
+    return Teacher.findOne({ where: { userId } }) as unknown as TeacherDetails | null;
   }
 }

@@ -5,19 +5,25 @@ export interface ApiResponse<T> {
 
 export interface User {
   id: number;
-  email: string;
-  firstName: string;
-  lastName: string;
-  displayName: string;
   auth0Id: string;
-  isActive: boolean;
-  picture?: string;
+  username: string;
+  email: string;
+  fullName: string;
+  status: 'active' | 'inactive';
   createdAt: string;
   updatedAt: string;
 }
 
-export interface UserWithRoles extends User {
-  roles: Role[];
+export interface UserWithRoles {
+  id: number;
+  auth0Id: string;
+  username: string;
+  email: string;
+  fullName: string;
+  status: 'active' | 'inactive';
+  createdAt: string;
+  updatedAt: string;
+  roles?: Role[];
 }
 
 export interface Role {
@@ -64,4 +70,26 @@ export interface SearchUsersParams {
   status?: 'active' | 'inactive';
   page?: number;
   limit?: number;
+}
+
+export interface StudentDetails {
+  id: number;
+  userId: number;
+  studentId: string;
+  cohortYear: number | null;
+  className: string | null;
+  phone: string | null;
+  dob: Date | null;
+  gender: 'male' | 'female' | 'other' | null;
+  status: 'active' | 'inactive' | 'graduated';
+}
+
+export interface TeacherDetails {
+  id: number;
+  userId: number;
+  teacherCode: string | null;
+  title: string | null;
+  office: string | null;
+  phone: string | null;
+  email: string | null;
 }

@@ -1,9 +1,7 @@
 import axios from 'axios';
 import dotenv from 'dotenv';
 import { sequelize } from '../models/db';
-import { Role } from '../models/Role';
 import { User } from '../models/User';
-import { UserRole } from '../models/UserRole';
 import { AppError } from '../utils/AppError';
 // npx ts-node src/utils/setupAdmin.ts
 dotenv.config();
@@ -46,20 +44,11 @@ async function setupAdmin() {
 }
 
 /**
- * Setup admin role and user in the database
+ * Setup admin in the database
  */
 async function setupDatabaseAdmin() {
   try {
     console.log('Setting up admin in database...');
-    
-    const [adminRole, roleCreated] = await Role.findOrCreate({
-      where: { name: 'ADMIN' },
-      defaults: {
-        name: 'ADMIN',
-      }
-    });
-    
-    console.log(roleCreated ? 'Admin role created in database' : 'Admin role already exists in database');
     
     const adminUsername = 'admin';
     const adminEmail = 'admin@thesisboard.com';
@@ -76,19 +65,6 @@ async function setupDatabaseAdmin() {
     });
     
     console.log(userCreated ? 'Admin user created in database' : 'Admin user already exists in database');
-    
-    // Associate user with admin role
-    const [userRole, userRoleCreated] = await UserRole.findOrCreate({
-      where: {
-        userId: adminUser.id,
-        roleId: adminRole.id
-      }
-    });
-    
-    console.log(userRoleCreated 
-      ? 'Admin role assigned to user in database' 
-      : 'User already has admin role in database');
-    
     console.log('Database admin setup completed.');
     return adminUser;
     
@@ -145,7 +121,7 @@ async function getAuth0ManagementToken(): Promise<string> {
 }
 
 /**
- * Setup admin role and user in Auth0
+ * Setup admin user in Auth0
  */
 async function setupAuth0Admin(): Promise<{ userId: string; roleId: string; username: string; email: string }> {
   try {
@@ -165,7 +141,6 @@ async function setupAuth0Admin(): Promise<{ userId: string; roleId: string; user
     
     // 1. Create admin role if it doesn't exist
     let roleId: string;
-    console.log(`Role URL: ${process.env.AUTH0_MANAGEMENT_API}roles`);
     try {
       const rolesResponse = await axios.get(
         `${process.env.AUTH0_MANAGEMENT_API}roles`,

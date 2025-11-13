@@ -1,9 +1,10 @@
 import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { useAuth0 } from '@auth0/auth0-react';
-import Callback from './pages/Callback';
-import Dashboard from './pages/Dashboard';
 import { useEffect } from 'react';
 import ProtectedRoute from './routes/ProtectedRoute';
+import Callback from './pages/Callback';
+import Dashboard from './pages/Dashboard';
+import ProfilePage from './pages/ProfilePage';
 
 function App() {
   const { isLoading, isAuthenticated, loginWithRedirect } = useAuth0();
@@ -57,10 +58,16 @@ function App() {
         }
       />
 
+      <Route path="/me" element={
+        <ProtectedRoute>
+          <ProfilePage />
+        </ProtectedRoute>
+      } />
+
       {/* Redirect root to dashboard */}
       <Route path="/" element={<Navigate to="/dashboard" replace />} />
       {/* Catch-all route for any other paths */}
-      <Route path="*" element={<Navigate to="/dashboard" replace />} />
+      <Route path="*" element={<Navigate to="/not-found" replace />} />
     </Routes>
   );
 }

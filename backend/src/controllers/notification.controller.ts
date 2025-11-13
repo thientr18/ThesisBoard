@@ -45,8 +45,6 @@ export class NotificationController {
   getUnreadCount = async (req: Request, res: Response, next: NextFunction) => {
     try {
       const userId = Number(req.user?.id);
-      console.log('Request User:', req.user);
-      console.log('User ID:', userId);
       if (!req.user?.id || Number.isNaN(userId)) {
         return next(new AppError('User not authenticated', 401, 'NOT_AUTHENTICATED'));
       }

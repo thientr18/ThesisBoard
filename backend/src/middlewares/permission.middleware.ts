@@ -11,25 +11,23 @@ interface RequestWithAuth extends Request {
   };
 }
 
-export const roleMiddleware = (allowedRolesOrPermissions: string[]) => {
+export const allowedPermissions = (permissions: string[]) => {
   return (req: RequestWithAuth, res: Response, next: NextFunction) => {
-    console.log('Role Middleware Invoked');
-    
     if (!req.auth || !req.auth.payload) {
       return next(
         new AppError('You are not logged in. Please log in to access this resource', 401, 'UNAUTHORIZED')
       );
     }
 
-    const { roles = [], permissions = [] } = req.auth.payload;
+    const { permissions = [] } = req.auth.payload;
     
-    if (roles.includes('admin:all')) {
+    if (permissions.includes('admin:all')) {
       return next();
     }
 
-    const hasRequiredAccess = allowedRolesOrPermissions.some(
-      (roleOrPermission) => 
-        roles.includes(roleOrPermission) || permissions.includes(roleOrPermission)
+    const hasRequiredAccess = permissions.some(
+      (permission) => 
+        permissions.includes(permission)
     );
 
     if (!hasRequiredAccess) {
@@ -43,7 +41,7 @@ export const roleMiddleware = (allowedRolesOrPermissions: string[]) => {
   };
 };
 
-export const requireAllPermissions = (requiredRolesOrPermissions: string[]) => {
+export const requireAllPermissions = (permissions: string[]) => {
   return (req: RequestWithAuth, res: Response, next: NextFunction) => {
     if (!req.auth || !req.auth.payload) {
       return next(
@@ -51,15 +49,15 @@ export const requireAllPermissions = (requiredRolesOrPermissions: string[]) => {
       );
     }
 
-    const { roles = [], permissions = [] } = req.auth.payload;
+    const { permissions = [] } = req.auth.payload;
     
-    if (roles.includes('admin:all')) {
+    if (permissions.includes('admin:all')) {
       return next();
     }
 
-    const hasAllRequiredAccess = requiredRolesOrPermissions.every(
-      (roleOrPermission) => 
-        roles.includes(roleOrPermission) || permissions.includes(roleOrPermission)
+    const hasAllRequiredAccess = permissions.every(
+      (permission) => 
+        permissions.includes(permission)
     );
 
     if (!hasAllRequiredAccess) {

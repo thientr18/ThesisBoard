@@ -1,12 +1,22 @@
 import { Request, Response, NextFunction } from 'express';
+import { Op } from 'sequelize';
 import { UserService } from '../services/user.service';
+import { Auth0Service } from '../services/auth0.service';
 import { AppError } from '../utils/AppError';
+import type { UserProfile } from '../types/profile.types';
+import type { StudentDetails } from '../types/user.types';
+import dotenv from "dotenv";
+
+dotenv.config();
+
 
 export class UserController {
   private userService: UserService;
+  private auth0Service: Auth0Service;
 
   constructor() {
     this.userService = new UserService();
+    this.auth0Service = new Auth0Service();
   }
 
   // Get all users with pagination
@@ -37,6 +47,44 @@ export class UserController {
       next(error);
     }
   };
+
+  /**
+   * Get current user's profile
+   */
+  getCurrentUserProfile = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const userId = (req as any).user.id;
+      const user = await this.userService.getUserById(userId);
+
+      const auth0Roles = await this.auth0Service.getUserRoles(user.auth0UserId as string);
+
+      const me = {
+        id: user.id,
+        auth0Id: user.auth0UserId,
+        username: user.username,
+        email: user.email,
+        fullName: user.fullName,
+        status: user.status,
+        roles: auth0Roles,
+      } as UserProfile;
+      
+      res.status(200).json({ status: 'success', user: me });
+    } catch (error) {
+      return next(error);
+    }
+  }
+
+  /**
+   * Update current user's profile
+   */
+  updateCurrentUser = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+
+    } catch (error) {
+      return next(error);
+    }
+  }
+  
 
   // Get user by ID
   getUserById = async (req: Request, res: Response, next: NextFunction) => {
@@ -141,62 +189,28 @@ export class UserController {
 
   // Get user with roles
   getUserWithRoles = async (req: Request, res: Response, next: NextFunction) => {
-    try {
-      const { id } = req.params;
-      const user = await this.userService.getUserWithRoles(parseInt(id));
-      res.status(200).json({
-        status: 'success',
-        data: user
-      });
-    } catch (error) {
-      next(error);
-    }
+    // call to auth0
+    // then call getUsers with the user IDs obtained from auth0
   };
 
   // Assign role to user
   assignRoleToUser = async (req: Request, res: Response, next: NextFunction) => {
-    try {
-      const { userId, roleId } = req.body;
-      if (!userId || !roleId) {
-        return next(new AppError('User ID and Role ID are required', 400, 'MISSING_FIELDS'));
-      }
-      
-      const result = await this.userService.assignRoleToUser(parseInt(userId), parseInt(roleId));
-      res.status(200).json({
-        status: 'success',
-        data: result
-      });
-    } catch (error) {
-      next(error);
-    }
+    // call to auth0
   };
 
   // Remove role from user
   removeRoleFromUser = async (req: Request, res: Response, next: NextFunction) => {
-    try {
-      const { userId, roleId } = req.body;
-      if (!userId || !roleId) {
-        return next(new AppError('User ID and Role ID are required', 400, 'MISSING_FIELDS'));
-      }
-      
-      const result = await this.userService.removeRoleFromUser(parseInt(userId), parseInt(roleId));
-      res.status(200).json({
-        status: 'success',
-        data: result
-      });
-    } catch (error) {
-      next(error);
-    }
+    // call to auth0
   };
 
   // Get users by role
   getUsersByRole = async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const { roleName } = req.params;
-      const users = await this.userService.getUsersByRole(roleName);
+      const userIds = req.body.userIds;
+      const users = await this.userService.getUsers(userIds);
       res.status(200).json({
         status: 'success',
-        results: users.length,
+        results: users,
         data: users
       });
     } catch (error) {
@@ -216,9 +230,35 @@ export class UserController {
       next(error);
     }
   };
-}
 
-// Don't forget to add this import at the top
-import { Op } from 'sequelize';
+  // Student-specific operations
+  getStudentById = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const { id } = req.params;
+      const student = await this.userService.getStudentById(parseInt(id));
+      res.status(200).json({
+        status: 'success',
+        student
+      });
+    }
+    catch (error) {
+      next(error);
+    }
+  };
+
+  // Teacher-specific operations
+  getTeacherById = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const { id } = req.params;
+      const teacher = await this.userService.getTeacherById(parseInt(id));
+      res.status(200).json({
+        status: 'success',
+        teacher
+      });
+    } catch (error) {
+      next(error);
+    }
+  };
+}
 
 export default UserController;

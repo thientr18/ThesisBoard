@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { Request, Response, NextFunction } from 'express';
-import { roleMiddleware } from '../middlewares/role.middleware';
+import { allowedPermissions } from '../middlewares/permission.middleware';
 import { checkJwt } from '../middlewares/auth.middleware';
 import { AttachmentController } from '../controllers/attachment.controller';
 import { upload } from '../config/multer.config';
@@ -36,15 +36,15 @@ const handleAttachmentRequest = (req: Request, res: Response, next: NextFunction
 
 // Routes
 router.post('/',
-  roleMiddleware(['upload:attachments']),
+  allowedPermissions(['upload:attachments']),
   handleAttachmentRequest);
   
 router.get('/:entityType/:entityId',
-  roleMiddleware(['download:attachments']),
+  allowedPermissions(['download:attachments']),
   attachmentController.getAttachmentsByEntity);
   
 router.delete('/:id',
-  roleMiddleware(['delete:attachments']),
+  allowedPermissions(['delete:attachments']),
   attachmentController.deleteAttachment);
 
 export default router;

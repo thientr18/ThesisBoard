@@ -1,6 +1,7 @@
 import React from "react";
-import { Avatar, Dropdown, type MenuProps } from "antd";
+import { Dropdown, type MenuProps } from "antd";
 import { LogoutOutlined, UserOutlined } from "@ant-design/icons";
+import Avatar from "../common/display/Avatar";
 import { useAuth0 } from "@auth0/auth0-react";
 
 interface ProfileMenuProps {
@@ -23,7 +24,7 @@ const ProfileMenu: React.FC<ProfileMenuProps> = ({ userName = "User", onLogout }
     {
       key: "profile",
       icon: <UserOutlined />,
-      label: <a href="/profile">Profile</a>,
+      label: <a href="/me">Profile</a>,
     },
     { type: "divider" },
     {

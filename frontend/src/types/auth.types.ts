@@ -22,11 +22,6 @@ export interface UserInfo {
   // Add other user profile fields as needed
 }
 
-export interface LoginRequest {
-  username: string;
-  password: string;
-}
-
 export interface SignupRequest {
   email: string;
   password: string;

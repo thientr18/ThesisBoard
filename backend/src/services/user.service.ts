@@ -1,7 +1,7 @@
 import { UserRepository } from '../repositories/user-repository';
 import { User } from '../models/User';
 import { AppError } from '../utils/AppError';
-import { error } from 'console';
+import type { StudentDetails, TeacherDetails } from '../types/user.types';
 
 export class UserService {
   private userRepository: UserRepository;
@@ -117,49 +117,35 @@ export class UserService {
     return this.userRepository.searchUsers(query);
   }
 
-  // Get user with roles
-  async getUserWithRoles(id: number) {
-    const user = await this.userRepository.getUserWithRoles(id);
-    if (!user) {
-      throw new AppError('User not found', 404, 'USER_NOT_FOUND');
-    }
-    return user;
-  }
-
-  // Assign role to user
-  async assignRoleToUser(userId: number, roleId: number) {
-    const success = await this.userRepository.assignRoleToUser(userId, roleId);
-    if (!success) {
-      throw new AppError('Failed to assign role to user', 500, 'ASSIGN_ROLE_FAILED', error);
-    }
-    return { success: true };
-  }
-
-  // Remove role from user
-  async removeRoleFromUser(userId: number, roleId: number) {
-    const success = await this.userRepository.removeRoleFromUser(userId, roleId);
-    if (!success) {
-      throw new AppError('Failed to remove role from user', 500, 'REMOVE_ROLE_FAILED', error);
-    }
-    return { success: true };
-  }
-
-  // Get users by role
-  async getUsersByRole(roleName: string) {
-    return this.userRepository.findUsersByRole(roleName);
-  }
-
   // Get user statistics
   async getUserStatistics() {
     const statusCounts = await this.userRepository.countUsersByStatus();
-    const roleDistribution = await this.userRepository.getRoleDistribution();
+    // const roleDistribution = await this.userRepository.getUsers(truyền vào những ids có role trong Auth0);
     const userGrowth = await this.userRepository.getUserGrowthByPeriod('month', 6);
     
     return {
       statusCounts,
-      roleDistribution,
+      // roleDistribution,
       userGrowth
     };
+  }
+  
+  // STUDENT
+  async getStudentDetails(userId: number): Promise<StudentDetails | null> {
+    return await this.userRepository.getStudentDetails(userId);
+  }
+
+  async getStudentById(userId: number): Promise<StudentDetails | null> {
+    return await this.userRepository.getStudentById(userId);
+  }
+
+  // TEACHER
+  async getTeacherDetails(userId: number): Promise<TeacherDetails | null> {
+    return await this.userRepository.getTeacherDetails(userId);
+  }
+
+  async getTeacherById(userId: number): Promise<TeacherDetails | null> {
+    return await this.userRepository.getTeacherById(userId);
   }
 }
 

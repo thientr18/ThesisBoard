@@ -8,13 +8,25 @@ import type {
   CreateUserRequest,
   UpdateUserRequest,
   AssignRoleRequest,
-  SearchUsersParams
+  SearchUsersParams,
+  StudentDetails,
+  TeacherDetails
 } from '../../types/user.types';
 
 const BASE_PATH = '/api/users';
 
 export const useUserApi = () => {
   const authApi = useAuthenticatedApi();
+
+  const getMe = useCallback(async (): Promise<ApiResponse<UserWithRoles>> => {
+    try {
+      const response = await authApi.get(`${BASE_PATH}/me`);
+      const user = (response.data.user ?? null) as UserWithRoles;
+      return { data: user, error: null };
+    } catch (error) {
+      return { data: null, error: error instanceof Error ? error.message : 'Failed to fetch current user' };
+    }
+  }, [authApi]);
 
   const getAll = useCallback(async (): Promise<ApiResponse<User[]>> => {
     try {
@@ -133,7 +145,26 @@ export const useUserApi = () => {
     }
   }, [authApi]);
 
+  const getStudentById = useCallback(async (id: number): Promise<ApiResponse<StudentDetails>> => {
+    try {
+      const response = await authApi.get(`${BASE_PATH}/student/${id}/`);
+      return { data: response.data.student as StudentDetails, error: null };
+    } catch (error) {
+      return { data: null, error: error instanceof Error ? error.message : `Failed to fetch student with ID ${id}` };
+    }
+  }, [authApi]);
+
+  const getTeacherById = useCallback(async (id: number): Promise<ApiResponse<TeacherDetails>> => {
+    try {
+      const response = await authApi.get(`${BASE_PATH}/teacher/${id}`);
+      return { data: response.data.teacher as TeacherDetails, error: null };
+    } catch (error) {
+      return { data: null, error: error instanceof Error ? error.message : `Failed to fetch teacher with ID ${id}` };
+    }
+  }, [authApi]);
+
   return useMemo(() => ({
+    getMe,
     getAll,
     getById,
     create,
@@ -146,8 +177,11 @@ export const useUserApi = () => {
     deactivate,
     getUserWithRoles,
     assignRole,
-    removeRole
+    removeRole,
+    getStudentById,
+    getTeacherById,
   }), [
+    getMe,
     getAll,
     getById,
     create,
@@ -160,6 +194,8 @@ export const useUserApi = () => {
     deactivate,
     getUserWithRoles,
     assignRole,
-    removeRole
+    removeRole,
+    getStudentById,
+    getTeacherById,
   ]);
 };

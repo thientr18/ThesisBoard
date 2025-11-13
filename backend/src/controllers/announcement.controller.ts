@@ -42,9 +42,8 @@ export class AnnouncementController {
       if (!title || !content) {
         throw new AppError('Title and content are required', 400, 'MISSING_FIELDS');
       }
-
-      // @ts-expect-error - auth user is added by middleware
-      const userId = req.user?.sub || req.user?.id;
+// !!! userId in User table
+      const userId = req.user?.sub || req.user?.id; 
       
       if (!userId) {
         throw new AppError('User ID not found in request', 401, 'USER_ID_NOT_FOUND');

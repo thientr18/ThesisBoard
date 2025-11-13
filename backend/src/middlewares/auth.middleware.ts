@@ -5,7 +5,6 @@ import 'dotenv/config';
 // Auth0 JWT verification result with properties
 interface ExtendedJwtPayload extends AuthResult {
   permissions?: string[];
-  roles?: string[];
   [key: string]: any; // Allow for dynamic properties like namespace claims
 }
 
@@ -26,17 +25,8 @@ export const requireAdmin = (req: Request, res: Response, next: NextFunction) =>
         message: 'Authentication required'
       });
     }
-    
-    const roles = user.permissions || 
-                  (process.env.AUTH0_AUDIENCE ? user[`${process.env.AUTH0_AUDIENCE}/roles`] : undefined) || 
-                  user.roles || 
-                  user['https://thesisboard-api.com/roles'];
-    
-    // For debugging
-    console.log('User auth object:', user);
-    console.log('Roles found:', roles);
-    
-    if (!roles || !Array.isArray(roles) || !roles.includes('admin')) {
+
+    if (!user.permissions || !Array.isArray(user.permissions) || !user.permissions.includes('admin:all')) {
       return res.status(403).json({
         error: 'Forbidden',
         message: 'Admin access required'

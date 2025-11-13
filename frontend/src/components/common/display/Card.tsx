@@ -70,7 +70,7 @@ const Card: React.FC<CardProps> = ({
         headStyle={{ padding: "12px 16px", borderBottom: bordered ? undefined : "none" }}
         className="bg-transparent shadow-none"
       >
-        <div className="min-h-[48px]">{children}</div>
+        <div className="min-h-12">{children}</div>
       </AntCard>
     </div>
   );

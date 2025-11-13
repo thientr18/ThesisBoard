@@ -1,6 +1,4 @@
 import { User } from './User';
-import { Role } from './Role';
-import { UserRole } from './UserRole';
 import { Semester } from './Semester';
 import { Student } from './Student';
 import { StudentSemester } from './StudentSemester';
@@ -23,8 +21,6 @@ import { Submission } from './Submission';
 
 const models = {
     User,
-    Role,
-    UserRole,
     Semester,
     Student,
     StudentSemester,
@@ -51,10 +47,6 @@ let associationsApplied = false;
 function applyAssociations() {
     if (associationsApplied) return;
     associationsApplied = true;
-
-    // users <-> roles
-    User.belongsToMany(Role, { through: UserRole, foreignKey: 'userId', otherKey: 'roleId' });
-    Role.belongsToMany(User, { through: UserRole, foreignKey: 'roleId', otherKey: 'userId' });
 
     // user -> student/teacher
     Student.belongsTo(User, { foreignKey: 'userId' });
