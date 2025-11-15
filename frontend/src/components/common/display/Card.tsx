@@ -12,18 +12,6 @@ export interface CardProps {
   onClick?: () => void;
 }
 
-/**
- Example usage:
- 
- <Card
-   title="Project Alpha"
-   extra={<Button size="small">Manage</Button>}
-   hoverable
-   onClick={() => console.log('open')}
- >
-   <p className="text-sm text-gray-600">Short project summary or stats go here.</p>
- </Card>
-*/
 const Card: React.FC<CardProps> = ({
   title,
   extra,
@@ -64,10 +52,12 @@ const Card: React.FC<CardProps> = ({
         title={title}
         extra={extra}
         loading={loading}
-        bordered={bordered}
-        hoverable={false} // we manage visual hover via Tailwind to keep consistent rounded/shadow
-        bodyStyle={{ padding: 16 }}
-        headStyle={{ padding: "12px 16px", borderBottom: bordered ? undefined : "none" }}
+        variant={bordered ? "outlined" : "borderless"}
+        hoverable={false}
+        styles={{
+          body: { padding: 16 },
+          header: { padding: "12px 16px", borderBottom: bordered ? undefined : "none" }
+        }}
         className="bg-transparent shadow-none"
       >
         <div className="min-h-12">{children}</div>

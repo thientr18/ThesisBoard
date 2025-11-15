@@ -9,12 +9,6 @@ export interface LoadingSpinnerProps {
   className?: string;
 }
 
-/**
- * Usage examples:
- * <LoadingSpinner tip="Loading data..." fullscreen />
- * <LoadingSpinner size="small" />
- */
-
 export const LoadingSpinner: React.FC<LoadingSpinnerProps> = ({
   size = 'default',
   tip,
@@ -37,15 +31,24 @@ export const LoadingSpinner: React.FC<LoadingSpinnerProps> = ({
   const containerClasses = [
     baseClasses,
     'transition-opacity duration-200 ease-in-out',
-    'text-gray-700 dark:text-gray-200', // helps spinner color adapt to dark mode via currentColor
+    'text-gray-700 dark:text-gray-200',
     className,
   ]
     .filter(Boolean)
     .join(' ');
 
+  // Only pass tip if fullscreen is true or we're using nested pattern
+  const spinProps = fullscreen
+    ? { indicator, tip, fullscreen: true }
+    : { indicator };
+
   return (
     <div className={containerClasses}>
-      <Spin indicator={indicator} tip={tip} />
+      <Spin {...spinProps} />
+      {/* Show tip text manually when not in fullscreen mode */}
+      {!fullscreen && tip && (
+        <span className="ml-2 text-sm">{tip}</span>
+      )}
     </div>
   );
 };

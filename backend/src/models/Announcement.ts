@@ -7,10 +7,12 @@ export class Announcement extends Model<InferAttributes<Announcement>, InferCrea
   declare title: string;
   declare content: string;
   declare audience: 'all' | 'students' | 'teachers' | 'public';
-  declare audienceFilter: object | null;
+  declare pinned: boolean;
   declare publishedByUserId: number;
   declare publishedAt: CreationOptional<Date>;
   declare visibleUntil: Date | null;
+  declare createdAt: CreationOptional<Date>;
+  declare updatedAt: CreationOptional<Date>;
 }
 
 Announcement.init(
@@ -25,15 +27,17 @@ Announcement.init(
       }
     },
     audience: {
-      type: DataTypes.ENUM('all', 'students', 'teachers'),
+      type: DataTypes.ENUM('all', 'students', 'teachers', 'public'),
       defaultValue: 'all',
       allowNull: false,
       validate: { isIn: [['all', 'students', 'teachers', 'public']] }
     },
-    audienceFilter: { type: DataTypes.JSON, allowNull: true, field: 'audience_filter' },
+    pinned: { type: DataTypes.BOOLEAN, allowNull: false, defaultValue: false },
     publishedByUserId: { type: DataTypes.BIGINT, allowNull: false, field: 'published_by_user_id' },
     publishedAt: { type: DataTypes.DATE, allowNull: false, defaultValue: DataTypes.NOW, field: 'published_at' },
     visibleUntil: { type: DataTypes.DATE, allowNull: true, field: 'visible_until' },
+    createdAt: { type: DataTypes.DATE, allowNull: false, defaultValue: DataTypes.NOW, field: 'created_at' },
+    updatedAt: { type: DataTypes.DATE, allowNull: false, defaultValue: DataTypes.NOW, field: 'updated_at' },
   },
   { 
     sequelize,

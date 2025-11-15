@@ -5,6 +5,7 @@ import ProtectedRoute from './routes/ProtectedRoute';
 import Callback from './pages/Callback';
 import Dashboard from './pages/Dashboard';
 import ProfilePage from './pages/ProfilePage';
+import Announcements from './pages/Announcements';
 
 function App() {
   const { isLoading, isAuthenticated, loginWithRedirect } = useAuth0();
@@ -49,6 +50,11 @@ function App() {
           </div>
         </div>
       } />
+      <Route path="/me" element={
+        <ProtectedRoute>
+          <ProfilePage />
+        </ProtectedRoute>
+      } />
       <Route 
         path="/dashboard" 
         element={
@@ -57,12 +63,14 @@ function App() {
           </ProtectedRoute>
         }
       />
-
-      <Route path="/me" element={
-        <ProtectedRoute>
-          <ProfilePage />
-        </ProtectedRoute>
-      } />
+      <Route 
+        path="/announcements" 
+        element={
+          <ProtectedRoute>
+            <Announcements />
+          </ProtectedRoute>
+        }
+      />
 
       {/* Redirect root to dashboard */}
       <Route path="/" element={<Navigate to="/dashboard" replace />} />

@@ -189,8 +189,20 @@ export class UserController {
 
   // Get user with roles
   getUserWithRoles = async (req: Request, res: Response, next: NextFunction) => {
-    // call to auth0
-    // then call getUsers with the user IDs obtained from auth0
+    try {
+      const userId = req.params.id;
+      const user = await this.userService.getUserById(parseInt(userId));
+      const roles = await this.auth0Service.getUserRoles(user.auth0UserId as string);
+      res.status(200).json({
+        status: 'success',
+        data: {
+          ...user,
+          roles
+        }
+      });
+    } catch (error) {
+      return next(error);
+    }
   };
 
   // Assign role to user

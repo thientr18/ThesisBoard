@@ -1,1 +1,25 @@
 @import "tailwindcss";
+
+.announcement-detail-modal .ant-modal-content {
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.announcement-form-modal .ant-modal-content {
+  border-radius: 12px;
+}
+
+/* Custom scrollbar */
+.announcement-detail-modal .ant-modal-body::-webkit-scrollbar {
+  width: 6px;
+}
+
+.announcement-detail-modal .ant-modal-body::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 10px;
+}
+
+.announcement-detail-modal .ant-modal-body::-webkit-scrollbar-thumb {
+  background: #189ad6;
+  border-radius: 10px;
+}

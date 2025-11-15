@@ -28,6 +28,15 @@ export const useUserApi = () => {
     }
   }, [authApi]);
 
+  const getUserRoles = useCallback(async (id: number): Promise<ApiResponse<string[]>> => {
+    try {
+      const response = await authApi.get(`${BASE_PATH}/${id}/roles`);
+      return { data: response.data as string[], error: null };
+    } catch (error) {
+      return { data: null, error: error instanceof Error ? error.message : `Failed to fetch roles for user with ID ${id}` };
+    }
+  }, [authApi]);
+
   const getAll = useCallback(async (): Promise<ApiResponse<User[]>> => {
     try {
       const response = await authApi.get(BASE_PATH);
@@ -165,6 +174,7 @@ export const useUserApi = () => {
 
   return useMemo(() => ({
     getMe,
+    getUserRoles,
     getAll,
     getById,
     create,
@@ -182,6 +192,7 @@ export const useUserApi = () => {
     getTeacherById,
   }), [
     getMe,
+    getUserRoles,
     getAll,
     getById,
     create,

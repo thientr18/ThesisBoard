@@ -19,6 +19,13 @@ router.get(
   announcementController.getAllAnnouncements
 );
 
+
+router.get(
+  '/pinned',
+  allowedPermissions(['view:announcements', 'admin:all', 'moderator:all', 'teacher:base', 'student:pre_thesis', 'student:thesis']),
+  announcementController.getPinnedAnnouncements
+);
+
 // Get announcement slides
 router.get(
   '/slide',
@@ -52,6 +59,25 @@ router.delete(
   '/:id',
   allowedPermissions(['delete:announcements', 'admin:all', 'moderator:all']),
   announcementController.deleteAnnouncement
+);
+
+// For statistics
+router.get(
+  '/stats/count',
+  allowedPermissions(['view:announcements', 'admin:all', 'moderator:all', 'teacher:base', 'student:pre_thesis', 'student:thesis']),
+  announcementController.getAnnouncementCount
+);
+
+router.get(
+  '/stats/pinned/count',
+  allowedPermissions(['view:announcements', 'admin:all', 'moderator:all', 'teacher:base', 'student:pre_thesis', 'student:thesis']),
+  announcementController.getPinnedAnnouncementCount
+);
+
+router.get(
+  '/stats/weekly/count',
+  allowedPermissions(['view:announcements', 'admin:all', 'moderator:all', 'teacher:base', 'student:pre_thesis', 'student:thesis']),
+  announcementController.getWeeklyAnnouncementCount
 );
 
 export default router;

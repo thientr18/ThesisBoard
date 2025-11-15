@@ -2,6 +2,7 @@ import React from 'react';
 import { Button } from 'antd';
 
 type AntButtonType = 'primary' | 'default' | 'dashed' | 'link' | 'text';
+type HtmlButtonType = 'button' | 'submit' | 'reset';
 
 interface PrimaryButtonProps {
   label: string;
@@ -10,6 +11,7 @@ interface PrimaryButtonProps {
   icon?: React.ReactNode;
   disabled?: boolean;
   type?: AntButtonType;
+  htmlType?: HtmlButtonType;
   className?: string;
 }
 
@@ -25,6 +27,7 @@ const PrimaryButton: React.FC<PrimaryButtonProps> = ({
   icon,
   disabled = false,
   type = 'primary',
+  htmlType = 'button',
   className = '',
 }) => {
   const handleClick = () => {
@@ -35,6 +38,7 @@ const PrimaryButton: React.FC<PrimaryButtonProps> = ({
   return (
     <Button
       type={type}
+      htmlType={htmlType}
       onClick={handleClick}
       loading={loading}
       disabled={disabled}

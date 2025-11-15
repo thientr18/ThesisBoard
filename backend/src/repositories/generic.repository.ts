@@ -12,9 +12,12 @@ export class GenericRepository<T extends Model, ID> implements BaseRepository<T,
     return this.model.findByPk(id as any) as Promise<T | null>;
   }
   
-  async findAll(filters?: any): Promise<T[]> {
+  async findAll(filters?: any, offset?: number, limit?: number,  order?: Array<[string, string]>): Promise<T[]> {
     return this.model.findAll({
-      where: filters || {}
+      where: filters || {},
+      ...(offset !== undefined && { offset }),
+      ...(limit !== undefined && { limit }),
+      ...(order !== undefined && { order })
     }) as Promise<T[]>;
   }
 
@@ -60,21 +63,25 @@ export class GenericRepository<T extends Model, ID> implements BaseRepository<T,
   }
   
   // Find including soft-deleted records
-  async findAllWithDeleted(filters?: any): Promise<T[]> {
+  async findAllWithDeleted(filters?: any, offset?: number, limit?: number): Promise<T[]> {
     return this.model.findAll({
       where: filters || {},
-      paranoid: false
+      paranoid: false,
+      ...(offset !== undefined && { offset }),
+      ...(limit !== undefined && { limit })
     }) as Promise<T[]>;
   }
   
   // Find only soft-deleted records
-  async findOnlyDeleted(filters?: any): Promise<T[]> {
+  async findOnlyDeleted(filters?: any, offset?: number, limit?: number): Promise<T[]> {
     return this.model.findAll({
       where: {
         ...filters,
         deletedAt: { [Op.ne]: null }
       },
-      paranoid: false
+      paranoid: false,
+      ...(offset !== undefined && { offset }),
+      ...(limit !== undefined && { limit })
     }) as Promise<T[]>;
   }
 }

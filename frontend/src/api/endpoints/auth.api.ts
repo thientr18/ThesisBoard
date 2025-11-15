@@ -113,7 +113,7 @@ export const login = async (
 /**
  * Logout user
  */
-export const logout = async (): Promise<AuthResponse<boolean>> => {
+export const logout = async (p0: { logoutParams: { returnTo: string; }; }): Promise<AuthResponse<boolean>> => {
   try {
     
     // Call Auth0 logout endpoint

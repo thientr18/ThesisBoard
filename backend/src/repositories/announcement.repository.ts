@@ -7,7 +7,7 @@ export class AnnouncementRepository extends GenericRepository<Announcement, numb
     super(Announcement);
   }
 
-  async findActive(): Promise<Announcement[]> {
+  async findActive(offset: number = 0, limit?: number): Promise<Announcement[]> {
     const now = new Date();
     return this.model.findAll({
       where: {
@@ -16,11 +16,13 @@ export class AnnouncementRepository extends GenericRepository<Announcement, numb
           { visibleUntil: { [Op.gt]: now } }
         ]
       },
-      order: [['publishedAt', 'DESC']]
+      order: [['publishedAt', 'DESC']],
+      offset,
+      ...(limit && { limit })
     });
   }
 
-  async findByAudience(audience: Announcement['audience']): Promise<Announcement[]> {
+  async findByAudience(audience: Announcement['audience'], offset: number = 0, limit?: number): Promise<Announcement[]> {
     const now = new Date();
     return this.model.findAll({
       where: {
@@ -30,35 +32,24 @@ export class AnnouncementRepository extends GenericRepository<Announcement, numb
           { visibleUntil: { [Op.gt]: now } }
         ]
       },
-      order: [['publishedAt', 'DESC']]
+      order: [['publishedAt', 'DESC']],
+      offset,
+      ...(limit && { limit })
     });
   }
 
-  async findByPublisher(userId: number): Promise<Announcement[]> {
+  async findByPublisher(userId: number, offset: number = 0, limit?: number): Promise<Announcement[]> {
     return this.model.findAll({
       where: {
         publishedByUserId: userId
       },
-      order: [['publishedAt', 'DESC']]
+      order: [['publishedAt', 'DESC']],
+      offset,
+      ...(limit && { limit })
     });
   }
 
-  async findByAudienceFilter(filterCriteria: object): Promise<Announcement[]> {
-    const now = new Date();
-
-    return this.model.findAll({
-      where: {
-        audienceFilter: { [Op.ne]: null },
-        [Op.or]: [
-          { visibleUntil: null },
-          { visibleUntil: { [Op.gt]: now } }
-        ]
-      },
-      order: [['publishedAt', 'DESC']]
-    });
-  }
-
-  async findRecent(page: number = 1, pageSize: number = 10): Promise<{
+  async findRecent(page: number = 1, pageSize: number = 10, offset: number = 0): Promise<{
     announcements: Announcement[],
     total: number,
     page: number,
@@ -76,7 +67,7 @@ export class AnnouncementRepository extends GenericRepository<Announcement, numb
       },
       order: [['publishedAt', 'DESC']],
       limit: pageSize,
-      offset: (page - 1) * pageSize
+      offset: (page - 1) * pageSize + offset
     });
     
     return {
@@ -104,17 +95,73 @@ export class AnnouncementRepository extends GenericRepository<Announcement, numb
     
     // Check audience match
     if (announcement.audience === 'all' || announcement.audience === audience) {
-      // If there's no audience filter, it's visible
-      if (!announcement.audienceFilter) return true;
-      
-      // If there's a filter but no filter data provided, can't determine visibility
       if (!audienceFilterData) return false;
-      
-      // Here you would implement the logic to match audienceFilter with audienceFilterData
-      // This is placeholder logic - you'll need to implement actual matching based on your requirements
+
       return true;
     }
     
     return false;
+  }
+
+  async findPinned(page: number = 1, pageSize: number = 10, offset: number = 0): Promise<{
+    announcements: Announcement[],
+    total: number,
+    page: number,
+    pageSize: number,
+    totalPages: number
+  }> {
+    const now = new Date();
+    
+    const { count, rows } = await this.model.findAndCountAll({
+      where: {
+        pinned: true,
+        [Op.or]: [
+          { visibleUntil: null },
+          { visibleUntil: { [Op.gt]: now } }
+        ]
+      },
+      order: [['publishedAt', 'DESC']],
+      limit: pageSize,
+      offset: (page - 1) * pageSize + offset
+    });
+    
+    return {
+      announcements: rows,
+      total: count,
+      page,
+      pageSize,
+      totalPages: Math.ceil(count / pageSize)
+    };
+  }
+
+  // Statistics
+  async countAll(): Promise<number> {
+    return this.model.count();
+  }
+
+  async countPinned(): Promise<number> {
+    const now = new Date();
+    return this.model.count({
+      where: {
+        pinned: true,
+        [Op.or]: [
+          { visibleUntil: null },
+          { visibleUntil: { [Op.gt]: now } }
+        ]
+      }
+    });
+  }
+
+  async countWeekly(): Promise<number> {
+    const oneWeekAgo = new Date();
+    oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
+    
+    return this.model.count({
+      where: {
+        publishedAt: {
+          [Op.gte]: oneWeekAgo
+        }
+      }
+    });
   }
 }

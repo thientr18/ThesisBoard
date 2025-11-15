@@ -3,6 +3,8 @@ export interface ApiResponse<T> {
   error: string | null;
 }
 
+export type Audience = 'all' | 'students' | 'teachers' | 'public';
+
 // Announcement interfaces
 export interface Announcement {
   id: number;
@@ -11,16 +13,47 @@ export interface Announcement {
   createdAt: string;
   updatedAt: string;
   authorId: number;
-  isPublished: boolean;
-  isSlide: boolean;
+  pinned: boolean;
+  audience: Audience;
+  publishedAt: string;
+  visibleUntil?: string | null;
 }
 
 export interface CreateAnnouncementRequest {
   title: string;
   content: string;
-  isPublished: boolean;
-  isSlide: boolean;
+  pinned: boolean;
+  audience: Audience;
+  publishedAt?: string;
+  visibleUntil?: string | null;
 }
 
 export interface UpdateAnnouncementRequest extends Partial<CreateAnnouncementRequest> {}
 
+export interface AnnouncementDTO {
+  id: number;
+  title: string;
+  content: string;
+  audience: Audience;
+  pinned: boolean;
+  publishedByUserId: number;
+  publishedAt: string;
+  visibleUntil?: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export function mapAnnouncement(dto: AnnouncementDTO): Announcement {
+  return {
+    id: dto.id,
+    title: dto.title,
+    content: dto.content,
+    createdAt: dto.createdAt,
+    updatedAt: dto.updatedAt,
+    authorId: dto.publishedByUserId,
+    pinned: dto.pinned,
+    audience: dto.audience,
+    publishedAt: dto.publishedAt,
+    visibleUntil: dto.visibleUntil,
+  };
+}
