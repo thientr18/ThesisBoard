@@ -31,7 +31,7 @@ const TextInput: React.FC<Props> = ({
   return (
     <div className={cx("w-full", className)}>
       {label && (
-        <label className="text-sm font-medium mb-1 block text-gray-700 dark:text-gray-200">
+        <label className="block text-sm font-['Open_Sans'] font-semibold text-gray-700 mb-2">
           {label} {required && <span className="text-red-500 ml-1">*</span>}
         </label>
       )}
@@ -50,6 +50,7 @@ const TextInput: React.FC<Props> = ({
           "focus:ring-2 focus:ring-primary",
         )}
         aria-required={required}
+        size="large" // Thêm dòng này
       />
     </div>
   );

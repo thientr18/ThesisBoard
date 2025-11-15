@@ -14,9 +14,232 @@ import type { Announcement, CreateAnnouncementRequest, UpdateAnnouncementRequest
 import { useAuth0 } from '@auth0/auth0-react';
 import type { UserWithRoles } from '../types/user.types';
 import Navbar from '../components/common/navigation/Navbar';
+import Sidebar from '../components/common/navigation/Sidebar';
+import { LayoutProvider, useLayoutContext, SIDEBAR_WIDTH, SIDEBAR_COLLAPSED_WIDTH } from '../contexts/LayoutContext';
+import Alert from 'antd/es/alert/Alert';
+
+function AnnouncementsContent({
+  user,
+  error,
+  loading,
+  currentAnnouncements,
+  selectedAnnouncement,
+  detailVisible,
+  formVisible,
+  formMode,
+  editingAnnouncement,
+  isAdminOrModerator,
+  searchParams,
+  handleOpenCreateForm,
+  handleOpenEditForm,
+  handleAnnouncementClick,
+  handleCloseDetail,
+  handleDeleteAnnouncement,
+  handleFormSubmit,
+  handleFilterChange,
+  currentPage,
+  totalPages,
+  startIndex,
+  endIndex,
+  totalItems,
+  handlePageChange,
+  setFormVisible,
+  setEditingAnnouncement,
+}: any) {
+  const { collapsed } = useLayoutContext();
+  const sidebarWidth = collapsed ? SIDEBAR_COLLAPSED_WIDTH : SIDEBAR_WIDTH;
+
+  return (
+    <>
+      <Sidebar user={user} />
+      <div
+        className="flex-1 flex flex-col"
+        style={{
+          marginLeft: sidebarWidth,
+          transition: "margin-left 0.3s cubic-bezier(0.4,0,0.2,1)",
+          minHeight: "100vh",
+        }}
+      >
+        <Navbar
+          userName={user?.fullName}
+          pageName="Announcements"
+          onLogout={undefined}
+        />
+        <div className="min-h-screen bg-gray-50">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+            {/* Error State */}
+            {error ? (
+              <Alert
+                type="error"
+                message="Failed to load announcements"
+                description={error}
+                showIcon
+              />
+            ) : (
+              <>
+                {/* Header */}
+                <div className="mb-8 bg-linear-to-r from-[#189ad6] to-[#2f398f] rounded-2xl p-8 text-white shadow-lg">
+                  <div className="flex items-center justify-between flex-wrap gap-4">
+                    <div>
+                      <Title level={1} className="text-white! mb-2! font-['Montserrat']!">
+                        All Announcements
+                      </Title>
+                      <Text className="text-white/90! text-base! font-['Open_Sans']">
+                        Browse and search through all announcements
+                      </Text>
+                    </div>
+                    {isAdminOrModerator && (
+                      <PrimaryButton
+                        label="New Announcement"
+                        icon={<PlusOutlined />}
+                        onClick={handleOpenCreateForm}
+                        className="bg-white! text-[#2f398f]! hover:bg-white/90! shadow-md!"
+                      />
+                    )}
+                  </div>
+                </div>
+
+                {/* Filter Bar */}
+                <div className="mb-6">
+                  <AnnouncementFilterBar
+                    onFilterChange={handleFilterChange}
+                    initialFilters={{
+                      keyword: searchParams.get('keyword') || '',
+                      startDate: searchParams.get('startDate') || '',
+                      endDate: searchParams.get('endDate') || '',
+                      pinned: searchParams.get('pinned') || '',
+                    }}
+                  />
+                </div>
+
+                {/* Results Summary */}
+                <div className="mb-4 flex items-center justify-between">
+                  <Text className="text-gray-600 font-['Open_Sans'] text-sm">
+                    Showing {startIndex + 1}-{Math.min(endIndex, totalItems)} of {totalItems} announcements
+                  </Text>
+                </div>
+
+                {/* Announcements List */}
+                {loading ? (
+                  <div className="flex justify-center items-center py-20">
+                    <Spin size="large" />
+                  </div>
+                ) : currentAnnouncements.length === 0 ? (
+                  <div className="text-center py-20">
+                    <div className="text-6xl mb-4">📢</div>
+                    <Title level={3} className="text-gray-400! mb-2! font-['Montserrat']!">
+                      No Announcements Found
+                    </Title>
+                    <Text className="text-gray-500 font-['Open_Sans']">
+                      {searchParams.toString() 
+                        ? 'Try adjusting your filters or search terms'
+                        : 'No announcements have been posted yet'}
+                    </Text>
+                  </div>
+                ) : (
+                  <>
+                    {/* Compact List View */}
+                    <div className="space-y-3 mb-8">
+                      {currentAnnouncements.map((announcement: Announcement) => (
+                        <AnnouncementCard
+                          key={announcement.id}
+                          announcement={announcement}
+                          onClick={handleAnnouncementClick}
+                          onEdit={isAdminOrModerator ? handleOpenEditForm : undefined}
+                        />
+                      ))}
+                    </div>
+
+                    {/* Pagination */}
+                    {totalPages > 1 && (
+                      <div className="flex justify-center items-center gap-2">
+                        <button
+                          onClick={() => handlePageChange(currentPage - 1)}
+                          disabled={currentPage === 1}
+                          className="px-4 py-2 rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                        >
+                          Previous
+                        </button>
+                        
+                        <div className="flex gap-2">
+                          {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => {
+                            if (
+                              page === 1 ||
+                              page === totalPages ||
+                              (page >= currentPage - 1 && page <= currentPage + 1)
+                            ) {
+                              return (
+                                <button
+                                  key={page}
+                                  onClick={() => handlePageChange(page)}
+                                  className={`px-4 py-2 rounded-lg transition-colors ${
+                                    currentPage === page
+                                      ? 'bg-[#189ad6] text-white'
+                                      : 'border border-gray-300 text-gray-700 hover:bg-gray-50'
+                                  }`}
+                                >
+                                  {page}
+                                </button>
+                              );
+                            } else if (
+                              page === currentPage - 2 ||
+                              page === currentPage + 2
+                            ) {
+                              return (
+                                <span key={page} className="px-2 py-2 text-gray-400">
+                                  ...
+                                </span>
+                              );
+                            }
+                            return null;
+                          })}
+                        </div>
+
+                        <button
+                          onClick={() => handlePageChange(currentPage + 1)}
+                          disabled={currentPage === totalPages}
+                          className="px-4 py-2 rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                        >
+                          Next
+                        </button>
+                      </div>
+                    )}
+                  </>
+                )}
+
+                {/* Modals */}
+                <AnnouncementDetail
+                  announcement={selectedAnnouncement}
+                  visible={detailVisible}
+                  onClose={handleCloseDetail}
+                  onEdit={isAdminOrModerator ? handleOpenEditForm : undefined}
+                  onDelete={isAdminOrModerator ? handleDeleteAnnouncement : undefined}
+                  showActions={isAdminOrModerator}
+                />
+
+                {isAdminOrModerator && (
+                  <AnnouncementForm
+                    visible={formVisible}
+                    onClose={() => {
+                      setFormVisible(false);
+                      setEditingAnnouncement(null);
+                    }}
+                    onSubmit={handleFormSubmit}
+                    announcement={editingAnnouncement}
+                    mode={formMode}
+                  />
+                )}
+                </>
+            )}
+          </div>
+        </div>
+      </div>
+    </>
+  );
+}
 
 export default function Announcements() {
-  const { logout, isAuthenticated, isLoading: authLoading, getAccessTokenSilently } = useAuth0();
+  const { isAuthenticated, isLoading: authLoading, getAccessTokenSilently } = useAuth0();
   const { getMe } = useUserApi();
 
   const [user, setUser] = useState<UserWithRoles | null>(null);
@@ -286,187 +509,38 @@ export default function Announcements() {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  if (error) {
-    return (
-      <div className="min-h-screen flex flex-col">
-        <Navbar
-          userName={user?.fullName}
-          onLogout={() => logout({ logoutParams: { returnTo: window.location.origin } })}
-        />
-        <div className="flex-grow flex flex-col justify-center items-center px-4">
-          <Title level={2} className="text-red-600! mb-4! font-['Montserrat']!">
-            Error
-          </Title>
-          <Text className="text-gray-700 font-['Open_Sans'] text-center">
-            {error}
-          </Text>
-        </div>
-      </div>
-    );
-  }
-
   return (
-    <>
-      <Navbar
-        userName={user?.fullName}
-        onLogout={() => logout({ logoutParams: { returnTo: window.location.origin } })}
+    <LayoutProvider>
+      <AnnouncementsContent
+        user={user}
+        error={error}
+        loading={loading}
+        announcements={announcements}
+        filteredAnnouncements={filteredAnnouncements}
+        currentAnnouncements={currentAnnouncements}
+        selectedAnnouncement={selectedAnnouncement}
+        detailVisible={detailVisible}
+        formVisible={formVisible}
+        formMode={formMode}
+        editingAnnouncement={editingAnnouncement}
+        isAdminOrModerator={isAdminOrModerator}
+        searchParams={searchParams}
+        handleOpenCreateForm={handleOpenCreateForm}
+        handleOpenEditForm={handleOpenEditForm}
+        handleAnnouncementClick={handleAnnouncementClick}
+        handleCloseDetail={handleCloseDetail}
+        handleDeleteAnnouncement={handleDeleteAnnouncement}
+        handleFormSubmit={handleFormSubmit}
+        handleFilterChange={handleFilterChange}
+        currentPage={currentPage}
+        totalPages={totalPages}
+        startIndex={startIndex}
+        endIndex={endIndex}
+        totalItems={totalItems}
+        handlePageChange={handlePageChange}
+        setFormVisible={setFormVisible}
+        setEditingAnnouncement={setEditingAnnouncement}
       />
-      <div className="min-h-screen bg-gray-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          {/* Header */}
-          <div className="mb-8 bg-linear-to-r from-[#189ad6] to-[#2f398f] rounded-2xl p-8 text-white shadow-lg">
-            <div className="flex items-center justify-between flex-wrap gap-4">
-              <div>
-                <Title level={1} className="text-white! mb-2! font-['Montserrat']!">
-                  All Announcements
-                </Title>
-                <Text className="text-white/90! text-base! font-['Open_Sans']">
-                  Browse and search through all announcements
-                </Text>
-              </div>
-              {isAdminOrModerator && (
-                <PrimaryButton
-                  label="New Announcement"
-                  icon={<PlusOutlined />}
-                  onClick={handleOpenCreateForm}
-                  className="bg-white! text-[#2f398f]! hover:bg-white/90! shadow-md!"
-                />
-              )}
-            </div>
-          </div>
-
-          {/* Filter Bar */}
-          <div className="mb-6">
-            <AnnouncementFilterBar
-              onFilterChange={handleFilterChange}
-              initialFilters={{
-                keyword: searchParams.get('keyword') || '',
-                startDate: searchParams.get('startDate') || '',
-                endDate: searchParams.get('endDate') || '',
-                pinned: searchParams.get('pinned') || '',
-              }}
-            />
-          </div>
-
-          {/* Results Summary */}
-          <div className="mb-4 flex items-center justify-between">
-            <Text className="text-gray-600 font-['Open_Sans'] text-sm">
-              Showing {startIndex + 1}-{Math.min(endIndex, totalItems)} of {totalItems} announcements
-            </Text>
-          </div>
-
-          {/* Announcements List */}
-          {loading ? (
-            <div className="flex justify-center items-center py-20">
-              <Spin size="large" />
-            </div>
-          ) : currentAnnouncements.length === 0 ? (
-            <div className="text-center py-20">
-              <div className="text-6xl mb-4">📢</div>
-              <Title level={3} className="text-gray-400! mb-2! font-['Montserrat']!">
-                No Announcements Found
-              </Title>
-              <Text className="text-gray-500 font-['Open_Sans']">
-                {searchParams.toString() 
-                  ? 'Try adjusting your filters or search terms'
-                  : 'No announcements have been posted yet'}
-              </Text>
-            </div>
-          ) : (
-            <>
-              {/* Compact List View */}
-              <div className="space-y-3 mb-8">
-                {currentAnnouncements.map((announcement) => (
-                  <AnnouncementCard
-                    key={announcement.id}
-                    announcement={announcement}
-                    onClick={handleAnnouncementClick}
-                    onEdit={isAdminOrModerator ? handleOpenEditForm : undefined}
-                  />
-                ))}
-              </div>
-
-              {/* Pagination */}
-              {totalPages > 1 && (
-                <div className="flex justify-center items-center gap-2">
-                  <button
-                    onClick={() => handlePageChange(currentPage - 1)}
-                    disabled={currentPage === 1}
-                    className="px-4 py-2 rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                  >
-                    Previous
-                  </button>
-                  
-                  <div className="flex gap-2">
-                    {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => {
-                      if (
-                        page === 1 ||
-                        page === totalPages ||
-                        (page >= currentPage - 1 && page <= currentPage + 1)
-                      ) {
-                        return (
-                          <button
-                            key={page}
-                            onClick={() => handlePageChange(page)}
-                            className={`px-4 py-2 rounded-lg transition-colors ${
-                              currentPage === page
-                                ? 'bg-[#189ad6] text-white'
-                                : 'border border-gray-300 text-gray-700 hover:bg-gray-50'
-                            }`}
-                          >
-                            {page}
-                          </button>
-                        );
-                      } else if (
-                        page === currentPage - 2 ||
-                        page === currentPage + 2
-                      ) {
-                        return (
-                          <span key={page} className="px-2 py-2 text-gray-400">
-                            ...
-                          </span>
-                        );
-                      }
-                      return null;
-                    })}
-                  </div>
-
-                  <button
-                    onClick={() => handlePageChange(currentPage + 1)}
-                    disabled={currentPage === totalPages}
-                    className="px-4 py-2 rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                  >
-                    Next
-                  </button>
-                </div>
-              )}
-            </>
-          )}
-
-          {/* Modals */}
-          <AnnouncementDetail
-            announcement={selectedAnnouncement}
-            visible={detailVisible}
-            onClose={handleCloseDetail}
-            onEdit={isAdminOrModerator ? handleOpenEditForm : undefined}
-            onDelete={isAdminOrModerator ? handleDeleteAnnouncement : undefined}
-            showActions={isAdminOrModerator}
-          />
-
-          {isAdminOrModerator && (
-            <AnnouncementForm
-              visible={formVisible}
-              onClose={() => {
-                setFormVisible(false);
-                setEditingAnnouncement(null);
-              }}
-              onSubmit={handleFormSubmit}
-              announcement={editingAnnouncement}
-              mode={formMode}
-            />
-          )}
-        </div>
-      </div>
-    </>
+    </LayoutProvider>
   );
 }

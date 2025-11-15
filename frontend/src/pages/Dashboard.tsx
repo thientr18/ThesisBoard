@@ -8,6 +8,65 @@ import { LoadingSpinner } from '../components/common/feedback/LoadingSpinner';
 import { Alert } from '../components/common/feedback/Alert';
 import { useUserApi } from '../api/endpoints/user.api';
 import type { UserWithRoles } from '../types/user.types';
+import Sidebar from '../components/common/navigation/Sidebar';
+import {
+  LayoutProvider,
+  useLayoutContext,
+  SIDEBAR_WIDTH,
+  SIDEBAR_COLLAPSED_WIDTH
+} from '../contexts/LayoutContext';
+
+const DashboardContent = ({ user, loading, error, onLogout }: {
+  user: UserWithRoles | null;
+  loading: boolean;
+  error: string | null;
+  onLogout: () => void;
+}) => {
+  const { collapsed } = useLayoutContext();
+  const sidebarWidth = collapsed ? SIDEBAR_COLLAPSED_WIDTH : SIDEBAR_WIDTH;
+
+  return (
+    <>
+      <Sidebar user={user} />
+      <div
+        className="flex-1 flex flex-col"
+        style={{
+          marginLeft: sidebarWidth,
+          transition: "margin-left 0.3s cubic-bezier(0.4,0,0.2,1)",
+          minHeight: "100vh",
+        }}
+      >
+        <Navbar
+          userName={user?.fullName}
+          pageName="Dashboard"
+          onLogout={onLogout}
+        />
+        {loading ? (
+          <LoadingSpinner size="large" tip="Loading dashboard..." fullscreen />
+        ) : error ? (
+          <main className="px-6 py-8 max-w-7xl mx-auto">
+            <Alert
+              type="error"
+              message="Failed to load user data"
+              description={error}
+              showIcon
+            />
+          </main>
+        ) : (
+          <>
+            <main className="px-6 py-8 max-w-7xl mx-auto flex-1">
+              <AnnouncementLayout user={user} />
+            </main>
+            <Separator />
+            <section className="bg-white py-12">
+              <Contact />
+            </section>
+          </>
+        )}
+      </div>
+    </>
+  );
+};
 
 const Dashboard = () => {
   const { logout, isAuthenticated, isLoading: authLoading, getAccessTokenSilently } = useAuth0();
@@ -50,55 +109,17 @@ const Dashboard = () => {
     loadUser();
   }, [loadUser]);
 
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-gray-50">
-        <Navbar
-          userName={user?.fullName}
-          onLogout={() => logout({ logoutParams: { returnTo: window.location.origin } })}
-        />
-        <LoadingSpinner size="large" tip="Loading dashboard..." fullscreen />
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="min-h-screen bg-gray-50">
-        <Navbar
-          userName={user?.fullName}
-          onLogout={() => logout({ logoutParams: { returnTo: window.location.origin } })}
-        />
-        <main className="px-6 py-8 max-w-7xl mx-auto">
-          <Alert
-            type="error"
-            message="Failed to load user data"
-            description={error}
-            showIcon
-          />
-        </main>
-      </div>
-    );
-  }
-
   return (
-    <div className="min-h-screen bg-gray-50">
-      <Navbar
-        userName={user?.fullName}
-        onLogout={() => logout({ logoutParams: { returnTo: window.location.origin } })}
-      />
-
-      {/* Main Content */}
-      <main className="px-6 py-8 max-w-7xl mx-auto">
-        <AnnouncementLayout user={user} />
-      </main>
-
-      {/* Contact Section */}
-      <Separator />
-      <section className="bg-white py-12">
-        <Contact />
-      </section>
-    </div>
+    <LayoutProvider>
+      <div className="min-h-screen bg-gray-50 flex">
+        <DashboardContent
+          user={user}
+          loading={loading}
+          error={error}
+          onLogout={() => logout({ logoutParams: { returnTo: window.location.origin } })}
+        />
+      </div>
+    </LayoutProvider>
   );
 };
 

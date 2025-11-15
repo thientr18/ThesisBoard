@@ -1,12 +1,12 @@
 import { useState } from 'react';
 import { SearchOutlined, FilterOutlined, ClearOutlined } from '@ant-design/icons';
-import { DatePicker, Input } from 'antd';
+import TextInput from '../common/inputs/TextInput';
+import SelectInput from '../common/inputs/SelectInput';
+import DatePicker from '../common/inputs/DatePicker';
 import dayjs from 'dayjs';
 import PrimaryButton from '../common/buttons/PrimaryButton';
 import SecondaryButton from '../common/buttons/SecondaryButton';
 import Card from '../common/display/Card';
-
-const { RangePicker } = DatePicker;
 
 type Props = {
   onFilterChange: (filters: {
@@ -56,14 +56,11 @@ export default function AnnouncementFilterBar({ onFilterChange, initialFilters =
         {/* Search Bar */}
         <div className="flex gap-3">
           <div className="flex-1">
-            <Input
+            <TextInput
               value={keyword}
               onChange={(e) => setKeyword(e.target.value)}
               placeholder="Search announcements by title or content..."
-              prefix={<SearchOutlined className="text-gray-400" />}
-              onPressEnter={handleApplyFilters}
-              size="large"
-              className="rounded-lg"
+              className="rounded-lg "
             />
           </div>
           <SecondaryButton
@@ -84,30 +81,35 @@ export default function AnnouncementFilterBar({ onFilterChange, initialFilters =
                 <label className="block text-sm font-['Open_Sans'] font-semibold text-gray-700 mb-2">
                   Date Range
                 </label>
-                <RangePicker
-                  value={dateRange}
-                  onChange={(dates) => setDateRange(dates as [dayjs.Dayjs | null, dayjs.Dayjs | null])}
-                  format="YYYY-MM-DD"
-                  className="w-full"
-                  size="large"
+                <DatePicker
+                  value={dateRange[0] ?? undefined}
+                  onChange={(date) => setDateRange([date, dateRange[1]])}
+                  placeholder="Start date"
+                  className="w-1/2"
+                />
+                <DatePicker
+                  value={dateRange[1] ?? undefined}
+                  onChange={(date) => setDateRange([dateRange[0], date])}
+                  placeholder="End date"
+                  className="w-1/2"
                 />
               </div>
 
               {/* Pinned Status */}
               <div>
-                <label className="block text-sm font-['Open_Sans'] font-semibold text-gray-700 mb-2">
-                  Pinned Status
-                </label>
-                <select
-                  value={pinnedFilter}
-                  onChange={(e) => setPinnedFilter(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#189ad6] focus:border-transparent"
-                  style={{ height: '40px' }}
-                >
-                  <option value="">All Announcements</option>
-                  <option value="true">Pinned Only</option>
-                  <option value="false">Non-Pinned Only</option>
-                </select>
+                <div>
+                  <SelectInput
+                    label="Pinned Status"
+                    options={[
+                      { label: "All Announcements", value: "" },
+                      { label: "Pinned Only", value: "true" },
+                      { label: "Non-Pinned Only", value: "false" },
+                    ]}
+                    value={pinnedFilter}
+                    onChange={val => setPinnedFilter(String(val))}
+                    className="w-full"
+                  />
+                </div>
               </div>
 
               {/* Empty column for alignment */}
@@ -117,11 +119,10 @@ export default function AnnouncementFilterBar({ onFilterChange, initialFilters =
             {/* Action Buttons */}
             <div className="flex justify-end gap-3">
               {hasActiveFilters && (
-                <SecondaryButton
+                <PrimaryButton
                   label="Clear All"
                   icon={<ClearOutlined />}
                   onClick={handleClearFilters}
-                  size="large"
                 />
               )}
               <PrimaryButton

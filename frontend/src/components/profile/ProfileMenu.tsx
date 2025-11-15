@@ -51,7 +51,7 @@ const ProfileMenu: React.FC<ProfileMenuProps> = ({ userName = "User", onLogout }
         <Avatar size="small" className="bg-primary" icon={<UserOutlined />}>
           {initial}
         </Avatar>
-        <span className="hidden sm:inline text-gray-800 dark:text-gray-100 font-semibold text-sm">
+        <span className="hidden sm:inline font-['Open_Sans'] text-gray-800 font-semibold text-sm">
           {userName}
         </span>
       </div>

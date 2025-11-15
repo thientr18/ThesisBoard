@@ -3,6 +3,8 @@ export const theme = {
     primary: '#189ad6',
     secondary: '#2f398f',
     background: '#ffffff',
+    white: '#ffffff',
+    theme: '#101829',
   },
   fonts: {
     body: "'Open Sans', sans-serif",

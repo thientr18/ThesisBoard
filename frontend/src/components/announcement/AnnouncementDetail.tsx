@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import { ClockCircleOutlined, UserOutlined, EditOutlined, DeleteOutlined, ExclamationCircleOutlined, CloseOutlined } from '@ant-design/icons';
-import { Modal as AntModal, message } from 'antd';
 import Modal from '../common/layout/Modal';
 import Tag from '../common/display/Tag';
 import { Paragraph, Title } from '../common/display/Typography';

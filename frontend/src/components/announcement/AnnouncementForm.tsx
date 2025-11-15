@@ -7,7 +7,6 @@ import TextInput from '../common/inputs/TextInput';
 import TextArea from '../common/inputs/TextArea';
 import Switch from '../common/display/Switch';
 import PrimaryButton from '../common/buttons/PrimaryButton';
-import SecondaryButton from '../common/buttons/SecondaryButton';
 import type { Announcement, CreateAnnouncementRequest, UpdateAnnouncementRequest } from '../../types/announcement.types';
 
 type Props = {
