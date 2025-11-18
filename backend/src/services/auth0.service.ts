@@ -392,6 +392,19 @@ export class Auth0Service {
     }
   }
 
+    /**
+   * Remove one or more role IDs from a user
+   * @param userId Auth0 user_id
+   * @param roles Array of role IDs
+   */
+  public async removeRolesFromUser(userId: string, roles: string[]): Promise<void> {
+    try {
+      await this.axiosInstance.delete(`/users/${encodeURIComponent(userId)}/roles`, { data: { roles } });
+    } catch (err) {
+      throw this.toAuth0Error(err, `Failed to remove roles from user ${userId}`);
+    }
+  }
+
   /**
    * Get roles for a user
    * @param userId Auth0 user_id

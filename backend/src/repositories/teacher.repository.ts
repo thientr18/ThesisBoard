@@ -12,7 +12,7 @@ export class TeacherRepository extends GenericRepository<Teacher, number> {
     });
   }
 
-  async findByCode(teacherCode: string): Promise<Teacher | null> {
+  async findTeacherByCode(teacherCode: string): Promise<Teacher | null> {
     return Teacher.findOne({
       where: { teacherCode }
     });

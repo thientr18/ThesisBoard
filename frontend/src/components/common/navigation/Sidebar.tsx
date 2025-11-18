@@ -27,7 +27,12 @@ type MenuItem = {
   label: string;
   icon: React.ReactNode;
   path: string;
+  children?: MenuItem[];
 };
+
+interface SidebarProps {
+  user?: UserWithRoles | null;
+}
 
 const adminModeratorMenu: MenuItem[] = [
   {
@@ -40,7 +45,27 @@ const adminModeratorMenu: MenuItem[] = [
     key: "users",
     label: "Users Management",
     icon: <UsergroupAddOutlined />,
-    path: "/users",
+    path: "/",
+    children: [
+      {
+        key: "users-student",
+        label: "Student",
+        icon: <TeamOutlined />,
+        path: "/student-management",
+      },
+      {
+        key: "users-teacher",
+        label: "Teacher",
+        icon: <BookOutlined />,
+        path: "/teacher-management",
+      },
+      {
+        key: "users-admin",
+        label: "Administrator",
+        icon: <SettingOutlined />,
+        path: "/administrator-management",
+      },
+    ],
   },
   {
     key: "prethesis",
@@ -162,10 +187,6 @@ function getMenuItemsForRoles(roles?: { name: string }[]): MenuItem[] {
   return Object.values(unique);
 }
 
-interface SidebarProps {
-  user?: UserWithRoles | null;
-}
-
 const Sidebar: React.FC<SidebarProps> = ({ user }) => {
   const location = useLocation();
   const { collapsed, setCollapsed } = useLayoutContext();
@@ -173,13 +194,65 @@ const Sidebar: React.FC<SidebarProps> = ({ user }) => {
   const menuItems = useMemo(() => getMenuItemsForRoles(user?.roles), [user]);
 
   const activeKey =
-    menuItems.find((item) =>
-      location.pathname.startsWith(item.path)
-    )?.key || menuItems[0]?.key;
+    menuItems
+      .flatMap(item => item.children ? [item, ...item.children] : [item])
+      .find(item => location.pathname.startsWith(item.path))?.key
+    || menuItems[0]?.key;
 
   const handleCollapse = (value: boolean) => {
     setCollapsed(value);
   };
+
+  // Helper to render menu items and submenus
+  const renderMenuItems = (items: MenuItem[]) =>
+    items.map(item =>
+      item.children ? (
+        <Menu.SubMenu
+          key={item.key}
+          icon={item.icon}
+          title={item.label}
+          popupClassName="sidebar-submenu"
+        >
+          {item.children.map(sub => (
+            <Menu.Item key={sub.key} icon={sub.icon}>
+              <NavLink
+                to={sub.path}
+                className={({ isActive }) =>
+                  isActive
+                    ? "font-semibold text-primary"
+                    : "font-medium text-gray-700"
+                }
+                style={{
+                  color: location.pathname.startsWith(sub.path)
+                    ? theme.colors.primary
+                    : undefined,
+                }}
+              >
+                {sub.label}
+              </NavLink>
+            </Menu.Item>
+          ))}
+        </Menu.SubMenu>
+      ) : (
+        <Menu.Item key={item.key} icon={item.icon}>
+          <NavLink
+            to={item.path}
+            className={({ isActive }) =>
+              isActive
+                ? "font-semibold text-primary"
+                : "font-medium text-gray-700"
+            }
+            style={{
+              color: location.pathname.startsWith(item.path)
+                ? theme.colors.primary
+                : undefined,
+            }}
+          >
+            {item.label}
+          </NavLink>
+        </Menu.Item>
+      )
+    );
 
   return (
     <Sider
@@ -218,28 +291,9 @@ const Sidebar: React.FC<SidebarProps> = ({ user }) => {
         mode="inline"
         selectedKeys={[activeKey]}
         style={{ borderRight: 0, fontFamily: theme.fonts.body }}
-        items={menuItems.map((item) => ({
-          key: item.key,
-          icon: item.icon,
-          label: (
-            <NavLink
-              to={item.path}
-              className={({ isActive }) =>
-                isActive
-                  ? "font-semibold text-primary"
-                  : "font-medium text-gray-700"
-              }
-              style={{
-                color: location.pathname.startsWith(item.path)
-                  ? theme.colors.primary
-                  : undefined,
-              }}
-            >
-              {item.label}
-            </NavLink>
-          ),
-        }))}
-      />
+      >
+        {renderMenuItems(menuItems)}
+      </Menu>
     </Sider>
   );
 };

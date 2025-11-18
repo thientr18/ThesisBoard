@@ -6,6 +6,9 @@ import Callback from './pages/Callback';
 import Dashboard from './pages/Dashboard';
 import ProfilePage from './pages/ProfilePage';
 import Announcements from './pages/Announcements';
+import TeacherManagement from './pages/admin/TeacherManagement';
+import StudentManagement from './pages/admin/StudentManagement';
+import AdministratorManagement from './pages/admin/AdministratorManagement';
 
 function App() {
   const { isLoading, isAuthenticated, loginWithRedirect } = useAuth0();
@@ -68,6 +71,30 @@ function App() {
         element={
           <ProtectedRoute>
             <Announcements />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/student-management"
+        element={
+          <ProtectedRoute>
+            <StudentManagement />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/teacher-management"
+        element={
+          <ProtectedRoute>
+            <TeacherManagement />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/administrator-management"
+        element={
+          <ProtectedRoute>
+            <AdministratorManagement />
           </ProtectedRoute>
         }
       />

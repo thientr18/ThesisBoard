@@ -2,9 +2,6 @@ import { sequelize } from '../models/db';
 import { Op } from 'sequelize';
 import { GenericRepository } from './generic.repository';
 import { User } from '../models/User';
-import { Student } from '../models/Student';
-import { Teacher } from '../models/Teacher';
-import type { StudentDetails, TeacherDetails } from '../types/user.types';
 
 export class UserRepository extends GenericRepository<User, number> {
   constructor() {
@@ -23,17 +20,11 @@ export class UserRepository extends GenericRepository<User, number> {
   async findByAuth0Id(auth0UserId: string): Promise<User | null> {
     return User.findOne({ where: { auth0UserId } });
   }
-  
-  // User search and filtering
-  async searchUsers(query: string): Promise<User[]> {
+
+  async findByAuth0Ids(auth0Ids: string[]): Promise<User[]> {
     return User.findAll({
-      where: {
-        [Op.or]: [
-          { username: { [Op.like]: `%${query}%` } },
-          { email: { [Op.like]: `%${query}%` } },
-          { fullName: { [Op.like]: `%${query}%` } }
-        ]
-      }
+      where: { auth0UserId: { [Op.in]: auth0Ids } },
+      attributes: { exclude: ['auth0UserId', 'createdAt', 'updatedAt'] }
     });
   }
   
@@ -47,6 +38,10 @@ export class UserRepository extends GenericRepository<User, number> {
     return User.findAll({
       where: { status: 'inactive' }
     });
+  }
+
+  async findAndCountAll(options: any): Promise<{ rows: User[], count: number }> {
+    return User.findAndCountAll(options);
   }
 
   /**
@@ -186,23 +181,5 @@ export class UserRepository extends GenericRepository<User, number> {
       period: item.period,
       count: parseInt(item.count, 10)
     }));
-  }
-
-  // STUDENT
-  async getStudentDetails(userId: number): Promise<StudentDetails | null> {
-    return Student.findOne({ where: { userId } }) as unknown as StudentDetails | null;
-  }
-
-  async getStudentById(userId: number): Promise<StudentDetails | null> {
-    return Student.findOne({ where: { userId } }) as unknown as StudentDetails | null;
-  }
-
-  // TEACHER
-  async getTeacherDetails(userId: number): Promise<TeacherDetails | null> {
-    return Teacher.findOne({ where: { userId } }) as unknown as TeacherDetails | null;
-  }
-
-  async getTeacherById(userId: number): Promise<TeacherDetails | null> {
-    return Teacher.findOne({ where: { userId } }) as unknown as TeacherDetails | null;
   }
 }

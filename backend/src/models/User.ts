@@ -7,9 +7,6 @@ export class User extends Model< InferAttributes<User>, InferCreationAttributes<
   declare username: string;
   declare email: string;
   declare fullName: string;
-  // dob
-  // address
-  // gender
   declare status: 'active' | 'inactive';
   declare createdAt: CreationOptional<Date>;
   declare updatedAt: CreationOptional<Date>;

@@ -8,6 +8,9 @@ export class Semester extends Model<InferAttributes<Semester>, InferCreationAttr
   declare startDate: Date;
   declare endDate: Date;
   declare isActive: boolean;
+  declare isCurrent: boolean;
+  declare createdAt: CreationOptional<Date>;
+  declare updatedAt: CreationOptional<Date>
 }
 
 Semester.init(
@@ -18,6 +21,9 @@ Semester.init(
     startDate: { type: DataTypes.DATEONLY, allowNull: false, field: 'start_date' },
     endDate: { type: DataTypes.DATEONLY, allowNull: false, field: 'end_date' },
     isActive: { type: DataTypes.BOOLEAN, defaultValue: false, field: 'is_active' },
+    isCurrent: { type: DataTypes.BOOLEAN, defaultValue: false, field: 'is_current' },
+    createdAt: { type: DataTypes.DATE, allowNull: false, defaultValue: DataTypes.NOW, field: 'created_at' },
+    updatedAt: { type: DataTypes.DATE, allowNull: false, defaultValue: DataTypes.NOW, field: 'updated_at' },
   },
   { sequelize,
     tableName: 'semesters',

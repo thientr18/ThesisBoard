@@ -24,7 +24,8 @@
     "multer": "^2.0.2",
     "mysql2": "^3.15.0",
     "puppeteer": "^24.25.0",
-    "sequelize": "^6.37.7"
+    "sequelize": "^6.37.7",
+    "zod": "^4.1.12"
   },
   "devDependencies": {
     "@types/cors": "^2.8.19",

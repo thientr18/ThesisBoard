@@ -29,4 +29,10 @@ export class SemesterRepository extends GenericRepository<Semester, number> {
     async deleteById(semesterId: number): Promise<void> {
         await this.model.destroy({ where: { id: semesterId } });
     }
+
+    async findNewestSemester(): Promise<Semester | null> {
+        return await this.model.findOne({
+            order: [['createdAt', 'DESC']],
+        });
+    }
 }
