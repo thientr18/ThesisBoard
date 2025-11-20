@@ -15,28 +15,28 @@ router.use(attachUserFromJwt);
 
 router.get(
   '/',
-  allowedPermissions(['view:announcements', 'admin:all', 'moderator:all', 'teacher:base', 'student:pre_thesis', 'student:thesis']),
+  allowedPermissions(['view:announcements', 'admin:all', 'moderator:all']),
   announcementController.getAllAnnouncements
 );
 
 
 router.get(
   '/pinned',
-  allowedPermissions(['view:announcements', 'admin:all', 'moderator:all', 'teacher:base', 'student:pre_thesis', 'student:thesis']),
+  allowedPermissions(['view:announcements', 'admin:all', 'moderator:all']),
   announcementController.getPinnedAnnouncements
 );
 
 // Get announcement slides
 router.get(
   '/slide',
-  allowedPermissions(['view:announcements', 'admin:all', 'moderator:all', 'teacher:base', 'student:pre_thesis', 'student:thesis']),
+  allowedPermissions(['view:announcements', 'admin:all', 'moderator:all']),
   announcementController.getAnnouncementSlides
 );
 
 // Get announcement by ID
 router.get(
   '/:id',
-  allowedPermissions(['view:announcements', 'admin:all', 'moderator:all', 'teacher:base', 'student:pre_thesis', 'student:thesis']),
+  allowedPermissions(['view:announcements', 'admin:all', 'moderator:all']),
   announcementController.getAnnouncementById
 );
 
@@ -64,19 +64,19 @@ router.delete(
 // For statistics
 router.get(
   '/stats/count',
-  allowedPermissions(['view:announcements', 'admin:all', 'moderator:all', 'teacher:base', 'student:pre_thesis', 'student:thesis']),
+  allowedPermissions(['view:announcements', 'admin:all', 'moderator:all']),
   announcementController.getAnnouncementCount
 );
 
 router.get(
   '/stats/pinned/count',
-  allowedPermissions(['view:announcements', 'admin:all', 'moderator:all', 'teacher:base', 'student:pre_thesis', 'student:thesis']),
+  allowedPermissions(['view:announcements', 'admin:all', 'moderator:all']),
   announcementController.getPinnedAnnouncementCount
 );
 
 router.get(
   '/stats/weekly/count',
-  allowedPermissions(['view:announcements', 'admin:all', 'moderator:all', 'teacher:base', 'student:pre_thesis', 'student:thesis']),
+  allowedPermissions(['view:announcements', 'admin:all', 'moderator:all']),
   announcementController.getWeeklyAnnouncementCount
 );
 

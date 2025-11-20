@@ -1,5 +1,6 @@
 import path from "path";
 import express from "express";
+import morgan from "morgan";
 import cors from "cors";
 import dotenv from "dotenv";
 import { sequelize } from "./models/db";
@@ -12,6 +13,7 @@ const app = express();
 
 app.use(express.static(path.join(__dirname, '../frontend/public')));
 app.use(express.json());
+app.use(morgan('dev'));
 
 const corsOptions = {
     origin: ['http://localhost:5173'],

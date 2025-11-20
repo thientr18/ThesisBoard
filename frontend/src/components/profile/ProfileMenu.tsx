@@ -3,13 +3,15 @@ import { Dropdown, type MenuProps } from "antd";
 import { LogoutOutlined, UserOutlined } from "@ant-design/icons";
 import Avatar from "../common/display/Avatar";
 import { useAuth0 } from "@auth0/auth0-react";
+import type { UserWithRoles } from "../../types/user.types";
 
 interface ProfileMenuProps {
-  userName?: string;
+  user?: UserWithRoles | null;
+  role?: string;
   onLogout?: () => void;
 }
 
-const ProfileMenu: React.FC<ProfileMenuProps> = ({ userName = "User", onLogout }) => {
+const ProfileMenu: React.FC<ProfileMenuProps> = ({ user, onLogout }) => {
   const { logout } = useAuth0();
 
   const handleLogout = () => {
@@ -20,11 +22,21 @@ const ProfileMenu: React.FC<ProfileMenuProps> = ({ userName = "User", onLogout }
     logout({ logoutParams: { returnTo: window.location.origin } });
   };
 
+  const roles = user?.roles?.map(r => r.name) || [];
+  const showProfile = roles.includes("student") || roles.includes("teacher");
+
   const items: MenuProps["items"] = [
+    ...(showProfile
+      ? [{
+          key: "profile",
+          icon: <UserOutlined />,
+          label: <a href="/me">Profile</a>,
+        }]
+      : []),
     {
-      key: "profile",
+      key: "change-password",
       icon: <UserOutlined />,
-      label: <a href="/me">Profile</a>,
+      label: <a href="/change-password">Change Password</a>,
     },
     { type: "divider" },
     {
@@ -39,7 +51,7 @@ const ProfileMenu: React.FC<ProfileMenuProps> = ({ userName = "User", onLogout }
     if (key === "logout") handleLogout();
   };
 
-  const initial = userName?.charAt(0)?.toUpperCase() || "U";
+  const initial = user?.fullName?.charAt(0)?.toUpperCase() || "Null";
 
   return (
     <Dropdown menu={{ items, onClick: onMenuClick }} placement="bottomRight" trigger={["click"]}>
@@ -52,7 +64,7 @@ const ProfileMenu: React.FC<ProfileMenuProps> = ({ userName = "User", onLogout }
           {initial}
         </Avatar>
         <span className="hidden sm:inline font-['Open_Sans'] text-gray-800 font-semibold text-sm">
-          {userName}
+          {user?.fullName || "Null"}
         </span>
       </div>
     </Dropdown>

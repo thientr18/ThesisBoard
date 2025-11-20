@@ -23,3 +23,8 @@
   background: #189ad6;
   border-radius: 10px;
 }
+
+.ant-layout-sider-trigger {
+  background: #2563eb !important; /* hoặc theme.colors.primary */
+  color: #fff !important;
+}

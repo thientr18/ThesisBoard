@@ -8,15 +8,15 @@ import { useNotificationAPI } from "../../../api/endpoints/notification.api";
 import type { Notification } from "../../../types/notification.types";
 import NotificationPanel from "../../notification/NotificationPanel";
 import Popover from "../layout/Popover";
-
+import type { UserWithRoles } from "../../../types/user.types";
 
 interface NavbarProps {
-  userName?: string;
+  user?: UserWithRoles | null;
   pageName?: string;
   onLogout?: () => void;
 }
 
-const Navbar: React.FC<NavbarProps> = ({ userName, pageName, onLogout }) => {
+const Navbar: React.FC<NavbarProps> = ({ user, pageName, onLogout }) => {
   const { count, loading: countLoading, error, refresh: refreshCount } = useUnreadNotifications();
   const { getAll, markAsRead, markAllAsRead } = useNotificationAPI();
 
@@ -106,7 +106,7 @@ const Navbar: React.FC<NavbarProps> = ({ userName, pageName, onLogout }) => {
               </span>
             </Popover>
           {/* User Dropdown */}
-          <ProfileMenu userName={userName ?? "User"} onLogout={onLogout} />
+          <ProfileMenu user={user} onLogout={onLogout} />
         </div>
       </div>
     </nav>

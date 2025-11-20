@@ -37,7 +37,7 @@ const DashboardContent = ({ user, loading, error, onLogout }: {
         }}
       >
         <Navbar
-          userName={user?.fullName}
+          user={user}
           pageName="Dashboard"
           onLogout={onLogout}
         />

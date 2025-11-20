@@ -7,9 +7,9 @@ export class StudentRepository extends GenericRepository<Student, number> {
         super(Student);
     }
 
-    async findByStudentId(studentId: string): Promise<Student | null> {
+    async findByStudentIdCode(studentIdCode: string): Promise<Student | null> {
         return this.model.findOne({
-            where: { studentId }
+            where: { studentIdCode }
         });
     }
 

@@ -3,7 +3,9 @@ import dotenv from 'dotenv';
 import { sequelize } from '../models/db';
 import { User } from '../models/User';
 import { AppError } from '../utils/AppError';
+
 // npx ts-node src/utils/setupAdmin.ts
+
 dotenv.config();
 /**
  * Email: admin@thesisboard.com
@@ -56,11 +58,9 @@ async function setupDatabaseAdmin() {
     const [adminUser, userCreated] = await User.findOrCreate({
       where: { email: adminEmail },
       defaults: {
-        username: adminUsername,
         email: adminEmail,
         fullName: 'Admin User',
         auth0UserId: 'database-admin',
-        status: 'active'
       }
     });
     
@@ -132,7 +132,6 @@ async function setupAuth0Admin(): Promise<{ userId: string; roleId: string; user
     if (!token) {
       throw new AppError('No Auth0 management token obtained', 401, 'NO_MANAGEMENT_TOKEN');
     }
-    console.log('Token: ', token);
     const headers = {
       Authorization: `Bearer ${token}`,
       'Content-Type': 'application/json',

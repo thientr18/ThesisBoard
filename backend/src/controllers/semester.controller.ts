@@ -1,8 +1,7 @@
-import { Request, Response } from 'express';
+import { NextFunction, Request, Response } from 'express';
 import { SemesterService } from '../services/semester.service';
-import { Semester } from '../models/Semester';
 import { AppError } from '../utils/AppError';
-
+import { parseExcelFile, validateRows, importStudentSemesters } from "../utils/student-semester.import.utils";
 export class SemesterController {
     private semesterService: SemesterService;
 
@@ -10,215 +9,263 @@ export class SemesterController {
         this.semesterService = new SemesterService();
     }
 
-    async getAllSemesters(req: Request, res: Response): Promise<void> {
+    getAllSemesters = async (req: Request, res: Response, next: NextFunction) => {
         try {
             const semesters = await this.semesterService.getAllSemesters();
-            res.status(200).json(semesters);
-        } catch (error: any) {
-            const appError = error instanceof AppError 
-                ? error 
-                : new AppError('Failed to retrieve semesters', 500, 'SEMESTER_FETCH_ERROR', error.message);
-            
-            res.status(appError.statusCode).json({
-                status: appError.status,
-                message: appError.message,
-                code: appError.code,
-                details: appError.details
-            });
+            if (!semesters || semesters.length === 0) {
+                throw new AppError('No semesters found', 404, 'SEMESTERS_NOT_FOUND');
+            }
+            res.json(semesters);
+        } catch (error) {
+            next(error);
         }
-    }
+    };
 
-    async getSemesterById(req: Request, res: Response): Promise<void> {
+    getSemesterById = async (req: Request, res: Response, next: NextFunction) => {
         try {
-            const id = parseInt(req.params.id, 10);
-            if (isNaN(id)) {
-                throw new AppError('Invalid semester ID', 400, 'INVALID_ID');
+            const { id } = req.params;
+            const semester = await this.semesterService.getSemesterById(Number(id));
+            if (!semester) {
+                throw new AppError('Semester not found', 404, 'SEMESTER_NOT_FOUND');
+            }   
+            res.json(semester);
+        } catch (error) {
+            next(error);
+        }
+    };
+
+    createSemester = async (req: Request, res: Response, next: NextFunction) => {
+        try {
+            const data = req.body;
+            const semester = await this.semesterService.createSemester(data);
+            if (!semester) {
+                throw new AppError('Failed to create semester', 500, 'SEMESTER_CREATION_FAILED');
+            }
+            res.status(201).json(semester);
+        } catch (error) {
+            next(error);
+        }
+    };
+
+    importStudentSemestersHandler = async (req: Request, res: Response, next: NextFunction) => {
+        try {
+            if (!req.file) {
+                throw new AppError("No file uploaded", 400, "NO_FILE");
             }
 
-            const semester = await this.semesterService.getSemesterById(id);
+            const rows = await parseExcelFile(req.file.path);
+            const { validRows, errors } = validateRows(rows);
+
+            if (errors.length > 0) {
+                return res.status(400).json({
+                    message: "Validation failed for some rows",
+                    errors,
+                });
+            }
+
+            const result = await importStudentSemesters(validRows);
+
+            res.status(200).json(result);
+        } catch (error) {
+            next(error);
+        }
+    };
+
+    updateSemester = async (req: Request, res: Response, next: NextFunction) => {
+        try {
+            const { id } = req.params;
+            const data = req.body;
+            const semester = await this.semesterService.updateSemester(Number(id), data);
             if (!semester) {
                 throw new AppError('Semester not found', 404, 'SEMESTER_NOT_FOUND');
             }
-
-            res.status(200).json(semester);
-        } catch (error: any) {
-            const appError = error instanceof AppError 
-                ? error 
-                : new AppError('Failed to retrieve semester', 500, 'SEMESTER_FETCH_ERROR', error.message);
-            
-            res.status(appError.statusCode).json({
-                status: appError.status,
-                message: appError.message,
-                code: appError.code,
-                details: appError.details
-            });
+            res.json(semester);
+        } catch (error) {
+            next(error);
         }
-    }
+    };
 
-    async getActiveSemester(req: Request, res: Response): Promise<void> {
+    deleteSemester = async (req: Request, res: Response, next: NextFunction) => {
         try {
-            const activeSemester = await this.semesterService.getActiveSemester();
-            if (!activeSemester) {
-                throw new AppError('No active semester found', 404, 'NO_ACTIVE_SEMESTER');
+            const { semesterId } = req.params;
+            const semester = await this.semesterService.deleteSemester(Number(semesterId));
+            if (!semester) {
+                throw new AppError('No semester found to delete', 404, 'SEMESTER_NOT_FOUND');
             }
-
-            res.status(200).json(activeSemester);
-        } catch (error: any) {
-            const appError = error instanceof AppError 
-                ? error 
-                : new AppError('Failed to retrieve active semester', 500, 'SEMESTER_FETCH_ERROR', error.message);
-            
-            res.status(appError.statusCode).json({
-                status: appError.status,
-                message: appError.message,
-                code: appError.code,
-                details: appError.details
-            });
+            res.status(204).send();
+        } catch (error) {
+            next(error);
         }
-    }
+    };
 
-    async createSemester(req: Request, res: Response): Promise<void> {
+    getCurrentSemester = async (req: Request, res: Response, next: NextFunction) => {
         try {
-            const { code, name, startDate, endDate, isActive } = req.body;
-            
-            // Basic validation
-            if (!code || !name || !startDate || !endDate) {
-                throw new AppError('Missing required fields', 400, 'MISSING_FIELDS');
+            const semester = await this.semesterService.getCurrentSemester();
+            if (!semester) {
+                throw new AppError('No current semester found', 404, 'CURRENT_SEMESTER_NOT_FOUND');
             }
-
-            const newSemester = await this.semesterService.createSemester({
-                code,
-                name,
-                startDate: new Date(startDate),
-                endDate: new Date(endDate),
-                isActive: isActive || false
-            } as Semester);
-
-            res.status(201).json(newSemester);
-        } catch (error: any) {
-            const appError = error instanceof AppError 
-                ? error 
-                : new AppError('Failed to create semester', 400, 'SEMESTER_CREATE_ERROR', error.message);
-            
-            res.status(appError.statusCode).json({
-                status: appError.status,
-                message: appError.message,
-                code: appError.code,
-                details: appError.details
-            });
+            res.json(semester);
+        } catch (error) {
+            next(error);
         }
-    }
+    };
 
-    async updateSemester(req: Request, res: Response): Promise<void> {
+    setCurrentSemester = async (req: Request, res: Response, next: NextFunction) => {
         try {
-            const id = parseInt(req.params.id, 10);
-            if (isNaN(id)) {
-                throw new AppError('Invalid semester ID', 400, 'INVALID_ID');
+            const { semesterId } = req.params;
+            const semester = await this.semesterService.setCurrentSemester(Number(semesterId));
+            if (!semester) {
+                throw new AppError('No semester found to set as current', 404, 'SEMESTER_NOT_FOUND');
             }
-
-            const { code, name, startDate, endDate, isActive } = req.body;
-            const updateData: any = {};
-            
-            if (code !== undefined) updateData.code = code;
-            if (name !== undefined) updateData.name = name;
-            if (startDate !== undefined) updateData.startDate = new Date(startDate);
-            if (endDate !== undefined) updateData.endDate = new Date(endDate);
-            if (isActive !== undefined) updateData.isActive = isActive;
-
-            const updatedSemester = await this.semesterService.updateSemester(id, updateData);
-            if (!updatedSemester) {
-                throw new AppError('Semester not found', 404, 'SEMESTER_NOT_FOUND');
-            }
-
-            res.status(200).json(updatedSemester);
-        } catch (error: any) {
-            const appError = error instanceof AppError 
-                ? error 
-                : new AppError('Failed to update semester', 400, 'SEMESTER_UPDATE_ERROR', error.message);
-            
-            res.status(appError.statusCode).json({
-                status: appError.status,
-                message: appError.message,
-                code: appError.code,
-                details: appError.details
-            });
+            res.json(semester);
+        } catch (error) {
+            next(error);
         }
-    }
+    };
 
-    async deleteSemester(req: Request, res: Response): Promise<void> {
+    unsetCurrentSemester = async (req: Request, res: Response, next: NextFunction) => {
         try {
-            const id = parseInt(req.params.id, 10);
-            if (isNaN(id)) {
-                throw new AppError('Invalid semester ID', 400, 'INVALID_ID');
+            const { semesterId } = req.params;
+            const semester = await this.semesterService.unsetCurrentSemester(Number(semesterId));
+            if (!semester) {
+                throw new AppError('No semester found to unset as current', 404, 'SEMESTER_NOT_FOUND');
             }
-
-            await this.semesterService.deleteSemester(id);
-            res.status(204).end();
-        } catch (error: any) {
-            const appError = error instanceof AppError 
-                ? error 
-                : error.message === 'Semester not found' 
-                    ? new AppError('Semester not found', 404, 'SEMESTER_NOT_FOUND') 
-                    : error.message === 'Cannot delete active semester' 
-                        ? new AppError('Cannot delete active semester', 400, 'ACTIVE_SEMESTER_DELETE') 
-                        : new AppError('Failed to delete semester', 500, 'SEMESTER_DELETE_ERROR', error.message);
-            
-            res.status(appError.statusCode).json({
-                status: appError.status,
-                message: appError.message,
-                code: appError.code,
-                details: appError.details
-            });
+            res.json(semester);
+        } catch (error) {
+            next(error);
         }
-    }
+    };
 
-    async activateSemester(req: Request, res: Response): Promise<void> {
+    getAtiveSemester = async (req: Request, res: Response, next: NextFunction) => {
         try {
-            const id = parseInt(req.params.id, 10);
-            if (isNaN(id)) {
-                throw new AppError('Invalid semester ID', 400, 'INVALID_ID');
+            const semester = await this.semesterService.getActiveSemester();
+            if (!semester) {
+                throw new AppError('No active semester found', 404, 'ACTIVE_SEMESTER_NOT_FOUND');
             }
-
-            await this.semesterService.activateSemester(id);
-            res.status(200).json({ message: 'Semester activated successfully' });
-        } catch (error: any) {
-            const appError = error instanceof AppError 
-                ? error 
-                : error.message === 'Semester not found' 
-                    ? new AppError('Semester not found', 404, 'SEMESTER_NOT_FOUND') 
-                    : new AppError('Failed to activate semester', 500, 'SEMESTER_ACTIVATION_ERROR', error.message);
-            
-            res.status(appError.statusCode).json({
-                status: appError.status,
-                message: appError.message,
-                code: appError.code,
-                details: appError.details
-            });
+            res.json(semester);
+        } catch (error) {
+            next(error);
         }
-    }
+    };
 
-    async deactivateSemester(req: Request, res: Response): Promise<void> {
+    setActiveSemester = async (req: Request, res: Response, next: NextFunction) => {
         try {
-            const id = parseInt(req.params.id, 10);
-            if (isNaN(id)) {
-                throw new AppError('Invalid semester ID', 400, 'INVALID_ID');
+            const { semesterId } = req.params;
+            const semester = await this.semesterService.setActiveSemester(Number(semesterId));
+            if (!semester) {
+                throw new AppError('No semester found to activate', 404, 'SEMESTER_NOT_FOUND');
+            }
+            res.json(semester);
+        } catch (error) {
+            next(error);
+        }
+    };
+
+    unsetActiveSemester = async (req: Request, res: Response, next: NextFunction) => {
+        try {
+            const { semesterId } = req.params;
+            const semester = await this.semesterService.unsetActiveSemester(Number(semesterId));
+            if (!semester) {
+                throw new AppError('No semester found to deactivate', 404, 'SEMESTER_NOT_FOUND');
+            }
+            res.json(semester);
+        } catch (error) {
+            next(error);
+        }
+    };
+
+    // Student in Semester Controllers
+    getStudentsInSemester = async (req: Request, res: Response, next: NextFunction) => {
+        try {
+            const { studentId } = req.params;
+            const semesters = await this.semesterService.getStudentsInSemester(Number(studentId));
+            if (!semesters || semesters.length === 0) {
+                throw new AppError('No semesters found for the student', 404, 'STUDENT_SEMESTERS_NOT_FOUND');
+            }
+            res.json(semesters);
+        } catch (error) {
+            next(error);
+        }
+    };
+
+    getSemesterForStudent = async (req: Request, res: Response, next: NextFunction) => {
+        try {
+            const { studentId } = req.params;
+            const semesters = await this.semesterService.getStudentSemesters(Number(studentId));
+
+            res.json(semesters);
+        } catch (error) {
+            next(error);
+        }
+    };
+
+    getStudentSemester = async (req: Request, res: Response, next: NextFunction) => {
+        try {
+            const { studentId, semesterId } = req.params;
+            const semesters = await this.semesterService.getStudentSemester(Number(studentId), Number(semesterId));
+            if (!semesters || semesters.length === 0) {
+                throw new AppError('No semesters found for the student', 404, 'STUDENT_SEMESTERS_NOT_FOUND');
+            }
+            res.json(semesters);
+        } catch (error) {
+            next(error);
+        }
+    };
+
+    createStudentInSemester = async (req: Request, res: Response, next: NextFunction) => {
+        try {
+            const { studentId, semesterId, gpa, credits, type, status } = req.body;
+            const data = { studentId, semesterId, gpa, credits, type, status };
+            const createdStudentSemester = await this.semesterService.addStudentToSemester(data);
+            res.status(201).json(createdStudentSemester);
+        } catch (error) {
+            next(error);
+        }
+    };
+
+    updateStudentInSemester = async (req: Request, res: Response, next: NextFunction) => {
+        try {
+            const { studentId, semesterId } = req.params;
+            const { gpa, credits, type, status } = req.body;
+
+            const studentSemester = await this.semesterService.getStudentSemester(Number(studentId), Number(semesterId));
+            if (!studentSemester) {
+                throw new AppError('No semester found for the student', 404, 'STUDENT_SEMESTER_NOT_FOUND');
             }
 
-            await this.semesterService.deactivateSemester(id);
-            res.status(200).json({ message: 'Semester deactivated successfully' });
-        } catch (error: any) {
-            const appError = error instanceof AppError 
-                ? error 
-                : error.message === 'Semester not found' 
-                    ? new AppError('Semester not found', 404, 'SEMESTER_NOT_FOUND') 
-                    : new AppError('Failed to deactivate semester', 500, 'SEMESTER_DEACTIVATION_ERROR', error.message);
-            
-            res.status(appError.statusCode).json({
-                status: appError.status,
-                message: appError.message,
-                code: appError.code,
-                details: appError.details
-            });
+            const updatedSemester = await this.semesterService.updateStudentInSemester(studentSemester.id, { gpa, credits, type, status });
+            res.json(updatedSemester);
+        } catch (error) {
+            next(error);
         }
-    }
+    };
+
+    deleteStudentFromSemester = async (req: Request, res: Response, next: NextFunction) => {
+        try {
+            const { studentId, semesterId } = req.params;
+            const studentSemester = await this.semesterService.getStudentSemester(Number(studentId), Number(semesterId));
+            if (!studentSemester) {
+                throw new AppError('No semester found for the student', 404, 'STUDENT_SEMESTER_NOT_FOUND');
+            }
+
+            await this.semesterService.deleteStudentFromSemester(studentSemester.id);
+            res.status(204).send();
+        } catch (error) {
+            next(error);
+        }
+    };
+
+    // Teacher in Semester Controllers
+    getTeachersInSemester = async (req: Request, res: Response, next: NextFunction) => {
+        try {
+            const { teacherId } = req.params;
+            const semesters = await this.semesterService.getTeachersInSemester(Number(teacherId));
+            if (!semesters || semesters.length === 0) {
+                throw new AppError('No semesters found for the teacher', 404, 'TEACHER_SEMESTERS_NOT_FOUND');
+            }
+            res.json(semesters);
+        } catch (error) {
+            next(error);
+        }
+    };
 }

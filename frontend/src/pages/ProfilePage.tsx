@@ -24,8 +24,6 @@ const renderRolePanel = (role: string, user: UserWithRoles) => {
       return <StudentPanel user={user} />;
     case 'teacher':
       return <TeacherPanel user={user} />;
-    case 'admin':
-      return <StudentPanel user={user} />;
     default:
       return null;
   }
@@ -53,7 +51,7 @@ const ProfileContent: React.FC<{
           }}
         >
           <Navbar
-            userName={user?.fullName}
+            user={user}
             pageName='Profile'
             onLogout={onLogout}
           />
@@ -78,19 +76,10 @@ const ProfileContent: React.FC<{
           }}
         >
           <Navbar
-            userName={user?.fullName}
+            user={user}
             pageName='Profile'
             onLogout={onLogout}
           />
-          <div className="w-full flex flex-col items-center gap-4 py-20">
-            <div className="text-red-600 text-sm">Error: {error}</div>
-            <button
-              onClick={() => window.location.reload()}
-              className="px-3 py-2 text-sm rounded bg-blue-600 text-white hover:bg-blue-700"
-            >
-              Retry
-            </button>
-          </div>
         </div>
       </>
     );
@@ -109,7 +98,7 @@ const ProfileContent: React.FC<{
           }}
         >
           <Navbar
-            userName={user && typeof user === 'object' ? (user as UserWithRoles).fullName : undefined}
+            user={user}
             pageName='Profile'
             onLogout={onLogout}
           />
@@ -139,7 +128,7 @@ const ProfileContent: React.FC<{
         }}
       >
         <Navbar
-          userName={user?.fullName}
+          user={user}
           pageName='Profile'
           onLogout={onLogout}
         />

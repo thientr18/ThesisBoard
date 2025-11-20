@@ -5,6 +5,7 @@ import ProtectedRoute from './routes/ProtectedRoute';
 import Callback from './pages/Callback';
 import Dashboard from './pages/Dashboard';
 import ProfilePage from './pages/ProfilePage';
+import ChangePassword from './pages/ChangePassword';
 import Announcements from './pages/Announcements';
 import TeacherManagement from './pages/admin/TeacherManagement';
 import StudentManagement from './pages/admin/StudentManagement';
@@ -56,6 +57,11 @@ function App() {
       <Route path="/me" element={
         <ProtectedRoute>
           <ProfilePage />
+        </ProtectedRoute>
+      } />
+      <Route path="/change-password" element={
+        <ProtectedRoute>
+          <ChangePassword />
         </ProtectedRoute>
       } />
       <Route 

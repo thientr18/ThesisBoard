@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useCallback } from 'react';import { useAuth0 } from '@auth0/auth0-react';
 import { useUserApi } from '../../api/endpoints/user.api';
-import type { TeacherDetails, UserWithRoles } from '../../types/user.types';
+import type { Teacher, UserWithRoles } from '../../types/user.types';
 import Label from '../common/display/Label';
 
 interface TeacherProps {
@@ -43,7 +43,7 @@ const TeacherPanel: React.FC<TeacherProps> = ({ user }) => {
         setError(error);
         setTeacherDetails(null);
       } else {
-        setTeacherDetails(data as TeacherDetails ?? null);
+        setTeacherDetails(data as Teacher ?? null);
         console.log("Teacher details set in state:", data);
       }
     } catch (e: any) {

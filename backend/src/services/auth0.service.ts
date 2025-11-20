@@ -340,6 +340,33 @@ export class Auth0Service {
     }
   }
 
+  public async getUsersByRoleNames(roleNames: string[]): Promise<Auth0User[]> {
+    try {
+      const allUsersResp = await this.getUsers(undefined, 0, 100);
+      const allUsers = allUsersResp.users;
+
+      const filteredUsers: Auth0User[] = [];
+      for (const user of allUsers) {
+        const roles = await this.getUserRoles(user.user_id);
+        if (roles.some(role => roleNames.includes(role.name))) {
+          filteredUsers.push(user);
+        }
+      }
+      return filteredUsers;
+    } catch (err) {
+      throw this.toAuth0Error(err, `Failed to get users by role names: ${roleNames.join(', ')}`);
+    }
+  }
+
+  public async getAllRoles(): Promise<Auth0Role[]> {
+    try {
+      const resp = await this.axiosInstance.get<Auth0Role[]>('/roles');
+      return resp.data;
+    } catch (err) {
+      throw this.toAuth0Error(err, 'Failed to get all roles');
+    }
+  }
+
   /**
    * Create a user
    * @param data CreateUserDto
@@ -358,7 +385,7 @@ export class Auth0Service {
    * @param userId Auth0 user_id
    * @param data UpdateUserDto
    */
-  public async updateUser(userId: string, data: UpdateUserDto): Promise<Auth0User> {
+  public async updateUser(userId: string, data: UpdateUserDto, options?: { transaction?: any }): Promise<Auth0User> {
     try {
       const resp = await this.axiosInstance.patch<Auth0User>(`/users/${encodeURIComponent(userId)}`, data);
       return resp.data;
@@ -371,7 +398,7 @@ export class Auth0Service {
    * Delete a user
    * @param userId Auth0 user_id
    */
-  public async deleteUser(userId: string): Promise<void> {
+  public async deleteUser(userId: string, options?: { transaction?: any }): Promise<void> {
     try {
       await this.axiosInstance.delete(`/users/${encodeURIComponent(userId)}`);
     } catch (err) {
@@ -384,7 +411,7 @@ export class Auth0Service {
    * @param userId Auth0 user_id
    * @param roles Array of role IDs
    */
-  public async assignRolesToUser(userId: string, roles: string[]): Promise<void> {
+  public async assignRolesToUser(userId: string, roles: string[], options?: { transaction?: any }): Promise<void> {
     try {
       await this.axiosInstance.post(`/users/${encodeURIComponent(userId)}/roles`, { roles });
     } catch (err) {
@@ -397,13 +424,23 @@ export class Auth0Service {
    * @param userId Auth0 user_id
    * @param roles Array of role IDs
    */
-  public async removeRolesFromUser(userId: string, roles: string[]): Promise<void> {
+  public async removeRolesFromUser(userId: string, roles: string[], options?: { transaction?: any }): Promise<void> {
     try {
       await this.axiosInstance.delete(`/users/${encodeURIComponent(userId)}/roles`, { data: { roles } });
     } catch (err) {
       throw this.toAuth0Error(err, `Failed to remove roles from user ${userId}`);
     }
   }
+
+public async changeUserPassword(userId: string, newPassword: string): Promise<void> {
+  try {
+    await this.axiosInstance.patch(`/users/${encodeURIComponent(userId)}`, {
+      password: newPassword
+    });
+  } catch (err) {
+    throw this.toAuth0Error(err, `Failed to change password for user ${userId}`);
+  }
+}
 
   /**
    * Get roles for a user

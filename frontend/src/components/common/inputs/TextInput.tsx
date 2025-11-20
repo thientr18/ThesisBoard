@@ -1,6 +1,3 @@
-// Example usage:
-// <TextInput label="Student ID" value={studentId} onChange={e => setStudentId(e.target.value)} />
-
 import React from "react";
 import { Input } from "antd";
 
@@ -13,6 +10,9 @@ type Props = {
   type?: string;
   required?: boolean;
   className?: string;
+  min?: number;
+  max?: number;
+  step?: number;
 };
 
 const cx = (...parts: Array<string | false | null | undefined>) =>

@@ -24,12 +24,6 @@ export class TeacherRepository extends GenericRepository<Teacher, number> {
     });
   }
 
-  async findByEmail(email: string): Promise<Teacher[]> {
-    return Teacher.findAll({
-      where: { email }
-    });
-  }
-
   async findAllWithUserInfo(filters?: any): Promise<Teacher[]> {
     return Teacher.findAll({
       where: filters || {},

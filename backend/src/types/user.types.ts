@@ -1,7 +1,9 @@
 export interface StudentDetails {
   id: number;
   userId: number;
-  studentId: string;
+  studentIdCode: string;
+  email: string | null;
+  fullName: string | null;
   cohortYear: number | null;
   className: string | null;
   phone: string | null;
@@ -13,9 +15,10 @@ export interface StudentDetails {
 export interface TeacherDetails {
   id: number;
   userId: number;
+  email: string | null;
+  fullName: string | null;
   teacherCode: string | null;
   title: string | null;
   office: string | null;
   phone: string | null;
-  email: string | null;
 }

@@ -14,6 +14,10 @@ import {
   FileSearchOutlined,
   ProjectOutlined,
   FormOutlined,
+  ScheduleOutlined,
+  SolutionOutlined,
+  ReadOutlined,
+  IdcardOutlined,
 } from "@ant-design/icons";
 import { NavLink, useLocation } from "react-router-dom";
 import type { UserWithRoles } from "../../../types/user.types";
@@ -64,6 +68,32 @@ const adminModeratorMenu: MenuItem[] = [
         label: "Administrator",
         icon: <SettingOutlined />,
         path: "/administrator-management",
+      },
+    ],
+  },
+  {
+    key: "semesters",
+    label: "Semesters Management",
+    icon: <ScheduleOutlined />,
+    path: "/",
+    children: [
+      {
+        key: "semesters-general",
+        label: "General",
+        icon: <SolutionOutlined />,
+        path: "/semester-management/general",
+      },
+      {
+        key: "semesters-teacher",
+        label: "Teacher",
+        icon: <ReadOutlined />,
+        path: "/semester-management/teacher",
+      },
+      {
+        key: "semesters-student",
+        label: "Student",
+        icon: <IdcardOutlined />,
+        path: "/semester-management/student",
       },
     ],
   },

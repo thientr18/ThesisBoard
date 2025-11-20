@@ -1,5 +1,7 @@
 import { GenericRepository } from './generic.repository';
 import { TeacherAvailability } from '../models/TeacherAvailability';
+import { Teacher } from '../models/Teacher';
+import { User } from '../models/User';
 import { Op } from 'sequelize';
 
 export class TeacherAvailabilityRepository extends GenericRepository<TeacherAvailability, number> {
@@ -7,99 +9,30 @@ export class TeacherAvailabilityRepository extends GenericRepository<TeacherAvai
     super(TeacherAvailability);
   }
 
+  async getTeachersInSemester(semesterId: number): Promise<TeacherAvailability[]> {
+    return this.model.findAll({
+      where: { semesterId },
+      include: [
+        {
+          model: Teacher,
+          as: 'teacher',
+          attributes: ['id', 'teacherCode', 'title', 'office', 'phone'],
+          include: [
+            {
+              model: User,
+              as: 'user',
+              attributes: ['email', 'fullName']
+            }
+          ]
+        }
+      ]
+    });
+  }
+
   async findByTeacherAndSemester(teacherId: number, semesterId: number): Promise<TeacherAvailability | null> {
     return this.model.findOne({
-      where: {
-        teacherId,
-        semesterId
-      }
+      where: { teacherId, semesterId }
     });
-  }
-
-  async findAllByTeacher(teacherId: number): Promise<TeacherAvailability[]> {
-    return this.model.findAll({
-      where: {
-        teacherId
-      },
-      order: [['semesterId', 'DESC']]
-    });
-  }
-
-  async findAllBySemester(semesterId: number): Promise<TeacherAvailability[]> {
-    return this.model.findAll({
-      where: {
-        semesterId
-      }
-    });
-  }
-
-  async findAvailableTeachers(semesterId: number): Promise<TeacherAvailability[]> {
-    return this.model.findAll({
-      where: {
-        semesterId,
-        isOpen: true
-      }
-    });
-  }
-
-  async findTeachersWithPreThesisCapacity(semesterId: number): Promise<TeacherAvailability[]> {
-    return this.model.findAll({
-      where: {
-        semesterId,
-        isOpen: true,
-        maxPreThesis: {
-          [Op.gt]: 0
-        }
-      }
-    });
-  }
-
-  async findTeachersWithThesisCapacity(semesterId: number): Promise<TeacherAvailability[]> {
-    return this.model.findAll({
-      where: {
-        semesterId,
-        isOpen: true,
-        maxThesis: {
-          [Op.gt]: 0
-        }
-      }
-    });
-  }
-
-  async setMaxPreThesis(teacherId: number, semesterId: number, maxPreThesis: number): Promise<boolean> {
-    const availability = await this.findByTeacherAndSemester(teacherId, semesterId);
-    if (!availability) {
-      return false;
-    }
-    await availability.update({ maxPreThesis });
-    return true;
-  }
-
-  async setMaxThesis(teacherId: number, semesterId: number, maxThesis: number): Promise<boolean> {
-    const availability = await this.findByTeacherAndSemester(teacherId, semesterId);
-    if (!availability) {
-      return false;
-    }
-    await availability.update({ maxThesis });
-    return true;
-  }
-
-  async setAvailabilityOpen(teacherId: number, semesterId: number, isOpen: boolean): Promise<boolean> {
-    const availability = await this.findByTeacherAndSemester(teacherId, semesterId);
-    if (!availability) {
-      return false;
-    }
-    await availability.update({ isOpen });
-    return true;
-  }
-
-  async setAvailabilityClosed(teacherId: number, semesterId: number, isOpen: boolean): Promise<boolean> {
-    const availability = await this.findByTeacherAndSemester(teacherId, semesterId);
-    if (!availability) {
-      return false;
-    }
-    await availability.update({ isOpen });
-    return true;
   }
 
   /**

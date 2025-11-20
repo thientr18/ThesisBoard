@@ -16,7 +16,7 @@ export class AttachmentController {
   }
   
   private isValidEntityType(entityType: string): entityType is EntityType {
-    return ["topic", "submission", "announcement", "topic_application", "thesis_proposal"].includes(entityType);
+    return ["topic", "submission", "announcement", "topic_application", "thesis_proposal", "system", "other"].includes(entityType);
   }
 
   /**

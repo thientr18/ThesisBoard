@@ -2,15 +2,11 @@ import { sequelize } from '../models/db';
 import { Op } from 'sequelize';
 import { GenericRepository } from './generic.repository';
 import { User } from '../models/User';
+import { fa } from 'zod/locales';
 
 export class UserRepository extends GenericRepository<User, number> {
   constructor() {
     super(User);
-  }
-  
-  // Basic user lookups
-  async findByUsername(username: string): Promise<User | null> {
-    return User.findOne({ where: { username } });
   }
   
   async findByEmail(email: string): Promise<User | null> {
@@ -27,95 +23,16 @@ export class UserRepository extends GenericRepository<User, number> {
       attributes: { exclude: ['auth0UserId', 'createdAt', 'updatedAt'] }
     });
   }
-  
-  async findActiveUsers(): Promise<User[]> {
-    return User.findAll({
-      where: { status: 'active' }
-    });
-  }
-  
-  async findInactiveUsers(): Promise<User[]> {
-    return User.findAll({
-      where: { status: 'inactive' }
-    });
-  }
 
   async findAndCountAll(options: any): Promise<{ rows: User[], count: number }> {
     return User.findAndCountAll(options);
   }
 
-  /**
-   * Update user status by auth0UserId.
-   */
-  async updateUserStatus(auth0UserId: string, status: 'active' | 'inactive'): Promise<User | null> {
-    const user = await this.findByAuth0Id(auth0UserId);
-    if (!user) return null;
-    return user.update({ status });
-  }
-  
-  // User status management
-  async activateUser(id: number): Promise<User | null> {
-    const user = await this.findById(id);
-    if (!user) return null;
-    
-    return user.update({ status: 'active' });
-  }
-  
-  async deactivateUser(id: number): Promise<User | null> {
-    const user = await this.findById(id);
-    if (!user) return null;
-    
-    return user.update({ status: 'inactive' });
-  }
-
-    /**
-   * Create or update a user record based on auth0UserId (preferred) or email.
-   * Performs minimal field synchronization.
-   */
-  async createOrUpdateUser(userData: {
-    auth0UserId: string;
-    email?: string;
-    username?: string;
-    fullName?: string;
-    status?: 'active' | 'inactive';
-  }): Promise<User> {
-    const { auth0UserId, email } = userData;
-
-    let existing = await this.findByAuth0Id(auth0UserId);
-
-    // Fallback: try match by email if no auth0UserId stored yet
-    if (!existing && email) {
-      existing = await this.findByEmail(email);
-    }
-
-    if (!existing) {
-      return User.create({
-        auth0UserId,
-        email: email ?? `${auth0UserId}@placeholder.local`,
-        username: userData.username ?? auth0UserId,
-        fullName: userData.fullName ?? userData.username ?? 'Unnamed User',
-        status: userData.status ?? 'active',
-      } as any);
-    }
-
-    // Update only changed fields to avoid overwriting local edits inadvertently
-    const updates: Partial<User> = {};
-    if (userData.email && userData.email !== existing.email) updates.email = userData.email;
-    if (userData.username && userData.username !== existing.username) updates.username = userData.username;
-    if (userData.fullName && userData.fullName !== existing.fullName) updates.fullName = userData.fullName;
-    if (userData.status && userData.status !== existing.status) updates.status = userData.status;
-
-    if (Object.keys(updates).length) {
-      await existing.update(updates);
-    }
-
-    return existing;
-  }
   
   // Advanced queries
   async countUsersByStatus(): Promise<{active: number, inactive: number}> {
-    const active = await User.count({ where: { status: 'active' } });
-    const inactive = await User.count({ where: { status: 'inactive' } });
+    const active = await User.count({ where: { deletedAt: false } });
+    const inactive = await User.count({ where: { deletedAt: true } });
     return { active, inactive };
   }
 

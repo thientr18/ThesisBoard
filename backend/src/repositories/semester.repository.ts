@@ -11,6 +11,10 @@ export class SemesterRepository extends GenericRepository<Semester, number> {
         return await this.model.findOne({ where: { isActive: true } });
     }
 
+    async findCurrentSemester(): Promise<Semester | null> {
+        return await this.model.findOne({ where: { isCurrent: true } });
+    }
+
     async activateSemester(semesterId: number): Promise<void> {
         // Deactivate all semesters
         await this.model.update({ isActive: false }, { where: {} } as UpdateOptions);

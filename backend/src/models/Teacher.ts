@@ -8,7 +8,6 @@ export class Teacher extends Model<InferAttributes<Teacher>, InferCreationAttrib
   declare title: string | null;
   declare office: string | null;
   declare phone: string | null;
-  declare email: string | null;
 }
 
 Teacher.init(
@@ -19,7 +18,6 @@ Teacher.init(
     title: { type: DataTypes.STRING(64), allowNull: true },
     office: { type: DataTypes.STRING(64), allowNull: true },
     phone: { type: DataTypes.STRING(32), allowNull: true },
-    email: { type: DataTypes.STRING(255), allowNull: true },
   },
   { sequelize, tableName: 'teachers', modelName: 'Teacher', underscored: true, timestamps: true, paranoid: true }
 );

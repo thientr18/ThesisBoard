@@ -61,7 +61,7 @@ function AnnouncementsContent({
         }}
       >
         <Navbar
-          userName={user?.fullName}
+          user={user}
           pageName="Announcements"
           onLogout={undefined}
         />

@@ -6,7 +6,6 @@ export interface ApiResponse<T> {
 export interface User {
   id: number;
   auth0Id: string;
-  username: string;
   email: string;
   fullName: string;
   status: 'active' | 'inactive';
@@ -17,7 +16,6 @@ export interface User {
 export interface UserWithRoles {
   id: number;
   auth0Id: string;
-  username: string;
   email: string;
   fullName: string;
   status: 'active' | 'inactive';
@@ -72,10 +70,12 @@ export interface SearchUsersParams {
   limit?: number;
 }
 
-export interface StudentDetails {
+export interface Student {
   id: number;
   userId: number;
-  studentId: string;
+  studentIdCode: string;
+  email: string | null;
+  fullName: string | null;
   cohortYear: number | null;
   className: string | null;
   phone: string | null;
@@ -84,12 +84,13 @@ export interface StudentDetails {
   status: 'active' | 'inactive' | 'graduated';
 }
 
-export interface TeacherDetails {
+export interface Teacher {
   id: number;
   userId: number;
+  email: string | null;
+  fullName: string | null;
   teacherCode: string | null;
   title: string | null;
   office: string | null;
   phone: string | null;
-  email: string | null;
 }

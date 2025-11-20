@@ -6,7 +6,8 @@
     "dev": "ts-node-dev --respawn --transpile-only src/index.ts",
     "build": "tsc",
     "start": "node dist/index.js",
-    "setup-admin": "ts-node src/utils/setupAdmin.ts"
+    "init-data": "ts-node src/utils/initData.ts",
+    "nodemon": "nodemon src/index.ts"
   },
   "keywords": [],
   "author": "",
@@ -21,18 +22,22 @@
     "express": "^5.1.0",
     "express-oauth2-jwt-bearer": "^1.7.1",
     "http-status-codes": "^2.3.0",
+    "morgan": "^1.10.1",
     "multer": "^2.0.2",
     "mysql2": "^3.15.0",
     "puppeteer": "^24.25.0",
     "sequelize": "^6.37.7",
+    "xlsx": "^0.18.5",
     "zod": "^4.1.12"
   },
   "devDependencies": {
     "@types/cors": "^2.8.19",
     "@types/ejs": "^3.1.5",
     "@types/express": "^5.0.3",
+    "@types/morgan": "^1.9.10",
     "@types/multer": "^2.0.0",
     "@types/node": "^24.5.1",
+    "nodemon": "^3.1.11",
     "ts-node-dev": "^2.0.0",
     "typescript": "^5.9.2"
   }

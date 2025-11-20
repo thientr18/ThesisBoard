@@ -49,15 +49,14 @@ function applyAssociations() {
     associationsApplied = true;
 
     // user -> student/teacher
-    Student.belongsTo(User, { foreignKey: 'userId' });
-    User.hasOne(Student, { foreignKey: 'userId' });
+    Student.belongsTo(User, { foreignKey: 'userId', as: 'user' });
+    User.hasOne(Student, { foreignKey: 'userId', as: 'student' });
 
-    Teacher.belongsTo(User, { foreignKey: 'userId' });
-    User.hasOne(Teacher, { foreignKey: 'userId' });
-
+    Teacher.belongsTo(User, { foreignKey: 'userId', as: 'user' });
+    User.hasOne(Teacher, { foreignKey: 'userId', as: 'teacher' });
     // student_semesters
-    StudentSemester.belongsTo(Student, { foreignKey: 'studentId' });
-    Student.hasMany(StudentSemester, { foreignKey: 'studentId' });
+    StudentSemester.belongsTo(Student, { foreignKey: 'studentId', as: 'student' });
+    Student.hasMany(StudentSemester, { foreignKey: 'studentId', as: 'studentSemesters' });
 
     StudentSemester.belongsTo(Semester, { foreignKey: 'semesterId' });
     Semester.hasMany(StudentSemester, { foreignKey: 'semesterId' });

@@ -1,7 +1,9 @@
-import React, { useEffect, useState, useCallback } from 'react';import { useAuth0 } from '@auth0/auth0-react';
-import { useUserApi } from '../../api/endpoints/user.api';
-import type { StudentDetails, UserWithRoles } from '../../types/user.types';
+import React, { useEffect, useState, useCallback } from 'react';
+import { useAuth0 } from '@auth0/auth0-react';
+import { useSemesterApi } from '../../api/endpoints/semester.api';
+import type { UserWithRoles } from '../../types/user.types';
 import Label from '../common/display/Label';
+import Card from '../common/display/Card';
 
 interface StudentProps {
   user: UserWithRoles;
@@ -16,19 +18,19 @@ const InfoRow: React.FC<{ label: string; value?: React.ReactNode }> = ({ label, 
 
 const StudentPanel: React.FC<StudentProps> = ({ user }) => {
   const { isAuthenticated, isLoading: authLoading, getAccessTokenSilently } = useAuth0();
-  const { getStudentById } = useUserApi();
+  const { getSemesterForStudent } = useSemesterApi();
 
-  const [studentDetails, setStudentDetails] = useState<any>(null);
+  const [semesters, setSemesters] = useState<any[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 
-  const loadStudentDetails = useCallback(async () => {
+  const loadStudentSemesters = useCallback(async () => {
     if (authLoading) {
       setLoading(true);
       return;
     }
     if (!isAuthenticated) {
-      setStudentDetails(null);
+      setSemesters([]);
       setLoading(false);
       return;
     }
@@ -36,31 +38,31 @@ const StudentPanel: React.FC<StudentProps> = ({ user }) => {
       setLoading(true);
       setError(null);
       await getAccessTokenSilently();
-      const { data, error } = await getStudentById(user.id);
-      console.log("Student details fetched:", data, error);
+      const { data, error } = await getSemesterForStudent(user.id);
       if (error) {
-        setError(error);
-        setStudentDetails(null);
+        let errorMsg = 'Unknown error';
+        if (typeof error === 'string') errorMsg = error;
+        setError(errorMsg);
+        setSemesters([]);
       } else {
-        setStudentDetails(data as StudentDetails ?? null);
-        console.log("Student details set in state:", data);
+        setSemesters(Array.isArray(data) ? data : []);
       }
     } catch (e: any) {
-      setError(e?.message ?? 'Failed to load profile');
-      setStudentDetails(null);
+      setError(e?.message ?? 'Failed to load semesters');
+      setSemesters([]);
     } finally {
       setLoading(false);
     }
-  }, [authLoading, isAuthenticated, getAccessTokenSilently, getStudentById]);
+  }, [authLoading, isAuthenticated, getAccessTokenSilently, getSemesterForStudent, user.id]);
 
   useEffect(() => {
-    loadStudentDetails();
-  }, [loadStudentDetails]);
+    loadStudentSemesters();
+  }, [loadStudentSemesters]);
 
   if (loading) {
     return (
       <div className="w-full flex justify-center py-20">
-        <div className="animate-pulse text-muted-foreground text-sm">Loading student details...</div>
+        <div className="animate-pulse text-muted-foreground text-sm">Loading student semesters...</div>
       </div>
     );
   }
@@ -68,43 +70,41 @@ const StudentPanel: React.FC<StudentProps> = ({ user }) => {
   if (error) {
     return (
       <div className="w-full flex flex-col items-center gap-4 py-20">
-        <div className="text-red-500 text-sm">Error: {error}</div>
-        <button 
-          onClick={loadStudentDetails}
-          className="btn btn-primary"
-        >
-          Retry
-        </button>
+        <div className="text-red-500 text-sm">
+          Error: {error}
+        </div>
       </div>
     );
   }
 
-  if (!studentDetails) {
+  if (!semesters.length) {
     return (
       <div className="w-full flex justify-center py-20">
         <div className="text-muted-foreground text-sm">
-          {isAuthenticated ? 'No student details available.' : 'You are not authenticated.'}
+          {isAuthenticated ? 'No semester data available.' : 'You are not authenticated.'}
         </div>
-        {isAuthenticated && (
-          <button 
-            onClick={loadStudentDetails}
-            className="btn btn-primary"
-          >
-            Retry
-          </button>
-        )}
       </div>
     );
   }
 
   return (
-    <div className="grid gap-4">
-      <InfoRow label="Student ID" value={studentDetails.studentId} />
-      <InfoRow label="Cohort Year" value={studentDetails.cohortYear} />
-      <InfoRow label="Class Name" value={studentDetails.className} />
-      <InfoRow label="Phone" value={studentDetails.phone} />
-      <InfoRow label="Date of Birth" value={studentDetails.dob ? new Date(studentDetails.dob).toLocaleDateString() : '—'} />
-      <InfoRow label="Gender" value={studentDetails.gender} />
+    <div className="grid gap-6">
+      {semesters.map((semesterItem: any) => (
+        <Card key={semesterItem.id || semesterItem.semester?.id || Math.random()} className="p-4 space-y-2">
+          <div className="font-bold text-lg mb-2">
+            Semester: {semesterItem.semester?.name || semesterItem.semesterName || 'Unknown'}
+          </div>
+          <InfoRow label="Student ID" value={semesterItem.student?.studentIdCode} />
+          <InfoRow label="Cohort Year" value={semesterItem.student?.cohortYear} />
+          <InfoRow label="Class Name" value={semesterItem.student?.className} />
+          <InfoRow label="Phone" value={semesterItem.student?.phone} />
+          <InfoRow label="Date of Birth" value={semesterItem.student?.dob ? new Date(semesterItem.student.dob).toLocaleDateString() : '—'} />
+          <InfoRow label="Gender" value={semesterItem.student?.gender} />
+          <InfoRow label="GPA" value={semesterItem.gpa} />
+          <InfoRow label="Credits" value={semesterItem.credits} />
+          <InfoRow label="Status" value={semesterItem.status} />
+        </Card>
+      ))}
     </div>
   );
 };

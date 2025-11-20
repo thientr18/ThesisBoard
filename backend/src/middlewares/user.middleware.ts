@@ -22,7 +22,7 @@ export const attachUserFromJwt = async (req: Request, _res: Response, next: Next
     [];
 
   // Lấy user nội bộ theo auth0UserId
-  let dbUser = await userService.findByAuth0UserId(auth0UserId);
+  let dbUser = await userService.getUserByAuth0Id(auth0UserId);
   if (!dbUser) {
     return next(new AppError('Local user not found for this Auth0 account', 404, 'USER_NOT_FOUND'));
   }

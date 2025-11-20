@@ -7,8 +7,6 @@ export class TeacherAvailability extends Model<InferAttributes<TeacherAvailabili
   declare semesterId: number;
   declare maxPreThesis: number;
   declare maxThesis: number;
-  declare contactEmail: string | null;
-  declare contactPhone: string | null;
   declare isOpen: boolean;
   declare note: string | null;
 }
@@ -20,8 +18,6 @@ TeacherAvailability.init(
     semesterId: { type: DataTypes.BIGINT, allowNull: false, field: 'semester_id' },
     maxPreThesis: { type: DataTypes.INTEGER, defaultValue: 0, field: 'max_pre_thesis' },
     maxThesis: { type: DataTypes.INTEGER, defaultValue: 0, field: 'max_thesis' },
-    contactEmail: { type: DataTypes.STRING(255), allowNull: true, field: 'contact_email' },
-    contactPhone: { type: DataTypes.STRING(32), allowNull: true, field: 'contact_phone' },
     isOpen: { type: DataTypes.BOOLEAN, defaultValue: true, field: 'is_open' },
     note: { type: DataTypes.STRING(255), allowNull: true },
   },

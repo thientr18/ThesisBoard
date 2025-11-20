@@ -10,31 +10,34 @@ const userController = new UserController();
 router.use(checkJwt);
 router.use(attachUserFromJwt);
 
-// Student-specific operations
-router.get('/student/:id', allowedPermissions(['admin:all', 'moderator:all', 'read:users']), userController.getStudentById);
-// router.put('/student/:id', allowedPermissions(['admin:all', 'update:users']), userController.updateStudent);
-
-// Teacher-specific operations
-router.get('/teacher/:id', allowedPermissions(['admin:all', 'moderator:all', 'read:users']), userController.getTeacherById);
-// router.put('/teacher/:id', allowedPermissions(['admin:all', 'update:users']), userController.updateTeacher);
-
-// General user management
-router.post('/', allowedPermissions(['admin:all']), userController.createUser);
-router.put('/:id', allowedPermissions(['admin:all']), userController.updateUser);
-router.delete('/:id', allowedPermissions(['admin:all']), userController.deleteUser);
-router.get('/', allowedPermissions(['admin:all']), userController.listUsers);
-router.patch('/:id/activate', allowedPermissions(['admin:all', 'update:users']), userController.activateUser);
-router.patch('/:id/deactivate', allowedPermissions(['admin:all', 'update:users']), userController.deactivateUser);
-
 // Role management
-router.get('/:id/roles', allowedPermissions(['admin:all', 'read:users', 'manage:roles']), userController.getUserWithRoles);
 router.post('/roles', allowedPermissions(['admin:all', 'manage:roles']), userController.assignRoleToUser);
 router.delete('/roles', allowedPermissions(['admin:all', 'manage:roles']), userController.removeRoleFromUser);
 
 // User listing and search
 router.get('/me', userController.getCurrentUserProfile);
+router.put('/change-password', userController.changeOwnPassword);
 router.get('/search', allowedPermissions(['admin:all', 'moderator:all', 'read:users']), userController.searchUsers);
-router.get('/role/:roleName', allowedPermissions(['admin:all', 'moderator:all', 'read:users', 'manage:roles']), userController.getUsersByRole);
 router.get('/statistics', allowedPermissions(['admin:all', 'access:admin_dashboard', 'view:logs']), userController.getUserStatistics);
 
+// Student-specific operations
+router.post('/student', allowedPermissions(['admin:all', 'moderator:all']), userController.createStudent);
+router.get('/students', allowedPermissions(['admin:all', 'moderator:all', 'read:users']), userController.getAllStudents);
+router.get('/student/:studentId', allowedPermissions(['admin:all', 'moderator:all', 'read:users']), userController.getStudentById);
+router.put('/student/:studentId', allowedPermissions(['admin:all', 'moderator:all', 'update:users']), userController.updateStudent);
+router.delete('/student/:studentId', allowedPermissions(['admin:all', 'moderator:all', 'delete:users']), userController.deleteStudent);
+
+// Teacher-specific operations
+router.post('/teacher', allowedPermissions(['admin:all', 'moderator:all', 'create:users']), userController.createTeacher);
+router.get('/teachers', allowedPermissions(['admin:all', 'moderator:all', 'read:users']), userController.getAllTeachers);
+router.get('/teacher/:teacherId', allowedPermissions(['admin:all', 'moderator:all', 'read:users']), userController.getTeacherById);
+router.put('/teacher/:teacherId', allowedPermissions(['admin:all', 'moderator:all', 'update:users']), userController.updateTeacher);
+router.delete('/teacher/:teacherId', allowedPermissions(['admin:all', 'moderator:all', 'delete:users']), userController.deleteTeacher);
+
+// Administrator-specific operations
+router.get('/administrator/:id', allowedPermissions(['admin:all', 'moderator:all', 'read:users']), userController.getUserWithRolesById);
+router.get('/administrators', allowedPermissions(['admin:all', 'moderator, all', 'read:users']), userController.getAllAdministrators);
+router.post('/administrator', allowedPermissions(['admin:all', 'create:users']), userController.createAdministrator);
+router.put('/administrator/:id', allowedPermissions(['admin:all', 'update:users']), userController.updateAdministrator);
+router.delete('/administrator/:id', allowedPermissions(['admin:all', 'delete:users']), userController.deleteAdministrator);
 export default router;

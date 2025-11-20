@@ -1,92 +1,105 @@
 import { SemesterRepository } from '../repositories/semester.repository';
+import { StudentSemesterRepository } from '../repositories/student-semester.repository';
+import { TeacherAvailabilityRepository } from '../repositories/teacher-availability.repository';
 import { Semester } from '../models/Semester';
+import { StudentSemester } from '../models/StudentSemester';
+import { Student } from '../models/Student';
+import { User } from '../models/User';
 import { AppError } from '../utils/AppError';
 
 export class SemesterService {
-    private repository: SemesterRepository;
+    private semesterRepository: SemesterRepository;
+    private studentSemesterRepository: StudentSemesterRepository;
+    private teacherAvailabilityRepository: TeacherAvailabilityRepository;
 
     constructor() {
-        this.repository = new SemesterRepository();
+        this.semesterRepository = new SemesterRepository();
+        this.studentSemesterRepository = new StudentSemesterRepository();
+        this.teacherAvailabilityRepository = new TeacherAvailabilityRepository();
     }
 
-    async getAllSemesters(): Promise<Semester[]> {
-        return this.repository.findAll();
+    async getAllSemesters() {
+        return this.semesterRepository.findAll({}, 0, undefined, [['startDate', 'DESC']]);
     }
 
-    async getSemesterById(id: number): Promise<Semester | null> {
-        return this.repository.findById(id);
+    async getSemesterById(semesterId: number) {
+        return this.semesterRepository.findById(semesterId);
+    }
+    async createSemester(data: Partial<Semester>) {
+        return this.semesterRepository.create(data);
     }
 
-    async getActiveSemester(): Promise<Semester | null> {
-        return this.repository.findActiveSemester();
+    async updateSemester(semesterId: number, data: Partial<Semester>) {
+        const semester = await this.semesterRepository.findById(semesterId);
+        if (!semester) throw new AppError('No semester found', 404, 'SEMESTER_NOT_FOUND');
+        return this.semesterRepository.update(semesterId, data);
     }
 
-    async createSemester(semesterData: Omit<Semester, 'id'>): Promise<Semester> {
-        // Validate semester dates
-        if (semesterData.startDate >= semesterData.endDate) {
-            throw new AppError('Start date must be before end date', 400, 'INVALID_DATES');
-        }
-        
-        // Check if semester code already exists
-        const existingSemester = await this.repository.findByCode(semesterData.code);
-        if (existingSemester) {
-            throw new AppError('Semester with this code already exists', 400, 'SEMESTER_CODE_EXISTS');
-        }
-
-        return this.repository.create(semesterData as Semester);
+    async deleteSemester(semesterId: number) {
+        return this.semesterRepository.delete(semesterId);
     }
 
-    async updateSemester(id: number, semesterData: Partial<Semester>): Promise<Semester | null> {
-        // Validate dates if they're being updated
-        if (semesterData.startDate && semesterData.endDate && 
-            new Date(semesterData.startDate) >= new Date(semesterData.endDate)) {
-            throw new AppError('Start date must be before end date', 400, 'INVALID_DATES');
-        }
-        
-        // Check if updated code already exists (if code is being updated)
-        if (semesterData.code) {
-            const existingSemester = await this.repository.findByCode(semesterData.code);
-            if (existingSemester && existingSemester.id !== id) {
-                throw new AppError('Semester with this code already exists', 400, 'SEMESTER_CODE_EXISTS');
-            }
-        }
-
-        await this.repository.update(id, semesterData);
-        return this.repository.findById(id);
+    async getActiveSemester() {
+        return this.semesterRepository.findActiveSemester();
     }
 
-    async deleteSemester(id: number): Promise<void> {
-        // Check if semester exists
-        const semester = await this.repository.findById(id);
-        if (!semester) {
-            throw new AppError('Semester not found', 404, 'SEMESTER_NOT_FOUND');
-        }
-
-        // Don't allow deleting active semester
-        if (semester.isActive) {
-            throw new AppError('Cannot delete active semester', 400, 'ACTIVE_SEMESTER');
-        }
-
-        await this.repository.deleteById(id);
+    async getCurrentSemester() {
+        return this.semesterRepository.findCurrentSemester();
     }
 
-    async activateSemester(id: number): Promise<void> {
-        // Check if semester exists
-        const semester = await this.repository.findById(id);
-        if (!semester) {
-            throw new AppError('Semester not found', 404, 'SEMESTER_NOT_FOUND');
-        }
-
-        await this.repository.activateSemester(id);
+    async setActiveSemester(semesterId: number) {
+        const semester = await this.semesterRepository.findById(semesterId);
+        if (!semester) throw new AppError('No semester found', 400, 'SEMESTER_NOT_FOUND');
+        await this.semesterRepository.activateSemester(semester.id);
+        return semester;
     }
 
-    async deactivateSemester(id: number): Promise<void> {
-        // Check if semester exists
-        const semester = await this.repository.findById(id);
-        if (!semester) {
-            throw new AppError('Semester not found', 404, 'SEMESTER_NOT_FOUND');
-        }
+    async unsetActiveSemester(semesterId: number) {
+        const semester = await this.semesterRepository.findById(semesterId);
+        if (!semester) throw new AppError('No semester found', 400, 'SEMESTER_NOT_FOUND');
+        await this.semesterRepository.deactivateSemester(semester.id);
+        return semester;
+    }
 
-        await this.repository.deactivateSemester(id);
+    async setCurrentSemester(semesterId: number) {
+        const semester = await this.semesterRepository.findById(semesterId);
+        if (!semester) throw new AppError('No semester found', 400, 'SEMESTER_NOT_FOUND');
+        await this.semesterRepository.update(semester.id, { isCurrent: true });
+        return semester;
+    }
+
+    async unsetCurrentSemester(semesterId: number) {
+        const semester = await this.semesterRepository.findById(semesterId);
+        if (!semester) throw new AppError('No semester found', 400, 'SEMESTER_NOT_FOUND');
+        await this.semesterRepository.update(semester.id, { isCurrent: false });
+        return semester;
+    }
+
+    async getStudentsInSemester(semesterId: number) {
+        return this.studentSemesterRepository.getStudentsInSemester(semesterId);
+    }
+
+    async getStudentSemester(studentId: number, semesterId: number) {
+        return this.studentSemesterRepository.getStudentSemester(studentId, semesterId);
+    }
+
+    async addStudentToSemester(data: Partial<StudentSemester>) {
+        return this.studentSemesterRepository.create(data);
+    }
+
+    async updateStudentInSemester(id: number, data: any) {
+        return this.studentSemesterRepository.update(id, data);
+    }
+
+    async deleteStudentFromSemester(id: number) {
+        return this.studentSemesterRepository.delete(id);
+    }
+
+    async getStudentSemesters(studentId: number) {
+        return this.studentSemesterRepository.getSemestersForStudent(studentId);
+    }
+
+    async getTeachersInSemester(semesterId: number) {
+        return this.teacherAvailabilityRepository.getTeachersInSemester(semesterId);
     }
 }
