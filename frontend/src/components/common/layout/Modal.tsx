@@ -11,7 +11,7 @@ type Props = {
   width?: number;
   className?: string;
   maskClosable?: boolean;
-  closeIcon?: React.ReactNode | null; // Allow hiding close icon
+  closeIcon?: React.ReactNode | null;
 };
 
 const Modal: React.FC<Props> = ({

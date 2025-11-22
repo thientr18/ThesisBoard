@@ -1,7 +1,6 @@
 import { NextFunction, Request, Response } from 'express';
 import { SemesterService } from '../services/semester.service';
 import { AppError } from '../utils/AppError';
-import { parseExcelFile, validateRows, importStudentSemesters } from "../utils/student-semester.import.utils";
 export class SemesterController {
     private semesterService: SemesterService;
 
@@ -47,30 +46,6 @@ export class SemesterController {
         }
     };
 
-    importStudentSemestersHandler = async (req: Request, res: Response, next: NextFunction) => {
-        try {
-            if (!req.file) {
-                throw new AppError("No file uploaded", 400, "NO_FILE");
-            }
-
-            const rows = await parseExcelFile(req.file.path);
-            const { validRows, errors } = validateRows(rows);
-
-            if (errors.length > 0) {
-                return res.status(400).json({
-                    message: "Validation failed for some rows",
-                    errors,
-                });
-            }
-
-            const result = await importStudentSemesters(validRows);
-
-            res.status(200).json(result);
-        } catch (error) {
-            next(error);
-        }
-    };
-
     updateSemester = async (req: Request, res: Response, next: NextFunction) => {
         try {
             const { id } = req.params;
@@ -87,8 +62,8 @@ export class SemesterController {
 
     deleteSemester = async (req: Request, res: Response, next: NextFunction) => {
         try {
-            const { semesterId } = req.params;
-            const semester = await this.semesterService.deleteSemester(Number(semesterId));
+            const { id } = req.params;
+            const semester = await this.semesterService.deleteSemester(Number(id));
             if (!semester) {
                 throw new AppError('No semester found to delete', 404, 'SEMESTER_NOT_FOUND');
             }
@@ -112,8 +87,8 @@ export class SemesterController {
 
     setCurrentSemester = async (req: Request, res: Response, next: NextFunction) => {
         try {
-            const { semesterId } = req.params;
-            const semester = await this.semesterService.setCurrentSemester(Number(semesterId));
+            const { id } = req.params;
+            const semester = await this.semesterService.setCurrentSemester(Number(id));
             if (!semester) {
                 throw new AppError('No semester found to set as current', 404, 'SEMESTER_NOT_FOUND');
             }
@@ -125,8 +100,8 @@ export class SemesterController {
 
     unsetCurrentSemester = async (req: Request, res: Response, next: NextFunction) => {
         try {
-            const { semesterId } = req.params;
-            const semester = await this.semesterService.unsetCurrentSemester(Number(semesterId));
+            const { id } = req.params;
+            const semester = await this.semesterService.unsetCurrentSemester(Number(id));
             if (!semester) {
                 throw new AppError('No semester found to unset as current', 404, 'SEMESTER_NOT_FOUND');
             }
@@ -177,12 +152,23 @@ export class SemesterController {
     // Student in Semester Controllers
     getStudentsInSemester = async (req: Request, res: Response, next: NextFunction) => {
         try {
-            const { studentId } = req.params;
-            const semesters = await this.semesterService.getStudentsInSemester(Number(studentId));
-            if (!semesters || semesters.length === 0) {
-                throw new AppError('No semesters found for the student', 404, 'STUDENT_SEMESTERS_NOT_FOUND');
-            }
-            res.json(semesters);
+            const { semesterId } = req.params;
+            const page = parseInt(req.query.page as string) || 1;
+            const pageSize = parseInt(req.query.pageSize as string) || 15;
+            const search = req.query.search as string | undefined;
+            const studentCode = req.query.studentCode as string | undefined;
+            const status = req.query.status as string | undefined;
+            const type = req.query.type as string | undefined;
+            const result = await this.semesterService.getStudentsInSemester(
+                Number(semesterId),
+                page,
+                pageSize,
+                search,
+                studentCode,
+                status,
+                type
+            );
+            res.json(result);
         } catch (error) {
             next(error);
         }
@@ -201,6 +187,7 @@ export class SemesterController {
 
     getStudentSemester = async (req: Request, res: Response, next: NextFunction) => {
         try {
+            console.log('getStudentSemester called with params:', req.params);
             const { studentId, semesterId } = req.params;
             const semesters = await this.semesterService.getStudentSemester(Number(studentId), Number(semesterId));
             if (!semesters || semesters.length === 0) {
@@ -227,7 +214,7 @@ export class SemesterController {
         try {
             const { studentId, semesterId } = req.params;
             const { gpa, credits, type, status } = req.body;
-
+            console.log('updateStudentInSemester called with params:', req.params, 'and body:', req.body);
             const studentSemester = await this.semesterService.getStudentSemester(Number(studentId), Number(semesterId));
             if (!studentSemester) {
                 throw new AppError('No semester found for the student', 404, 'STUDENT_SEMESTER_NOT_FOUND');
@@ -268,4 +255,46 @@ export class SemesterController {
             next(error);
         }
     };
+
+    createTeacherInSemester = async (req: Request, res: Response, next: NextFunction) => {
+        try {
+            const { teacherId, semesterId, maxPreThesis, maxThesis, isOpen, note } = req.body;
+            const data = { teacherId, semesterId, maxPreThesis, maxThesis, isOpen, note };
+            const createdTeacherSemester = await this.semesterService.addTeacherToSemester(data);
+            res.status(201).json(createdTeacherSemester);
+        } catch (error) {
+            next(error);
+        }
+    };
+
+    updateTeacherInSemester = async (req: Request, res: Response, next: NextFunction) => {
+        try {
+            const { teacherId, semesterId } = req.params;
+            const { maxPreThesis, maxThesis, isOpen, note } = req.body;
+            const teacherSemester = await this.semesterService.getTeacherSemester(Number(teacherId), Number(semesterId));
+            if (!teacherSemester) {
+                throw new AppError('No semester found for the teacher', 404, 'TEACHER_SEMESTER_NOT_FOUND');
+            }
+            const updatedSemester = await this.semesterService.updateTeacherInSemester(teacherSemester.id, { maxPreThesis, maxThesis, isOpen, note });
+            res.json(updatedSemester);
+        } catch (error) {
+            next(error);
+        }
+    };
+
+    deleteTeacherFromSemester = async (req: Request, res: Response, next: NextFunction) => {
+        try {
+            const { teacherId, semesterId } = req.params;
+            const teacherSemester = await this.semesterService.getTeacherSemester(Number(teacherId), Number(semesterId));
+            if (!teacherSemester) {
+                throw new AppError('No semester found for the teacher', 404, 'TEACHER_SEMESTER_NOT_FOUND');
+            }
+
+            await this.semesterService.deleteTeacherFromSemester(teacherSemester.id);
+            res.status(204).send();
+        } catch (error) {
+            next(error);
+        }
+    };
+
 }

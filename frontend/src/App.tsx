@@ -7,9 +7,15 @@ import Dashboard from './pages/Dashboard';
 import ProfilePage from './pages/ProfilePage';
 import ChangePassword from './pages/ChangePassword';
 import Announcements from './pages/Announcements';
+
+// User management pages
 import TeacherManagement from './pages/admin/TeacherManagement';
 import StudentManagement from './pages/admin/StudentManagement';
 import AdministratorManagement from './pages/admin/AdministratorManagement';
+
+// Semester management pages
+import SemesterGeneral from './pages/semester/SemesterGeneral';
+import StudentSemesterPage from './pages/semester/StudentSemester';
 
 function App() {
   const { isLoading, isAuthenticated, loginWithRedirect } = useAuth0();
@@ -101,6 +107,22 @@ function App() {
         element={
           <ProtectedRoute>
             <AdministratorManagement />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/semester-management/general"
+        element={
+          <ProtectedRoute>
+            <SemesterGeneral />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/semester-management/student"
+        element={
+          <ProtectedRoute>
+            <StudentSemesterPage />
           </ProtectedRoute>
         }
       />

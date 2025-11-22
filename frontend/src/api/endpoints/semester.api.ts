@@ -5,7 +5,6 @@ import type {
   Semester,
   CreateSemesterRequest,
   UpdateSemesterRequest,
-  SemesterAttachment
 } from '../../types/semester.types';
 
 const BASE_PATH = '/api/semesters';
@@ -124,53 +123,100 @@ export const useSemesterApi = () => {
   }, [authApi]);
 
   // get Student Semesters data
+  // GET /api/semesters/student-semesters/semester/:semesterId
+  const getStudentsInSemester = useCallback(
+    async (
+      semesterId: number,
+      page = 1,
+      pageSize = 15,
+      search?: string,
+      studentCode?: string,
+      status?: string,
+      type?: string // thêm type ở đây
+    ): Promise<ApiResponse<any>> => {
+      try {
+        const params = new URLSearchParams({
+          page: String(page),
+          pageSize: String(pageSize),
+        });
+        if (search) params.append("search", search);
+        if (studentCode) params.append("studentCode", studentCode);
+        if (status && status !== "all") params.append("status", status);
+        if (type && type !== "all") params.append("type", type); // truyền type
+
+        const res = await authApi.get(
+          `${BASE_PATH}/student-semesters/semester/${semesterId}?${params.toString()}`
+        );
+        return { data: res.data, error: null };
+      } catch (e) {
+        return { data: null, error: e instanceof Error ? e.message : 'Failed to fetch students in semester' };
+      }
+    },
+    [authApi]
+  );
+  
+  // GET /api/semesters/student-semesters/:studentId
   const getSemesterForStudent = useCallback(async (studentId: number) => {
     try {
-      const res = await authApi.get(`${BASE_PATH}/student-semesters/${studentId}`);
+      const res = await authApi.get(`${BASE_PATH}/student-semesters/student/${studentId}`);
       return { data: res.data, error: null };
     } catch (e) {
       return { data: null, error: e instanceof Error ? e.message : 'Failed to fetch semesters for student' };
     }
   }, [authApi]);
 
+  // GET /api/semesters/student-semesters/:studentId/:semesterId
+  const getStudentSemester = useCallback(async (studentId: number, semesterId: number) => {
+    try {
+      const res = await authApi.get(`${BASE_PATH}/student-semesters/${studentId}/${semesterId}`);
+      return { data: res.data, error: null };
+    } catch (e) {
+      return { data: null, error: e instanceof Error ? e.message : 'Failed to add semester for student' };
+    }
+  }, [authApi]);
+
+  // POST /api/semesters/student-semesters/:semesterId
+  const createStudentInSemester = useCallback(async (semesterId: number, payload: any) => {
+    try {
+      const res = await authApi.post(`${BASE_PATH}/student-semesters/${semesterId}`, payload);
+      return { data: res.data, error: null };
+    } catch (e) {
+      return { data: null, error: e instanceof Error ? e.message : 'Failed to create student in semester' };
+    }
+  }, [authApi]);
+
+  // PUT /api/semesters/student-semesters/:studentId/:semesterId
+  const updateStudentInSemester = useCallback(async (studentId: number, semesterId: number, payload: any) => {
+    try {
+      const res = await authApi.put(`${BASE_PATH}/student-semesters/${studentId}/${semesterId}`, payload);
+      return { data: res.data, error: null };
+    } catch (e) {
+      return { data: null, error: e instanceof Error ? e.message : 'Failed to update student in semester' };
+    }
+  }, [authApi]);
+
+  // DELETE /api/semesters/student-semesters/:studentId/:semesterId
+  const deleteStudentFromSemester = useCallback(async (studentId: number, semesterId: number) => {
+    try {
+      const res = await authApi.delete(`${BASE_PATH}/student-semesters/${studentId}/${semesterId}`);
+      return { data: res.data, error: null };
+    } catch (e) {
+      return { data: null, error: e instanceof Error ? e.message : 'Failed to delete student from semester' };
+    }
+  }, [authApi]);
+
+  // GET /api/semesters/teacher/:semesterId
+  const getTeachersInSemester = useCallback(async (semesterId: number) => {
+    try {
+      const res = await authApi.get(`${BASE_PATH}/teacher/${semesterId}`);
+      return { data: res.data, error: null };
+    } catch (e) {
+      return { data: null, error: e instanceof Error ? e.message : 'Failed to fetch teachers in semester' };
+    }
+  }, [authApi]);
+
   // Attachments
-  const addAttachment = useCallback(async (
-    semesterId: number,
-    file: File
-  ): Promise<ApiResponse<SemesterAttachment>> => {
-    const formData = new FormData();
-    formData.append('file', file);
-    try {
-      const res = await authApi.post(`${BASE_PATH}/${semesterId}/attachments`, formData);
-      return { data: res.data as SemesterAttachment, error: null };
-    } catch (e) {
-      return { data: null, error: e instanceof Error ? e.message : 'Failed to add attachment' };
-    }
-  }, [authApi]);
 
-  const addExternalAttachment = useCallback(async (
-    semesterId: number,
-    attachment: { name: string; url: string; type: string }
-  ): Promise<ApiResponse<SemesterAttachment>> => {
-    try {
-      const res = await authApi.post(`${BASE_PATH}/${semesterId}/attachments/external`, attachment);
-      return { data: res.data as SemesterAttachment, error: null };
-    } catch (e) {
-      return { data: null, error: e instanceof Error ? e.message : 'Failed to add external attachment' };
-    }
-  }, [authApi]);
-
-  const removeAttachment = useCallback(async (
-    semesterId: number,
-    attachmentId: number
-  ): Promise<ApiResponse<boolean>> => {
-    try {
-      await authApi.delete(`${BASE_PATH}/${semesterId}/attachments/${attachmentId}`);
-      return { data: true, error: null };
-    } catch (e) {
-      return { data: null, error: e instanceof Error ? e.message : 'Failed to remove attachment' };
-    }
-  }, [authApi]);
 
   return useMemo(() => ({
     getAll,
@@ -184,10 +230,13 @@ export const useSemesterApi = () => {
     getActive,
     setActive,
     unsetActive,
+    getStudentsInSemester,
     getSemesterForStudent,
-    addAttachment,
-    addExternalAttachment,
-    removeAttachment
+    getStudentSemester,
+    createStudentInSemester,
+    updateStudentInSemester,
+    deleteStudentFromSemester,
+    getTeachersInSemester,
   }), [
     getAll,
     getById,
@@ -200,9 +249,12 @@ export const useSemesterApi = () => {
     getActive,
     setActive,
     unsetActive,
+    getStudentsInSemester,
     getSemesterForStudent,
-    addAttachment,
-    addExternalAttachment,
-    removeAttachment
+    getStudentSemester,
+    createStudentInSemester,
+    updateStudentInSemester,
+    deleteStudentFromSemester,
+    getTeachersInSemester,
   ]);
 };

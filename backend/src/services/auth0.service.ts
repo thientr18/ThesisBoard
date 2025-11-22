@@ -342,17 +342,24 @@ export class Auth0Service {
 
   public async getUsersByRoleNames(roleNames: string[]): Promise<Auth0User[]> {
     try {
-      const allUsersResp = await this.getUsers(undefined, 0, 100);
-      const allUsers = allUsersResp.users;
+      // 1. Get all roles
+      const allRoles = await this.getAllRoles();
+      // 2. Find role IDs for the given names
+      const roleIds = allRoles.filter(r => roleNames.includes(r.name)).map(r => r.id);
 
-      const filteredUsers: Auth0User[] = [];
-      for (const user of allUsers) {
-        const roles = await this.getUserRoles(user.user_id);
-        if (roles.some(role => roleNames.includes(role.name))) {
-          filteredUsers.push(user);
-        }
+      // 3. For each role, get users
+      let users: Auth0User[] = [];
+      for (const roleId of roleIds) {
+        const resp = await this.axiosInstance.get<Auth0User[]>(`/roles/${roleId}/users`, {
+          params: { per_page: 100 }, // adjust as needed
+        });
+        users = users.concat(resp.data);
       }
-      return filteredUsers;
+
+      // 4. Deduplicate users by user_id
+      const uniqueUsers: { [id: string]: Auth0User } = {};
+      users.forEach(u => { uniqueUsers[u.user_id] = u; });
+      return Object.values(uniqueUsers);
     } catch (err) {
       throw this.toAuth0Error(err, `Failed to get users by role names: ${roleNames.join(', ')}`);
     }

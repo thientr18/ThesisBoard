@@ -11,6 +11,35 @@ const semesterController = new SemesterController();
 router.use(checkJwt);
 router.use(attachUserFromJwt);
 
+router.get("/student-semesters/student/:studentId",
+    allowedPermissions(['view:semesters', 'admin:all', 'moderator:all', 'teacher:base']),
+    semesterController.getSemesterForStudent
+);
+router.get("/student-semesters/semester/:semesterId",
+    allowedPermissions(['view:semesters', 'admin:all', 'moderator:all', 'teacher:base']),
+    semesterController.getStudentsInSemester
+)
+router.get("/student-semesters/:studentId/:semesterId",
+    allowedPermissions(['manage:semesters', 'admin:all', 'moderator:all']),
+    semesterController.getStudentSemester
+);
+router.post("/student-semesters/:semesterId",
+    allowedPermissions(['manage:semesters', 'admin:all', 'moderator:all']),
+    semesterController.createStudentInSemester
+);
+router.put("/student-semesters/:studentId/:semesterId",
+    allowedPermissions(['manage:semesters', 'admin:all', 'moderator:all']),
+    semesterController.updateStudentInSemester
+)
+router.delete("/student-semesters/:studentId/:semesterId",
+    allowedPermissions(['manage:semesters', 'admin:all', 'moderator:all']),
+    semesterController.deleteStudentFromSemester
+);
+router.get("/teacher/:semesterId",
+    allowedPermissions(['view:semesters', 'admin:all', 'moderator:all', 'teacher:base']),
+    semesterController.getTeachersInSemester
+);
+
 router.get('/',
     allowedPermissions(['view:semesters', 'admin:all', 'moderator:all']),
     semesterController.getAllSemesters
@@ -55,13 +84,5 @@ router.patch('/unset-active/:id',
     allowedPermissions(['manage:semesters', 'admin:all', 'moderator:all']),
     semesterController.unsetActiveSemester
 );
-
-router.get("/student-semesters/:studentId",
-    allowedPermissions(['view:semesters', 'admin:all', 'moderator:all', 'teacher:base']),
-    semesterController.getSemesterForStudent
-);
-
-// Student in Semester Routes
-router.post("/student-semesters/import", upload.single("file"), semesterController.importStudentSemestersHandler);
 
 export default router;

@@ -5,13 +5,23 @@ export interface ApiResponse<T> {
 
 export interface Semester {
   id: number;
+  code: string;
   name: string;
   startDate: string;
   endDate: string;
   isActive: boolean;
+  isCurrent: boolean;
   attachments?: SemesterAttachment[];
   createdAt?: string;
   updatedAt?: string;
+}
+
+export interface StudentSemester {
+  id: number;
+  fullName: string;
+  studentCode: string;
+  email?: string;
+  status?: string;
 }
 
 export interface SemesterAttachment {

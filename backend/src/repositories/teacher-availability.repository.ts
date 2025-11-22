@@ -29,7 +29,13 @@ export class TeacherAvailabilityRepository extends GenericRepository<TeacherAvai
     });
   }
 
-  async findByTeacherAndSemester(teacherId: number, semesterId: number): Promise<TeacherAvailability | null> {
+  async getSemestersForTeacher(teacherId: number): Promise<TeacherAvailability[]> {
+    return this.model.findAll({
+      where: { teacherId }
+    });
+  }
+
+  async getTeacherSemester(teacherId: number, semesterId: number): Promise<TeacherAvailability | null> {
     return this.model.findOne({
       where: { teacherId, semesterId }
     });
@@ -40,7 +46,7 @@ export class TeacherAvailabilityRepository extends GenericRepository<TeacherAvai
    * Returns false if no capacity available
    */
   async decreasePreThesisCapacity(teacherId: number, semesterId: number): Promise<boolean> {
-    const availability = await this.findByTeacherAndSemester(teacherId, semesterId);
+    const availability = await this.getTeacherSemester(teacherId, semesterId);
     
     if (!availability || availability.maxPreThesis <= 0 || !availability.isOpen) {
       return false;
@@ -58,7 +64,7 @@ export class TeacherAvailabilityRepository extends GenericRepository<TeacherAvai
    * Returns false if no capacity available
    */
   async decreaseThesisCapacity(teacherId: number, semesterId: number): Promise<boolean> {
-    const availability = await this.findByTeacherAndSemester(teacherId, semesterId);
+    const availability = await this.getTeacherSemester(teacherId, semesterId);
     
     if (!availability || availability.maxThesis <= 0 || !availability.isOpen) {
       return false;
@@ -75,7 +81,7 @@ export class TeacherAvailabilityRepository extends GenericRepository<TeacherAvai
    * Increase pre-thesis capacity for a teacher
    */
   async increasePreThesisCapacity(teacherId: number, semesterId: number): Promise<boolean> {
-    const availability = await this.findByTeacherAndSemester(teacherId, semesterId);
+    const availability = await this.getTeacherSemester(teacherId, semesterId);
     
     if (!availability) {
       return false;
@@ -92,7 +98,7 @@ export class TeacherAvailabilityRepository extends GenericRepository<TeacherAvai
    * Increase thesis capacity for a teacher
    */
   async increaseThesisCapacity(teacherId: number, semesterId: number): Promise<boolean> {
-    const availability = await this.findByTeacherAndSemester(teacherId, semesterId);
+    const availability = await this.getTeacherSemester(teacherId, semesterId);
     
     if (!availability) {
       return false;

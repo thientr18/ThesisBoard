@@ -58,110 +58,110 @@ function applyAssociations() {
     StudentSemester.belongsTo(Student, { foreignKey: 'studentId', as: 'student' });
     Student.hasMany(StudentSemester, { foreignKey: 'studentId', as: 'studentSemesters' });
 
-    StudentSemester.belongsTo(Semester, { foreignKey: 'semesterId' });
-    Semester.hasMany(StudentSemester, { foreignKey: 'semesterId' });
+    StudentSemester.belongsTo(Semester, { foreignKey: 'semesterId', as: 'semester' });
+    Semester.hasMany(StudentSemester, { foreignKey: 'semesterId', as: 'studentSemesters' });
 
     // teacher_availability
-    TeacherAvailability.belongsTo(Teacher, { foreignKey: 'teacherId' });
-    Teacher.hasMany(TeacherAvailability, { foreignKey: 'teacherId' });
+    TeacherAvailability.belongsTo(Teacher, { foreignKey: 'teacherId', as: 'teacher' });
+    Teacher.hasMany(TeacherAvailability, { foreignKey: 'teacherId', as: 'teacherAvailabilities' });
 
-    TeacherAvailability.belongsTo(Semester, { foreignKey: 'semesterId' });
-    Semester.hasMany(TeacherAvailability, { foreignKey: 'semesterId' });
+    TeacherAvailability.belongsTo(Semester, { foreignKey: 'semesterId', as: 'semester' });
+    Semester.hasMany(TeacherAvailability, { foreignKey: 'semesterId', as: 'teacherAvailabilities' });
 
     // topics
-    Topic.belongsTo(Teacher, { foreignKey: 'teacherId' });
-    Teacher.hasMany(Topic, { foreignKey: 'teacherId' });
+    Topic.belongsTo(Teacher, { foreignKey: 'teacherId', as: 'teacher' });
+    Teacher.hasMany(Topic, { foreignKey: 'teacherId', as: 'topics' });
 
-    Topic.belongsTo(Semester, { foreignKey: 'semesterId' });
-    Semester.hasMany(Topic, { foreignKey: 'semesterId' });
+    Topic.belongsTo(Semester, { foreignKey: 'semesterId', as: 'semester' });
+    Semester.hasMany(Topic, { foreignKey: 'semesterId', as: 'topics' });
 
-    TopicApplication.belongsTo(Topic, { foreignKey: 'topicId' });
-    Topic.hasMany(TopicApplication, { foreignKey: 'topicId' });
+    TopicApplication.belongsTo(Topic, { foreignKey: 'topicId', as: 'topic' });
+    Topic.hasMany(TopicApplication, { foreignKey: 'topicId', as: 'topicApplications' });
 
-    TopicApplication.belongsTo(Student, { foreignKey: 'studentId' });
-    Student.hasMany(TopicApplication, { foreignKey: 'studentId' });
+    TopicApplication.belongsTo(Student, { foreignKey: 'studentId', as: 'student' });
+    Student.hasMany(TopicApplication, { foreignKey: 'studentId', as: 'topicApplications' });
 
     // pre_thesis_projects
-    PreThesis.belongsTo(Student, { foreignKey: 'studentId' });
-    Student.hasMany(PreThesis, { foreignKey: 'studentId' });
+    PreThesis.belongsTo(Student, { foreignKey: 'studentId', as: 'student' });
+    Student.hasMany(PreThesis, { foreignKey: 'studentId', as: 'preTheses' });
 
-    PreThesis.belongsTo(TopicApplication, { foreignKey: 'topicApplicationId' });
-    TopicApplication.hasMany(PreThesis, { foreignKey: 'topicApplicationId' });
+    PreThesis.belongsTo(TopicApplication, { foreignKey: 'topicApplicationId', as: 'topicApplication' });
+    TopicApplication.hasMany(PreThesis, { foreignKey: 'topicApplicationId', as: 'preTheses' });
 
-    PreThesis.belongsTo(Semester, { foreignKey: 'semesterId' });
-    Semester.hasMany(PreThesis, { foreignKey: 'semesterId' });
+    PreThesis.belongsTo(Semester, { foreignKey: 'semesterId', as: 'semester' });
+    Semester.hasMany(PreThesis, { foreignKey: 'semesterId', as: 'preTheses' });
 
-    PreThesis.belongsTo(Teacher, { as: 'supervisorTeacher', foreignKey: 'supervisorTeacherId' });
-    Teacher.hasMany(PreThesis, { as: 'supervisions', foreignKey: 'supervisorTeacherId' });
+    PreThesis.belongsTo(Teacher, { foreignKey: 'supervisorTeacherId', as: 'supervisorTeacher' });
+    Teacher.hasMany(PreThesis, { foreignKey: 'supervisorTeacherId', as: 'supervisions' });
 
     // thesis_proposals (student -> available teacher)
-    ThesisProposal.belongsTo(Student, { foreignKey: 'studentId' });
-    Student.hasMany(ThesisProposal, { foreignKey: 'studentId' });
+    ThesisProposal.belongsTo(Student, { foreignKey: 'studentId', as: 'student' });
+    Student.hasMany(ThesisProposal, { foreignKey: 'studentId', as: 'thesisProposals' });
 
-    ThesisProposal.belongsTo(Teacher, { as: 'targetTeacher', foreignKey: 'targetTeacherId' });
-    Teacher.hasMany(ThesisProposal, { as: 'receivedProposals', foreignKey: 'targetTeacherId' });
+    ThesisProposal.belongsTo(Teacher, { foreignKey: 'targetTeacherId', as: 'targetTeacher' });
+    Teacher.hasMany(ThesisProposal, { foreignKey: 'targetTeacherId', as: 'receivedProposals' });
 
-    ThesisProposal.belongsTo(Semester, { foreignKey: 'semesterId' });
-    Semester.hasMany(ThesisProposal, { foreignKey: 'semesterId' });
+    ThesisProposal.belongsTo(Semester, { foreignKey: 'semesterId', as: 'semester' });
+    Semester.hasMany(ThesisProposal, { foreignKey: 'semesterId', as: 'thesisProposals' });
 
     // thesis_registrations
-    ThesisRegistration.belongsTo(Student, { foreignKey: 'studentId' });
-    Student.hasMany(ThesisRegistration, { foreignKey: 'studentId' });
+    ThesisRegistration.belongsTo(Student, { foreignKey: 'studentId', as: 'student' });
+    Student.hasMany(ThesisRegistration, { foreignKey: 'studentId', as: 'thesisRegistrations' });
 
-    ThesisRegistration.belongsTo(Teacher, { as: 'supervisorTeacher', foreignKey: 'supervisorTeacherId' });
-    Teacher.hasMany(ThesisRegistration, { as: 'supervisedRegistrations', foreignKey: 'supervisorTeacherId' });
+    ThesisRegistration.belongsTo(Teacher, { foreignKey: 'supervisorTeacherId', as: 'supervisorTeacher' });
+    Teacher.hasMany(ThesisRegistration, { foreignKey: 'supervisorTeacherId', as: 'supervisedRegistrations' });
+    
+    ThesisRegistration.belongsTo(Semester, { foreignKey: 'semesterId', as: 'semester' });
+    Semester.hasMany(ThesisRegistration, { foreignKey: 'semesterId', as: 'thesisRegistrations' });
 
-    ThesisRegistration.belongsTo(Semester, { foreignKey: 'semesterId' });
-    Semester.hasMany(ThesisRegistration, { foreignKey: 'semesterId' });
+    ThesisRegistration.belongsTo(Teacher, { foreignKey: 'submittedByTeacherId', as: 'submittedByTeacher' });
+    Teacher.hasMany(ThesisRegistration, { foreignKey: 'submittedByTeacherId', as: 'submittedRegistrations' });
 
-    ThesisRegistration.belongsTo(Teacher, { as: 'submittedByTeacher', foreignKey: 'submittedByTeacherId' });
-    Teacher.hasMany(ThesisRegistration, { as: 'submittedRegistrations', foreignKey: 'submittedByTeacherId' });
-
-    ThesisRegistration.belongsTo(User, { as: 'approvedByUser', foreignKey: 'approvedByUserId' });
-    User.hasMany(ThesisRegistration, { as: 'approvedRegistrations', foreignKey: 'approvedByUserId' });
+    ThesisRegistration.belongsTo(User, { foreignKey: 'approvedByUserId', as: 'approvedByUser' });
+    User.hasMany(ThesisRegistration, { foreignKey: 'approvedByUserId', as: 'approvedRegistrations' });
 
     // theses
-    Thesis.belongsTo(Student, { foreignKey: 'studentId' });
-    Student.hasMany(Thesis, { foreignKey: 'studentId' });
+    Thesis.belongsTo(Student, { foreignKey: 'studentId', as: 'student' });
+    Student.hasMany(Thesis, { foreignKey: 'studentId', as: 'theses' });
 
-    Thesis.belongsTo(Teacher, { as: 'supervisorTeacher', foreignKey: 'supervisorTeacherId' });
-    Teacher.hasMany(Thesis, { as: 'supervisedTheses', foreignKey: 'supervisorTeacherId' });
+    Thesis.belongsTo(Teacher, { foreignKey: 'supervisorTeacherId', as: 'supervisorTeacher' });
+    Teacher.hasMany(Thesis, { foreignKey: 'supervisorTeacherId', as: 'supervisedTheses' });
 
-    Thesis.belongsTo(Semester, { foreignKey: 'semesterId' });
-    Semester.hasMany(Thesis, { foreignKey: 'semesterId' });
+    Thesis.belongsTo(Semester, { foreignKey: 'semesterId', as: 'semester' });
+    Semester.hasMany(Thesis, { foreignKey: 'semesterId', as: 'theses' });
 
-    ThesisAssignment.belongsTo(Thesis, { foreignKey: 'thesisId' });
-    Thesis.hasMany(ThesisAssignment, { foreignKey: 'thesisId' });
+    ThesisAssignment.belongsTo(Thesis, { foreignKey: 'thesisId', as: 'thesis' });
+    Thesis.hasMany(ThesisAssignment, { foreignKey: 'thesisId', as: 'assignments' });
 
-    ThesisAssignment.belongsTo(Teacher, { foreignKey: 'teacherId' });
-    Teacher.hasMany(ThesisAssignment, { foreignKey: 'teacherId' });
+    ThesisAssignment.belongsTo(Teacher, { foreignKey: 'teacherId', as: 'teacher' });
+    Teacher.hasMany(ThesisAssignment, { foreignKey: 'teacherId', as: 'assignments' });
 
-    ThesisAssignment.belongsTo(User, { as: 'assignedByUser', foreignKey: 'assignedByUserId' });
-    User.hasMany(ThesisAssignment, { as: 'assignmentsMade', foreignKey: 'assignedByUserId' });
+    ThesisAssignment.belongsTo(User, { foreignKey: 'assignedByUserId', as: 'assignedByUser' });
+    User.hasMany(ThesisAssignment, { foreignKey: 'assignedByUserId', as: 'assignmentsMade' });
 
-    DefenseSession.belongsTo(Thesis, { foreignKey: 'thesisId' });
-    Thesis.hasOne(DefenseSession, { foreignKey: 'thesisId' });
+    DefenseSession.belongsTo(Thesis, { foreignKey: 'thesisId', as: 'thesis' });
+    Thesis.hasOne(DefenseSession, { foreignKey: 'thesisId', as: 'defenseSession' });
 
-    ThesisEvaluation.belongsTo(Thesis, { foreignKey: 'thesisId' });
-    Thesis.hasMany(ThesisEvaluation, { foreignKey: 'thesisId' });
+    ThesisEvaluation.belongsTo(Thesis, { foreignKey: 'thesisId', as: 'thesis' });
+    Thesis.hasMany(ThesisEvaluation, { foreignKey: 'thesisId', as: 'evaluations' });
 
-    ThesisEvaluation.belongsTo(Teacher, { as: 'evaluatorTeacher', foreignKey: 'evaluatorTeacherId' });
-    Teacher.hasMany(ThesisEvaluation, { as: 'evaluations', foreignKey: 'evaluatorTeacherId' });
+    ThesisEvaluation.belongsTo(Teacher, { foreignKey: 'evaluatorTeacherId', as: 'evaluatorTeacher' });
+    Teacher.hasMany(ThesisEvaluation, { foreignKey: 'evaluatorTeacherId', as: 'evaluations' });
 
-    ThesisFinalGrade.belongsTo(Thesis, { foreignKey: 'thesisId' });
-    Thesis.hasOne(ThesisFinalGrade, { foreignKey: 'thesisId' });
+    ThesisFinalGrade.belongsTo(Thesis, { foreignKey: 'thesisId', as: 'thesis' });
+    Thesis.hasOne(ThesisFinalGrade, { foreignKey: 'thesisId', as: 'finalGrade' });
 
-    Announcement.belongsTo(User, { as: 'publishedBy', foreignKey: 'publishedByUserId' });
-    User.hasMany(Announcement, { as: 'announcements', foreignKey: 'publishedByUserId' });
+    Announcement.belongsTo(User, { foreignKey: 'publishedByUserId', as: 'publishedBy' });
+    User.hasMany(Announcement, { foreignKey: 'publishedByUserId', as: 'announcements' });
 
-    Notification.belongsTo(User, { foreignKey: 'userId' });
-    User.hasMany(Notification, { foreignKey: 'userId' });
+    Notification.belongsTo(User, { foreignKey: 'userId', as: 'user' });
+    User.hasMany(Notification, { foreignKey: 'userId', as: 'notifications' });
 
-    Attachment.belongsTo(User, { as: 'uploadedBy', foreignKey: 'uploadedByUserId' });
-    User.hasMany(Attachment, { as: 'attachments', foreignKey: 'uploadedByUserId' });
+    Attachment.belongsTo(User, { foreignKey: 'uploadedByUserId', as: 'uploadedBy' });
+    User.hasMany(Attachment, { foreignKey: 'uploadedByUserId', as: 'attachments' });
 
-    Submission.belongsTo(User, { as: 'uploadedBy', foreignKey: 'uploadedByUserId' });
-    User.hasMany(Submission, { as: 'submissions', foreignKey: 'uploadedByUserId' });
+    Submission.belongsTo(User, { foreignKey: 'uploadedByUserId', as: 'uploadedBy' });
+    User.hasMany(Submission, { foreignKey: 'uploadedByUserId', as: 'submissions' });
 }
 
 export { applyAssociations, models };

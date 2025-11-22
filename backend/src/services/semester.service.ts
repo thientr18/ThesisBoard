@@ -75,8 +75,24 @@ export class SemesterService {
         return semester;
     }
 
-    async getStudentsInSemester(semesterId: number) {
-        return this.studentSemesterRepository.getStudentsInSemester(semesterId);
+    async getStudentsInSemester(
+        semesterId: number,
+        page = 1,
+        pageSize = 15,
+        search?: string,
+        studentCode?: string,
+        status?: string,
+        type?: string
+    ) {
+        return this.studentSemesterRepository.getStudentsInSemester(
+            semesterId,
+            page,
+            pageSize,
+            search,
+            studentCode,
+            status,
+            type
+        );
     }
 
     async getStudentSemester(studentId: number, semesterId: number) {
@@ -101,5 +117,25 @@ export class SemesterService {
 
     async getTeachersInSemester(semesterId: number) {
         return this.teacherAvailabilityRepository.getTeachersInSemester(semesterId);
+    }
+
+    async getTeacherSemesters(teacherId: number) {
+        return this.teacherAvailabilityRepository.getSemestersForTeacher(teacherId);
+    }
+
+    async getTeacherSemester(teacherId: number, semesterId: number) {
+        return this.teacherAvailabilityRepository.getTeacherSemester(teacherId, semesterId);
+    }
+
+    async addTeacherToSemester(data: Partial<any>) {
+        return this.teacherAvailabilityRepository.create(data);
+    }
+
+    async updateTeacherInSemester(id: number, data: any) {
+        return this.teacherAvailabilityRepository.update(id, data);
+    }
+
+    async deleteTeacherFromSemester(id: number) {
+        return this.teacherAvailabilityRepository.delete(id);
     }
 }

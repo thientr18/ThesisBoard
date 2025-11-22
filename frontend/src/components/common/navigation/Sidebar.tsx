@@ -84,16 +84,16 @@ const adminModeratorMenu: MenuItem[] = [
         path: "/semester-management/general",
       },
       {
-        key: "semesters-teacher",
-        label: "Teacher",
-        icon: <ReadOutlined />,
-        path: "/semester-management/teacher",
-      },
-      {
         key: "semesters-student",
         label: "Student",
         icon: <IdcardOutlined />,
         path: "/semester-management/student",
+      },
+      {
+        key: "semesters-teacher",
+        label: "Teacher",
+        icon: <ReadOutlined />,
+        path: "/semester-management/teacher",
       },
     ],
   },
@@ -223,10 +223,13 @@ const Sidebar: React.FC<SidebarProps> = ({ user }) => {
 
   const menuItems = useMemo(() => getMenuItemsForRoles(user?.roles), [user]);
 
+  const flatMenuItems = menuItems.flatMap(item =>
+    item.children ? item.children : [item]
+  );
+
   const activeKey =
-    menuItems
-      .flatMap(item => item.children ? [item, ...item.children] : [item])
-      .find(item => location.pathname.startsWith(item.path))?.key
+    flatMenuItems.find(item => location.pathname === item.path)?.key
+    || flatMenuItems.find(item => location.pathname.startsWith(item.path))?.key
     || menuItems[0]?.key;
 
   const handleCollapse = (value: boolean) => {
