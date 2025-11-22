@@ -1,14 +1,12 @@
 import React, { useState, useEffect } from "react";
-import { Input } from "antd";
+import TextInput from "../../common/inputs/TextInput";
 
-export interface TeacherFilterBarProps {
+export interface TeacherAvailabilityFilterBarProps {
   search: string;
   onSearchChange: (val: string) => void;
-  status: string | null;
-  onStatusChange: (val: string | null) => void;
 }
 
-const TeacherFilterBar: React.FC<TeacherFilterBarProps> = ({
+const TeacherAvailabilityFilterBar: React.FC<TeacherAvailabilityFilterBarProps> = ({
   search,
   onSearchChange,
 }) => {
@@ -27,15 +25,15 @@ const TeacherFilterBar: React.FC<TeacherFilterBarProps> = ({
 
   return (
     <div className="flex flex-col sm:flex-row gap-4 items-center bg-white p-4 rounded-xl shadow-sm">
-      <Input
-        className="w-full sm:w-64"
-        placeholder="Search by name"
+      <TextInput
+        label="Search by teacher name"
         value={searchValue}
         onChange={e => setSearchValue(e.target.value)}
-        allowClear
+        placeholder="Enter teacher name"
+        className="w-full sm:w-64"
       />
     </div>
   );
 };
 
-export default TeacherFilterBar;
+export default TeacherAvailabilityFilterBar;

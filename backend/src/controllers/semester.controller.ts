@@ -111,7 +111,7 @@ export class SemesterController {
         }
     };
 
-    getAtiveSemester = async (req: Request, res: Response, next: NextFunction) => {
+    getActiveSemester = async (req: Request, res: Response, next: NextFunction) => {
         try {
             const semester = await this.semesterService.getActiveSemester();
             if (!semester) {
@@ -245,11 +245,10 @@ export class SemesterController {
     // Teacher in Semester Controllers
     getTeachersInSemester = async (req: Request, res: Response, next: NextFunction) => {
         try {
-            const { teacherId } = req.params;
-            const semesters = await this.semesterService.getTeachersInSemester(Number(teacherId));
-            if (!semesters || semesters.length === 0) {
-                throw new AppError('No semesters found for the teacher', 404, 'TEACHER_SEMESTERS_NOT_FOUND');
-            }
+            console.log('getTeachersInSemester called with params:', req.params);
+            const { semesterId } = req.params;
+            const semesters = await this.semesterService.getTeachersInSemester(Number(semesterId));
+
             res.json(semesters);
         } catch (error) {
             next(error);
@@ -258,7 +257,8 @@ export class SemesterController {
 
     createTeacherInSemester = async (req: Request, res: Response, next: NextFunction) => {
         try {
-            const { teacherId, semesterId, maxPreThesis, maxThesis, isOpen, note } = req.body;
+            const { semesterId } = req.params;
+            const { teacherId, maxPreThesis, maxThesis, isOpen, note } = req.body;
             const data = { teacherId, semesterId, maxPreThesis, maxThesis, isOpen, note };
             const createdTeacherSemester = await this.semesterService.addTeacherToSemester(data);
             res.status(201).json(createdTeacherSemester);
@@ -270,6 +270,7 @@ export class SemesterController {
     updateTeacherInSemester = async (req: Request, res: Response, next: NextFunction) => {
         try {
             const { teacherId, semesterId } = req.params;
+            console.log('updateTeacherInSemester called with params:', req.params, 'and body:', req.body);
             const { maxPreThesis, maxThesis, isOpen, note } = req.body;
             const teacherSemester = await this.semesterService.getTeacherSemester(Number(teacherId), Number(semesterId));
             if (!teacherSemester) {
@@ -285,6 +286,7 @@ export class SemesterController {
     deleteTeacherFromSemester = async (req: Request, res: Response, next: NextFunction) => {
         try {
             const { teacherId, semesterId } = req.params;
+            console.log('deleteTeacherFromSemester called with params:', req.params);
             const teacherSemester = await this.semesterService.getTeacherSemester(Number(teacherId), Number(semesterId));
             if (!teacherSemester) {
                 throw new AppError('No semester found for the teacher', 404, 'TEACHER_SEMESTER_NOT_FOUND');

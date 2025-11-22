@@ -205,6 +205,7 @@ export const useSemesterApi = () => {
     }
   }, [authApi]);
 
+  // Teacher
   // GET /api/semesters/teacher/:semesterId
   const getTeachersInSemester = useCallback(async (semesterId: number) => {
     try {
@@ -215,8 +216,35 @@ export const useSemesterApi = () => {
     }
   }, [authApi]);
 
-  // Attachments
+  // POST /api/semesters/teacher/:semesterId
+  const createTeacherInSemester = useCallback(async (semesterId: number, payload: any) => {
+    try {
+      const res = await authApi.post(`${BASE_PATH}/teacher/${semesterId}`, payload);
+      return { data: res.data, error: null };
+    } catch (e) {
+      return { data: null, error: e instanceof Error ? e.message : 'Failed to create teacher in semester' };
+    }
+  }, [authApi]);
 
+  // PUT /api/semesters/teacher/:semesterId/:teacherId
+  const updateTeacherInSemester = useCallback(async (semesterId: number, teacherId: number, payload: any) => {
+    try {
+      const res = await authApi.put(`${BASE_PATH}/teacher/${semesterId}/${teacherId}`, payload);
+      return { data: res.data, error: null };
+    } catch (e) {
+      return { data: null, error: e instanceof Error ? e.message : 'Failed to update teacher in semester' };
+    }
+  }, [authApi]);
+
+  // DELETE /api/semesters/teacher/:semesterId/:teacherId
+  const deleteTeacherFromSemester = useCallback(async (semesterId: number, teacherId: number) => {
+    try {
+      const res = await authApi.delete(`${BASE_PATH}/teacher/${semesterId}/${teacherId}`);
+      return { data: res.data, error: null };
+    } catch (e) {
+      return { data: null, error: e instanceof Error ? e.message : 'Failed to delete teacher from semester' };
+    }
+  }, [authApi]);
 
   return useMemo(() => ({
     getAll,
@@ -237,6 +265,9 @@ export const useSemesterApi = () => {
     updateStudentInSemester,
     deleteStudentFromSemester,
     getTeachersInSemester,
+    createTeacherInSemester,
+    updateTeacherInSemester,
+    deleteTeacherFromSemester,
   }), [
     getAll,
     getById,
@@ -256,5 +287,8 @@ export const useSemesterApi = () => {
     updateStudentInSemester,
     deleteStudentFromSemester,
     getTeachersInSemester,
+    createTeacherInSemester,
+    updateTeacherInSemester,
+    deleteTeacherFromSemester,
   ]);
 };

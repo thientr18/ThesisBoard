@@ -5,13 +5,9 @@ import {
   UsergroupAddOutlined,
   FileProtectOutlined,
   BookOutlined,
-  CalendarOutlined,
   TeamOutlined,
-  CheckCircleOutlined,
-  FileOutlined,
   NotificationOutlined,
   SettingOutlined,
-  FileSearchOutlined,
   ProjectOutlined,
   FormOutlined,
   ScheduleOutlined,
@@ -110,28 +106,10 @@ const adminModeratorMenu: MenuItem[] = [
     path: "/thesis",
   },
   {
-    key: "timeline",
-    label: "Timeline",
-    icon: <CalendarOutlined />,
-    path: "/timeline",
-  },
-  {
     key: "committee",
     label: "Defense Committee",
     icon: <TeamOutlined />,
     path: "/committee",
-  },
-  {
-    key: "grading",
-    label: "Grading Systems",
-    icon: <CheckCircleOutlined />,
-    path: "/grading",
-  },
-  {
-    key: "files",
-    label: "Files",
-    icon: <FileOutlined />,
-    path: "/files",
   },
   {
     key: "announcement",
@@ -144,12 +122,6 @@ const adminModeratorMenu: MenuItem[] = [
     label: "Settings",
     icon: <SettingOutlined />,
     path: "/settings",
-  },
-  {
-    key: "logs",
-    label: "Logs",
-    icon: <FileSearchOutlined />,
-    path: "/logs",
   },
 ];
 

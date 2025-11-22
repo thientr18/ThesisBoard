@@ -16,6 +16,7 @@ import AdministratorManagement from './pages/admin/AdministratorManagement';
 // Semester management pages
 import SemesterGeneral from './pages/semester/SemesterGeneral';
 import StudentSemesterPage from './pages/semester/StudentSemester';
+import TeacherAvailabilityPage from './pages/semester/TeacherAvailability';
 
 function App() {
   const { isLoading, isAuthenticated, loginWithRedirect } = useAuth0();
@@ -117,15 +118,23 @@ function App() {
             <SemesterGeneral />
           </ProtectedRoute>
         }
-      />
-      <Route
-        path="/semester-management/student"
-        element={
-          <ProtectedRoute>
-            <StudentSemesterPage />
-          </ProtectedRoute>
-        }
-      />
+        />
+        <Route
+          path="/semester-management/student"
+          element={
+            <ProtectedRoute>
+              <StudentSemesterPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/semester-management/teacher"
+          element={
+            <ProtectedRoute>
+              <TeacherAvailabilityPage />
+            </ProtectedRoute>
+          }
+        />
 
       {/* Redirect root to dashboard */}
       <Route path="/" element={<Navigate to="/dashboard" replace />} />

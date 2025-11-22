@@ -227,10 +227,7 @@ export default function StudentSemesterManagement() {
   const [detailVisible, setDetailVisible] = useState(false);
   const [formVisible, setFormVisible] = useState(false);
   const [editingStudent, setEditingStudent] = useState<any | null>(null);
-  const [detailData, setDetailData] = useState<any>(null);
-  const [detailLoading, setDetailLoading] = useState(false);
-  const [detailError, setDetailError] = useState<string | null>(null);
-  
+
   // Add filter states
   const [search, setSearch] = useState("");
   const [status, setStatus] = useState<string | null>(null);

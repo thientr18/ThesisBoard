@@ -25,7 +25,7 @@ router.get(
 
 // Application routes
 router.post(
-  '/topics/:topicId/applications/:studentId',
+  '/applications/:topicId/:studentId',
   allowedPermissions(['apply:topics', 'student:pre_thesis']),
   preThesisController.applyToTopic
 );

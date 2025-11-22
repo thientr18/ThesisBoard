@@ -6,6 +6,9 @@ import { StudentSemester } from '../models/StudentSemester';
 import { Student } from '../models/Student';
 import { User } from '../models/User';
 import { AppError } from '../utils/AppError';
+import { PreThesis } from '../models/PreThesis';
+import { Topic } from '../models/Topic';
+import { Thesis } from '../models/Thesis';
 
 export class SemesterService {
     private semesterRepository: SemesterRepository;
@@ -132,10 +135,96 @@ export class SemesterService {
     }
 
     async updateTeacherInSemester(id: number, data: any) {
+        const availability = await this.teacherAvailabilityRepository.findById(id);
+        if (!availability) {
+            throw new AppError('No teacher availability found', 404, 'TEACHER_AVAILABILITY_NOT_FOUND');
+        }
+
+        const { maxPreThesis, maxThesis } = data;
+
+        if (typeof maxPreThesis === 'number') {
+            const currentPreThesisUsage = await PreThesis.count({
+                where: {
+                    supervisorTeacherId: availability.teacherId,
+                    semesterId: availability.semesterId,
+                    status: ['in_progress', 'completed']
+                }
+            });
+            if (maxPreThesis < currentPreThesisUsage) {
+                throw new AppError(
+                    `Cannot set maxPreThesis (${maxPreThesis}) below current usage (${currentPreThesisUsage})`,
+                    400,
+                    'MAX_PRETHESIS_BELOW_USAGE'
+                );
+            }
+            const sumMaxSlots = await Topic.sum('maxSlots', {
+                where: {
+                    teacherId: availability.teacherId,
+                    semesterId: availability.semesterId,
+                }
+            });
+            if (sumMaxSlots > maxPreThesis) {
+                throw new AppError(
+                    `Total topic slots (${sumMaxSlots}) exceed new maxPreThesis (${maxPreThesis})`,
+                    400,
+                    'TOPIC_SLOTS_EXCEED_MAX'
+                );
+            }
+        }
+
+        // Check maxThesis constraints
+        if (typeof maxThesis === 'number') {
+            const currentThesisUsage = await Thesis.count({
+                where: {
+                    supervisorTeacherId: availability.teacherId,
+                    semesterId: availability.semesterId,
+                    status: ['in_progress', 'defense_scheduled', 'defense_completed', 'completed']
+                }
+            });
+            if (maxThesis < currentThesisUsage) {
+                throw new AppError(
+                    `Cannot set maxThesis (${maxThesis}) below current usage (${currentThesisUsage})`,
+                    400,
+                    'MAX_THESIS_BELOW_USAGE'
+                );
+            }
+        }
+        
         return this.teacherAvailabilityRepository.update(id, data);
     }
 
     async deleteTeacherFromSemester(id: number) {
+        const availability = await this.teacherAvailabilityRepository.findById(id);
+        if (!availability) {
+            throw new AppError('No teacher availability found', 404, 'TEACHER_AVAILABILITY_NOT_FOUND');
+        }
+
+        // Check if teacher has supervised any PreThesis in this semester
+        const preThesisCount = await PreThesis.count({
+            where: {
+                supervisorTeacherId: availability.teacherId,
+                semesterId: availability.semesterId,
+                status: ['in_progress', 'completed']
+            }
+        });
+
+        // Check if teacher has supervised any Thesis in this semester
+        const thesisCount = await Thesis.count({
+            where: {
+                supervisorTeacherId: availability.teacherId,
+                semesterId: availability.semesterId,
+                status: ['in_progress', 'defense_scheduled', 'defense_completed', 'completed']
+            }
+        });
+
+        if (preThesisCount > 0 || thesisCount > 0) {
+            throw new AppError(
+                'Cannot delete teacher availability: teacher has supervised students in this semester.',
+                400,
+                'TEACHER_HAS_SUPERVISED_STUDENTS'
+            );
+        }
+
         return this.teacherAvailabilityRepository.delete(id);
     }
 }

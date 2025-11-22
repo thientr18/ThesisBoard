@@ -161,6 +161,7 @@ export const useUserApi = () => {
   const getAllTeachers = useCallback(async (): Promise<ApiResponse<Teacher[]>> => {
     try {
       const response = await authApi.get(`${BASE_PATH}/teachers`);
+      console.log(response.data);
       return { data: response.data.teachers as Teacher[], error: null };
     } catch (error) {
       return { data: null, error: error instanceof Error ? error.message : 'Failed to fetch teachers' };

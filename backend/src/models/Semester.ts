@@ -1,4 +1,4 @@
-import { DataTypes, Model, InferAttributes, InferCreationAttributes, CreationOptional } from 'sequelize';
+import { DataTypes, Model, InferAttributes, InferCreationAttributes, CreationOptional, Op } from 'sequelize';
 import { sequelize } from './db';
 
 export class Semester extends Model<InferAttributes<Semester>, InferCreationAttributes<Semester>> {
@@ -33,7 +33,32 @@ Semester.init(
     paranoid: true,
     indexes: [
       { fields: ['code'], unique: true },
-      { fields: ['is_active'] }
+      { fields: ['is_active'] },
+      { fields: ['is_current'] },
     ],
+    hooks: {
+        async beforeUpdate(semester) {
+          if (semester.changed('isCurrent') && semester.isCurrent) {
+            await Semester.update(
+              { isCurrent: false },
+              { where: { id: { [Op.ne]: semester.id } } }
+            );
+          }
+          if (semester.changed('isActive') && semester.isActive) {
+            await Semester.update(
+              { isActive: false },
+              { where: { id: { [Op.ne]: semester.id } } }
+            );
+          }
+        },
+      async beforeCreate(semester) {
+        if (semester.isCurrent) {
+          await Semester.update({ isCurrent: false }, { where: {} });
+        }
+        if (semester.isActive) {
+          await Semester.update({ isActive: false }, { where: {} });
+        }
+      },
+    },
   }
 );
