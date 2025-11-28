@@ -13,157 +13,30 @@
       font-size: 12pt;
       line-height: 1.5;
     }
-    
-    .container {
-      width: 100%;
-      max-width: 100%;
-    }
-    
-    /* Header styles */
-    .header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 30px;
-      border-bottom: 2px solid #2c3e50;
-      padding-bottom: 15px;
-    }
-    
-    .header-left {
-      display: flex;
-      align-items: center;
-    }
-    
-    .logo {
-      width: 100px;
-      margin-right: 20px;
-    }
-    
-    .university-name {
-      font-size: 14pt;
-      font-weight: bold;
-    }
-    
-    .header-right {
-      text-align: right;
-    }
-    
-    .report-title {
-      text-align: center;
-      font-size: 18pt;
-      font-weight: bold;
-      margin: 30px 0;
-      text-transform: uppercase;
-    }
-    
-    /* Information sections */
-    .section {
-      margin-bottom: 30px;
-    }
-    
-    .section-title {
-      font-size: 14pt;
-      font-weight: bold;
-      margin-bottom: 10px;
-      color: #2c3e50;
-      border-bottom: 1px solid #ddd;
-      padding-bottom: 5px;
-    }
-    
-    .info-grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 15px;
-    }
-    
-    .info-item {
-      margin-bottom: 8px;
-    }
-    
-    .label {
-      font-weight: bold;
-      margin-right: 8px;
-    }
-    
-    /* Evaluation section */
-    .evaluation-table {
-      width: 100%;
-      border-collapse: collapse;
-      margin-top: 10px;
-    }
-    
-    .evaluation-table th,
-    .evaluation-table td {
-      border: 1px solid #ddd;
-      padding: 8px;
-      text-align: left;
-    }
-    
-    .evaluation-table th {
-      background-color: #f2f2f2;
-    }
-    
-    .comments {
-      margin-top: 15px;
-      border: 1px solid #ddd;
-      padding: 15px;
-      background-color: #f9f9f9;
-    }
-    
-    /* Signature section */
-    .signature-section {
-      display: flex;
-      justify-content: space-between;
-      margin-top: 50px;
-    }
-    
-    .signature {
-      text-align: center;
-      width: 45%;
-    }
-    
-    .signature-line {
-      border-top: 1px solid #333;
-      margin-top: 50px;
-      margin-bottom: 5px;
-      width: 80%;
-      display: inline-block;
-    }
-    
-    /* Footer */
-    .footer {
-      margin-top: 50px;
-      text-align: center;
-      font-size: 10pt;
-      color: #666;
-      border-top: 1px solid #ddd;
-      padding-top: 10px;
-      position: fixed;
-      bottom: 0;
-      width: 100%;
-    }
-    
-    .page-number {
-      font-style: italic;
-    }
-    
-    /* Status styles */
-    .status {
-      display: inline-block;
-      padding: 5px 15px;
-      font-weight: bold;
-      border-radius: 5px;
-    }
-    
-    .status-pass {
-      background-color: #dff0d8;
-      color: #3c763d;
-    }
-    
-    .status-fail {
-      background-color: #f2dede;
-      color: #a94442;
-    }
+    .container { width: 100%; max-width: 100%; }
+    .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; border-bottom: 2px solid #2c3e50; padding-bottom: 15px; }
+    .header-left { display: flex; align-items: center; }
+    .logo { width: 100px; margin-right: 20px; }
+    .university-name { font-size: 14pt; font-weight: bold; }
+    .header-right { text-align: right; }
+    .report-title { text-align: center; font-size: 18pt; font-weight: bold; margin: 30px 0; text-transform: uppercase; }
+    .section { margin-bottom: 30px; }
+    .section-title { font-size: 14pt; font-weight: bold; margin-bottom: 10px; color: #2c3e50; border-bottom: 1px solid #ddd; padding-bottom: 5px; }
+    .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
+    .info-item { margin-bottom: 8px; }
+    .label { font-weight: bold; margin-right: 8px; }
+    .evaluation-table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+    .evaluation-table th, .evaluation-table td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+    .evaluation-table th { background-color: #f2f2f2; }
+    .comments { margin-top: 15px; border: 1px solid #ddd; padding: 15px; background-color: #f9f9f9; }
+    .signature-section { display: flex; justify-content: space-between; margin-top: 50px; }
+    .signature { text-align: center; width: 45%; }
+    .signature-line { border-top: 1px solid #333; margin-top: 50px; margin-bottom: 5px; width: 80%; display: inline-block; }
+    .footer { margin-top: 50px; text-align: center; font-size: 10pt; color: #666; border-top: 1px solid #ddd; padding-top: 10px; position: fixed; bottom: 0; width: 100%; }
+    .page-number { font-style: italic; }
+    .status { display: inline-block; padding: 5px 15px; font-weight: bold; border-radius: 5px; }
+    .status-pass { background-color: #dff0d8; color: #3c763d; }
+    .status-fail { background-color: #f2dede; color: #a94442; }
   </style>
 </head>
 <body>
@@ -171,7 +44,6 @@
     <!-- Header Section -->
     <div class="header">
       <div class="header-left">
-        <img src="<%= report.universityInfo.logo %>" alt="University Logo" class="logo">
         <div class="university-name">
           <%= report.universityInfo.name %>
         </div>
@@ -204,18 +76,6 @@
         <div class="info-item">
           <span class="label">Class Name:</span>
           <span><%= report.student.className %></span>
-        </div>
-        <div class="info-item">
-          <span class="label">Cohort Year:</span>
-          <span><%= report.student.cohortYear %></span>
-        </div>
-        <div class="info-item">
-          <span class="label">GPA:</span>
-          <span><%= report.student.gpa.toFixed(2) %></span>
-        </div>
-        <div class="info-item">
-          <span class="label">Accumulated Credits:</span>
-          <span><%= report.student.accumulatedCredits %></span>
         </div>
       </div>
       <div class="info-item" style="margin-top: 15px;">
@@ -256,11 +116,15 @@
         </thead>
         <tbody>
           <tr>
-            <td><%= report.evaluation.numericGrade.toFixed(1) %></td>
+            <td><%= typeof report.evaluation.numericGrade === 'number' ? report.evaluation.numericGrade.toFixed(1) : '' %></td>
             <td><%= report.evaluation.letterGrade %></td>
             <td>
-              <span class="status <%= report.evaluation.status === 'Pass' ? 'status-pass' : 'status-fail' %>">
-                <%= report.evaluation.status %>
+              <% 
+                // Status: Pass if numericGrade >= 5, Fail otherwise
+                let isPass = (typeof report.evaluation.numericGrade === 'number' && report.evaluation.numericGrade >= 5);
+              %>
+              <span class="status <%= isPass ? 'status-pass' : 'status-fail' %>">
+                <%= isPass ? 'Pass' : 'Fail' %>
               </span>
             </td>
           </tr>

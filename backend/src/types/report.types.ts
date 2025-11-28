@@ -1,25 +1,27 @@
+import { off } from "process";
+
 export interface StudentInfo {
   name: string;
   id: string;
   phone: string;
   className: string;
-  cohortYear: number;
-  gpa: number;
-  accumulatedCredits: number;
+  cohortYear?: number;
+  gpa?: number;
+  accumulatedCredits?: number;
   preThesisTitle: string;
 }
 
 export interface SupervisorInfo {
   name: string;
   academicTitle: string;
-  department: string;
+  office: string;
 }
 
 export interface EvaluationInfo {
   numericGrade: number;
   letterGrade: string;
   comments: string;
-  status: 'Pass' | 'Fail';
+  status: 'Pass' | 'Fail' | 'Not Graded' | undefined | null;
 }
 
 export interface PreThesisReportData {
@@ -30,7 +32,6 @@ export interface PreThesisReportData {
   date: Date;
   universityInfo: {
     name: string;
-    logo: string;
     address: string;
     contact: string;
   };

@@ -44,7 +44,6 @@ export class PreThesisController {
 
   getOwnTopicsInActiveSemester = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
-      console.log('Fetching own topics in active semester');
       const userId = req.user?.id;
       const teacherId = await this.userService.getTeacherIdByUserId(Number(userId));
       if (!teacherId) {
@@ -373,7 +372,6 @@ export class PreThesisController {
     try {
       const { status, note } = req.body;
       const applicationId = Number(req.params.id);
-      console.log(`Updating application ID ${applicationId} to status: ${status}`);
       
       if (!['pending', 'accepted', 'rejected', 'cancelled'].includes(status)) {
         throw new AppError('Invalid status value', 400, 'INVALID_STATUS');
@@ -393,7 +391,6 @@ export class PreThesisController {
   cancelApplicationStatus = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
       const applicationId = Number(req.params.id);
-      console.log(`Cancelling application with ID: ${applicationId}`);
       
       const application = await this.preThesisService.updateApplicationStatus(applicationId, 'cancelled');
       
@@ -666,52 +663,77 @@ export class PreThesisController {
    */
   generatePreThesisReportPDF = async (req: Request, res: Response): Promise<void> => {
     try {
-      // In a real app, you'd get this data from the database
-      // based on the request parameters (e.g., studentId)
+      const { preThesisId } = req.params;
+      const preThesis = await this.preThesisService.getPreThesisById(Number(preThesisId));
+      if (!preThesis) {
+        res.status(404).json({
+          status: 'fail',
+          message: 'Pre-thesis not found'
+        });
+        return;
+      }
+      
+      const student = await this.userService.getStudentById(preThesis.studentId);
+      const studentUserData = await this.userService.getUserById(student?.userId || 0);
+      const supervisor = await this.userService.getTeacherById(preThesis.supervisorTeacherId);
+      const supervisorUserData = await this.userService.getUserById(supervisor?.userId || 0);
+      const topicApplication = preThesis.topicApplicationId
+        ? await this.preThesisService.getApplicationById(preThesis.topicApplicationId)
+        : null;
+      const topic = topicApplication
+        ? await this.preThesisService.getTopicById(topicApplication.topicId)
+        : null;
+      const semester = await this.semesterService.getSemesterById(preThesis.semesterId);  
+
+      const numericGrade = preThesis.finalScore !== null && preThesis.finalScore !== undefined
+                          ? Number(preThesis.finalScore)
+                          : 0;
+
       const reportData: PreThesisReportData = {
         student: {
-          name: "",
-          id: "",
-          phone: "",
-          className: "",
-          cohortYear: 0,
-          gpa: 0,
-          accumulatedCredits: 0,
-          preThesisTitle: ""
+          name: studentUserData?.fullName || '',
+          id: student?.studentIdCode || '',
+          phone: student?.phone || '',
+          className: student?.className || '',
+          preThesisTitle: topic?.title || topicApplication?.proposalTitle || ''
         },
         supervisor: {
-          name: "",
-          academicTitle: "",
-          department: ""
+          name: supervisorUserData?.fullName || '',
+          academicTitle: supervisor?.title || '',
+          office: supervisor?.office || ''
         },
         evaluation: {
-          numericGrade: 0,
-          letterGrade: "",
-          comments: "",
-          status: "Pass"
+          numericGrade: numericGrade,
+          letterGrade: preThesis.finalScore !== null && preThesis.finalScore !== undefined
+            ? (preThesis.finalScore >= 80 ? 'A'
+              : preThesis.finalScore >= 70 ? 'B'
+              : preThesis.finalScore >= 50 ? 'C'
+              : 'F')
+            : '',
+          comments: preThesis.feedback || '',
+          status: preThesis.finalScore !== null && preThesis.finalScore !== undefined
+            ? (preThesis.finalScore >= 50 ? 'Pass' : 'Fail')
+            : 'Not Graded'
         },
-        semester: "",
+        semester: semester?.name || '',
         date: new Date(),
         universityInfo: {
           name: "International University - Vietnam National University HCM City",
-          logo: path.join(__dirname, '../assets/Logo-HCMIU.svg.png'),
           address: "Quarter 33, Linh Xuan Ward, Ho Chi Minh City, Vietnam",
           contact: "info@hcmiu.edu.vn | (028) 37244270"
         },
         departmentHead: {
-          name: "",
-          title: ""
+          name: '',
+          title: ''
         }
       };
 
       const pdfBuffer = await this.preThesisService.generatePreThesisReport(reportData);
-      
-      // Set headers for PDF download
+
       res.setHeader('Content-Type', 'application/pdf');
       res.setHeader('Content-Disposition', `attachment; filename=pre-thesis-report-${reportData.student.id}.pdf`);
       res.setHeader('Content-Length', pdfBuffer.length);
-      
-      // Send PDF buffer as response
+
       res.send(pdfBuffer);
     } catch (error) {
       console.error('Error generating pre-thesis report:', error);

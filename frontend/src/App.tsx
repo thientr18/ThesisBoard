@@ -144,6 +144,7 @@ function App() {
       />
 
       {/* Pre-thesis Pages */}
+      {/* for students only */}
       <Route
         path="/projects"
         element={

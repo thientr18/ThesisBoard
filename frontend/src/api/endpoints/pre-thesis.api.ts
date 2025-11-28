@@ -294,7 +294,7 @@ export const usePreThesisApi = () => {
     preThesisId: number | string
   ): Promise<BaseResponse<Blob>> => {
     try {
-      const res = await api.get(`${REPORTS_PATH}/evaluation/${preThesisId}`, {
+      const res = await api.get(`${REPORTS_PATH}/${preThesisId}`, {
         responseType: 'blob'
       });
       return { data: res.data as Blob, error: null };

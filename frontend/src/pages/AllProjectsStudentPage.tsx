@@ -31,6 +31,14 @@ const AllProjectsStudentPage: React.FC = () => {
   ) {
     return <AllStudentProjects user={user} />;
   }
+
+  if (
+    user &&
+    Array.isArray(user.roles) &&
+    user.roles.some((r: any) => r.name === 'admin' || r.name === 'moderator')
+  ) {
+    return <Navigate to="/dashboard" replace />;
+  }
   
   return <Navigate to="/forbidden" replace />;
 };
