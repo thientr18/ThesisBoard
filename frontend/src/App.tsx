@@ -18,6 +18,13 @@ import SemesterGeneral from './pages/semester/SemesterGeneral';
 import StudentSemesterPage from './pages/semester/StudentSemester';
 import TeacherAvailabilityPage from './pages/semester/TeacherAvailability';
 
+// Pre-thesis topic Pages
+import PreThesisTopicPage from './pages/prethesis/TopicPage';
+import PreThesisApplicationPage from './pages/prethesis/ApplicationPage';
+import PreThesisProjectsListPage from './pages/prethesis/PreThesisProjectsListPage';
+import AllProjectStudentPage from './pages/AllProjectsStudentPage';
+import PreThesisDetailPage from './pages/prethesis/PreThesisDetailPage';
+
 function App() {
   const { isLoading, isAuthenticated, loginWithRedirect } = useAuth0();
   const location = useLocation();
@@ -118,23 +125,67 @@ function App() {
             <SemesterGeneral />
           </ProtectedRoute>
         }
-        />
-        <Route
-          path="/semester-management/student"
-          element={
-            <ProtectedRoute>
-              <StudentSemesterPage />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/semester-management/teacher"
-          element={
-            <ProtectedRoute>
-              <TeacherAvailabilityPage />
-            </ProtectedRoute>
-          }
-        />
+      />
+      <Route
+        path="/semester-management/student"
+        element={
+          <ProtectedRoute>
+            <StudentSemesterPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/semester-management/teacher"
+        element={
+          <ProtectedRoute>
+            <TeacherAvailabilityPage />
+          </ProtectedRoute>
+        }
+      />
+
+      {/* Pre-thesis Pages */}
+      <Route
+        path="/projects"
+        element={
+          <ProtectedRoute>
+            <AllProjectStudentPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/prethesis/topics"
+        element={
+          <ProtectedRoute>
+            <PreThesisTopicPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/prethesis/applications"
+        element={
+          <ProtectedRoute>
+            <PreThesisApplicationPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/prethesis/projects"
+        element={
+          <ProtectedRoute>
+            <PreThesisProjectsListPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/prethesis/:id"
+        element={
+          <ProtectedRoute>
+            <PreThesisDetailPage />
+          </ProtectedRoute>
+        }
+      />
+
+      {/* Thesis Pages */}
 
       {/* Redirect root to dashboard */}
       <Route path="/" element={<Navigate to="/dashboard" replace />} />

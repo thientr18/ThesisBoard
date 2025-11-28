@@ -4,6 +4,7 @@ import Tag from "../../common/display/Tag";
 import { EditOutlined, DeleteOutlined, ExclamationCircleOutlined, UserOutlined } from "@ant-design/icons";
 import PrimaryButton from "../../common/buttons/PrimaryButton";
 import SecondaryButton from "../../common/buttons/SecondaryButton";
+import { Alert } from "../../common/feedback/Alert";
 
 export interface TeacherAvailabilityDetailData {
   id: number;
@@ -27,6 +28,7 @@ export interface TeacherAvailabilityDetailProps {
   onEdit?: (teacher: TeacherAvailabilityDetailData) => void;
   onDelete?: (teacherId: number) => void;
   canManage?: boolean;
+  deleteError?: string | null;
 }
 
 const renderStatusTag = (isOpen: boolean) => {
@@ -42,6 +44,7 @@ const TeacherAvailabilityDetail: React.FC<TeacherAvailabilityDetailProps> = ({
   onEdit,
   onDelete,
   canManage = false,
+  deleteError,
 }) => {
   const [confirmVisible, setConfirmVisible] = useState(false);
   if (!teacher) return null;
@@ -56,7 +59,6 @@ const TeacherAvailabilityDetail: React.FC<TeacherAvailabilityDetailProps> = ({
 
   const handleConfirmDelete = () => {
     onDelete?.(teacher.id);
-    setConfirmVisible(false);
   };
 
   const handleCancelDelete = () => {
@@ -141,6 +143,11 @@ const TeacherAvailabilityDetail: React.FC<TeacherAvailabilityDetailProps> = ({
         width={400}
         closeIcon={null}
       >
+        {deleteError && (
+          <div className="mb-2">
+            <Alert type="error" message={deleteError} showIcon />
+          </div>
+        )}
         <div className="text-gray-700 text-base">
           Are you sure you want to delete this teacher's availability for the semester? This action cannot be undone.
         </div>

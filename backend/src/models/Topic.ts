@@ -11,6 +11,8 @@ export class Topic extends Model<InferAttributes<Topic>, InferCreationAttributes
   declare tags: object | null;
   declare maxSlots: number | null;
   declare status: 'open' | 'closed';
+
+  
 }
 
 Topic.init(

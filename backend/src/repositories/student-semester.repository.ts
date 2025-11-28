@@ -147,11 +147,10 @@ export class StudentSemesterRepository extends GenericRepository<StudentSemester
         });
     }
 
-
-
-
-
-
-
+    async getStudentInActiveSemester(studentId: number): Promise<any | null> {
+        return this.model.findOne({
+            where: { studentId },
+        });
+    }
 
 }

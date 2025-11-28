@@ -6,8 +6,6 @@ import type {
   TopicApplication,
   PreThesis,
   PreThesisGrade,
-  CreatePreThesisRequest,
-  UpdatePreThesisRequest,
   PreThesisStats,
   ApplicationStats
 } from '../../types/pre-thesis.types';
@@ -35,20 +33,85 @@ export const usePreThesisApi = () => {
   const getTopics = useCallback(async (): Promise<BaseResponse<Topic[]>> => {
     try {
       const res = await api.get(TOPICS_PATH);
-      return { data: res.data as Topic[], error: null };
+      return { data: res.data?.data as Topic[], error: null };
     } catch (e) {
       return { data: null, error: handleError(e, 'Failed to fetch topics') };
+    }
+  }, [api]);
+
+  const getTopicsBySemester = useCallback(async (semesterId: number | string): Promise<BaseResponse<Topic[]>> => {
+    try {
+      const res = await api.get(`${TOPICS_PATH}/semester/${semesterId}`);
+      return { data: res.data?.data as Topic[], error: null };
+    } catch (e) {
+      return { data: null, error: handleError(e, 'Failed to fetch topics for semester') };
     }
   }, [api]);
 
   const getTopicById = useCallback(async (id: number | string): Promise<BaseResponse<Topic>> => {
     try {
       const res = await api.get(`${TOPICS_PATH}/${id}`);
-      return { data: res.data as Topic, error: null };
+      return { data: res.data?.data as Topic, error: null };
     } catch (e) {
       return { data: null, error: handleError(e, 'Failed to fetch topic') };
     }
   }, [api]);
+
+  const getTopicsWithSlots = useCallback(async (semesterId?: number | string): Promise<BaseResponse<Topic[]>> => {
+    try {
+      const res = await api.get(`${TOPICS_PATH}/with-slots`, { params: { semesterId } });
+      return { data: res.data?.data as Topic[], error: null };
+    } catch (e) {
+      return { data: null, error: handleError(e, 'Failed to fetch topics with slots') };
+    }
+  }, [api]);
+
+  const getOwnTopicsInActiveSemester = useCallback(async (semesterId?: number | string): Promise<BaseResponse<Topic[]>> => {
+    try {
+      const res = await api.get(`${TOPICS_PATH}/active-semester/own`, { params: { semesterId } });
+      return { data: res.data?.data as Topic[], error: null };
+    } catch (e) {
+      return { data: null, error: handleError(e, 'Failed to fetch own topics in active semester') };
+    }
+  }, [api]);
+
+  const createTopic = useCallback(async (data: {
+    title: string;
+    description?: string;
+    requirements?: string;
+    tags?: string[];
+    maxSlots?: number;
+    semesterId: number | string;
+  }): Promise<BaseResponse<Topic>> => {
+    try {
+      const res = await api.post(TOPICS_PATH, data);
+      return { data: res.data?.data as Topic, error: null };
+    } catch (e) {
+      return { data: null, error: handleError(e, 'Failed to create topic') };
+    }
+  }, [api]);
+
+  const updateTopic = useCallback(async (
+    id: number | string,
+    data: Partial<Topic>
+  ): Promise<{ data: Topic | null; error: string | null }> => {
+    try {
+      const res = await api.put(`${TOPICS_PATH}/${id}`, data);
+      return { data: res.data?.data as Topic, error: null };
+    } catch (e) {
+      return { data: null, error: handleError(e, 'Failed to update topic') };
+    }
+  }, [api]);
+
+  const deleteTopic = useCallback(async (id: number | string): Promise<{ error: string | null }> => {
+    try {
+      await api.delete(`${TOPICS_PATH}/${id}`);
+      return { error: null };
+    } catch (e) {
+      return { error: handleError(e, 'Failed to delete topic') };
+    }
+  }, [api]);
+
 
   // Applications
   const getApplications = useCallback(async (): Promise<BaseResponse<TopicApplication[]>> => {
@@ -57,6 +120,24 @@ export const usePreThesisApi = () => {
       return { data: res.data as TopicApplication[], error: null };
     } catch (e) {
       return { data: null, error: handleError(e, 'Failed to fetch applications') };
+    }
+  }, [api]);
+
+  const getApplicationsByTeacher = useCallback(async (semesterId: number | string): Promise<BaseResponse<TopicApplication[]>> => {
+    try {
+      const res = await api.get(`${APPLICATIONS_PATH}/teacher/me/${semesterId}`);
+      return { data: res.data?.data as TopicApplication[], error: null };
+    } catch (e) {
+      return { data: null, error: handleError(e, 'Failed to fetch applications for teacher') };
+    }
+  }, [api]);
+
+  const getMyApplications = useCallback(async (semesterId: number | string): Promise<BaseResponse<TopicApplication[]>> => {
+    try {
+      const res = await api.get(`${APPLICATIONS_PATH}/student/me/${semesterId}`);
+      return { data: res.data?.data as TopicApplication[], error: null };
+    } catch (e) {
+      return { data: null, error: handleError(e, 'Failed to fetch own applications') };
     }
   }, [api]);
 
@@ -71,23 +152,35 @@ export const usePreThesisApi = () => {
 
   const applyToTopic = useCallback(async (
     topicId: number | string,
-    studentId: number | string,
-    motivation?: string
+    data: { proposalTitle: string; proposalAbstract: string }
   ): Promise<BaseResponse<TopicApplication>> => {
     try {
-      const res = await api.post(`${TOPICS_PATH}/${topicId}/applications/${studentId}`, { motivation });
+      const res = await api.post(`${TOPICS_PATH}/${topicId}/apply`, data);
       return { data: res.data as TopicApplication, error: null };
     } catch (e) {
       return { data: null, error: handleError(e, 'Failed to apply to topic') };
     }
   }, [api]);
 
-  const updateApplicationStatus = useCallback(async (
+  const updateApplication = useCallback(async (
     id: number | string,
-    status: string
+    data: Partial<TopicApplication>
   ): Promise<BaseResponse<TopicApplication>> => {
     try {
-      const res = await api.patch(`${APPLICATIONS_PATH}/${id}/status`, { status });
+      const res = await api.put(`${APPLICATIONS_PATH}/${id}`, data);
+      return { data: res.data as TopicApplication, error: null };
+    } catch (e) {
+      return { data: null, error: handleError(e, 'Failed to update application') };
+    }
+  }, [api]);
+
+  const updateApplicationStatus = useCallback(async (
+    id: number | string,
+    status: string,
+    note?: string | null
+  ): Promise<BaseResponse<TopicApplication>> => {
+    try {
+      const res = await api.patch(`${APPLICATIONS_PATH}/${id}/status`, { status, note });
       return { data: res.data as TopicApplication, error: null };
     } catch (e) {
       return { data: null, error: handleError(e, 'Failed to update application status') };
@@ -96,7 +189,7 @@ export const usePreThesisApi = () => {
 
   const cancelApplication = useCallback(async (id: number | string): Promise<BaseResponse<TopicApplication>> => {
     try {
-      const res = await api.post(`${APPLICATIONS_PATH}/${id}/cancel`);
+      const res = await api.patch(`${APPLICATIONS_PATH}/${id}/cancel`);
       return { data: res.data as TopicApplication, error: null };
     } catch (e) {
       return { data: null, error: handleError(e, 'Failed to cancel application') };
@@ -113,33 +206,39 @@ export const usePreThesisApi = () => {
     }
   }, [api]);
 
+  const getPreThesesByStudent = useCallback(async (): Promise<BaseResponse<PreThesis[]>> => {
+    try {
+      const res = await api.get(`${PRETHESIS_PATH}/student/me`);
+      return { data: res.data?.data as PreThesis[], error: null };
+    } catch (e) {
+      return { data: null, error: handleError(e, 'Failed to fetch pre-theses by student') };
+    }
+  }, [api]);
+
   const getPreThesisById = useCallback(async (id: number | string): Promise<BaseResponse<PreThesis>> => {
     try {
       const res = await api.get(`${PRETHESIS_PATH}/${id}`);
-      return { data: res.data as PreThesis, error: null };
+      return { data: res.data?.data as PreThesis, error: null };
     } catch (e) {
       return { data: null, error: handleError(e, 'Failed to fetch pre-thesis') };
     }
   }, [api]);
 
-  const createPreThesis = useCallback(async (
-    data: CreatePreThesisRequest
-  ): Promise<BaseResponse<PreThesis>> => {
+  const getPreThesesForTeacherBySemester = useCallback(async (semesterId: number | string): Promise<BaseResponse<PreThesis[]>> => {
     try {
-      if (data.attachments?.length) {
-        const formData = new FormData();
-        formData.append('title', data.title);
-        formData.append('description', data.description);
-        formData.append('studentId', String(data.studentId));
-        formData.append('semesterId', String(data.semesterId));
-        data.attachments.forEach(f => formData.append('attachments', f));
-        const res = await api.post(PRETHESIS_PATH, formData);
-        return { data: res.data as PreThesis, error: null };
-      }
-      const res = await api.post(PRETHESIS_PATH, data);
-      return { data: res.data as PreThesis, error: null };
+      const res = await api.get(`${PRETHESIS_PATH}/teacher/me/${semesterId}`);
+      return { data: res.data?.data as PreThesis[], error: null };
     } catch (e) {
-      return { data: null, error: handleError(e, 'Failed to create pre-thesis') };
+      return { data: null, error: handleError(e, 'Failed to fetch pre-theses for teacher by semester') };
+    }
+  }, [api]);
+
+  const getPreThesesForAdministratorBySemester = useCallback(async (semesterId: number | string): Promise<BaseResponse<PreThesis[]>> => {
+    try {
+      const res = await api.get(`${PRETHESIS_PATH}/administrator/me/${semesterId}`);
+      return { data: res.data?.data as PreThesis[], error: null };
+    } catch (e) {
+      return { data: null, error: handleError(e, 'Failed to fetch pre-theses for administrator by semester') };
     }
   }, [api]);
 
@@ -160,19 +259,10 @@ export const usePreThesisApi = () => {
     gradeData: PreThesisGrade
   ): Promise<BaseResponse<PreThesis>> => {
     try {
-      const res = await api.post(`${PRETHESIS_PATH}/${id}/grade`, gradeData);
+      const res = await api.patch(`${PRETHESIS_PATH}/${id}/grade`, gradeData);
       return { data: res.data as PreThesis, error: null };
     } catch (e) {
       return { data: null, error: handleError(e, 'Failed to grade pre-thesis') };
-    }
-  }, [api]);
-
-  const cancelPreThesis = useCallback(async (id: number | string): Promise<BaseResponse<PreThesis>> => {
-    try {
-      const res = await api.post(`${PRETHESIS_PATH}/${id}/cancel`);
-      return { data: res.data as PreThesis, error: null };
-    } catch (e) {
-      return { data: null, error: handleError(e, 'Failed to cancel pre-thesis') };
     }
   }, [api]);
 
@@ -240,19 +330,29 @@ export const usePreThesisApi = () => {
     // Topics
     getTopics,
     getTopicById,
+    getTopicsBySemester,
+    getOwnTopicsInActiveSemester,
+    createTopic,
+    deleteTopic,
+    updateTopic,
+    getTopicsWithSlots,
     // Applications
     getApplications,
+    getApplicationsByTeacher,
     getApplicationById,
     applyToTopic,
+    updateApplication,
     updateApplicationStatus,
     cancelApplication,
+    getMyApplications,
     // Pre-Thesis core
     getPreTheses,
+    getPreThesesByStudent,
     getPreThesisById,
-    createPreThesis,
+    getPreThesesForTeacherBySemester,
+    getPreThesesForAdministratorBySemester,
     updatePreThesisStatus,
     gradePreThesis,
-    cancelPreThesis,
     // Stats
     getPreThesisStats,
     getApplicationStats,
@@ -262,17 +362,27 @@ export const usePreThesisApi = () => {
   }), [
     getTopics,
     getTopicById,
+    getTopicsBySemester,
+    getOwnTopicsInActiveSemester,
+    createTopic,
+    deleteTopic,
+    updateTopic,
+    getTopicsWithSlots,
     getApplications,
+    getApplicationsByTeacher,
     getApplicationById,
     applyToTopic,
+    updateApplication,
     updateApplicationStatus,
     cancelApplication,
+    getMyApplications,
     getPreTheses,
+    getPreThesesByStudent,
     getPreThesisById,
-    createPreThesis,
+    getPreThesesForTeacherBySemester,
+    getPreThesesForAdministratorBySemester,
     updatePreThesisStatus,
     gradePreThesis,
-    cancelPreThesis,
     getPreThesisStats,
     getApplicationStats,
     generatePreThesisReport,

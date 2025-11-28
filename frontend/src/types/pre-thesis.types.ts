@@ -21,7 +21,7 @@ export interface TopicApplication {
   id: number;
   topicId: number;
   studentId: number;
-  status: 'PENDING' | 'APPROVED' | 'REJECTED' | 'CANCELLED';
+  status: 'pending' | 'approved' | 'rejected' | 'cancelled';
   note: string | null;
   decidedAt: string | null;
   proposalTitle: string | null;
@@ -37,7 +37,7 @@ export interface PreThesis {
   studentId: number;
   supervisorId: number;
   semesterId: number;
-  status: 'IN_PROGRESS' | 'SUBMITTED' | 'GRADED' | 'CANCELLED';
+  status: 'in_progress' | 'submitted' | 'graded' | 'cancelled';
   finalScore?: number | null;
   feedback?: string | null;
   createdAt: string;
@@ -45,7 +45,7 @@ export interface PreThesis {
 }
 
 export interface PreThesisGrade {
-  grade: number;
+  finalScore: number;
   feedback: string;
 }
 

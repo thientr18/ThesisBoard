@@ -1,11 +1,14 @@
 import { NextFunction, Request, Response } from 'express';
 import { SemesterService } from '../services/semester.service';
 import { AppError } from '../utils/AppError';
+import { UserService } from '../services/user.service';
 export class SemesterController {
     private semesterService: SemesterService;
+    private userService: UserService;
 
     constructor() {
         this.semesterService = new SemesterService();
+        this.userService = new UserService();
     }
 
     getAllSemesters = async (req: Request, res: Response, next: NextFunction) => {
@@ -298,5 +301,27 @@ export class SemesterController {
             next(error);
         }
     };
-
+    getOwnTeacherAvailabilityInActiveSemester = async (req: Request, res: Response, next: NextFunction) => {
+        try {
+            const userId = req.user?.id;
+            if (!userId) {
+                throw new AppError('User ID not found in request', 400, 'USER_ID_NOT_FOUND');
+            }
+            const teacherId = await this.userService.getTeacherIdByUserId(Number(userId));
+            if (!teacherId) {
+                throw new AppError('No teacher found for the user', 404, 'TEACHER_NOT_FOUND');
+            }
+            const activeSemester = await this.semesterService.getActiveSemester();
+            if (!activeSemester) {
+                throw new AppError('No active semester found', 404, 'ACTIVE_SEMESTER_NOT_FOUND');
+            }
+            const availability = await this.semesterService.getTeacherAvailabilityInSemester(Number(teacherId), activeSemester.id);
+            if (!availability) {
+                throw new AppError('No availability found for the teacher in the semester', 404, 'TEACHER_AVAILABILITY_NOT_FOUND');
+            }
+            res.json(availability);
+        } catch (error) {
+            next(error);
+        }
+    };
 }

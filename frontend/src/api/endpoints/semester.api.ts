@@ -216,6 +216,15 @@ export const useSemesterApi = () => {
     }
   }, [authApi]);
 
+  const getOwnTeacherAvailabilityInActiveSemester = useCallback(async () => {
+    try {
+      const res = await authApi.get(`${BASE_PATH}/teacher/availability/own`);
+      return { data: res.data, error: null };
+    } catch (e) {
+      return { data: null, error: e instanceof Error ? e.message : 'Failed to fetch teacher availability' };
+    }
+  }, [authApi]);
+
   // POST /api/semesters/teacher/:semesterId
   const createTeacherInSemester = useCallback(async (semesterId: number, payload: any) => {
     try {
@@ -268,6 +277,7 @@ export const useSemesterApi = () => {
     createTeacherInSemester,
     updateTeacherInSemester,
     deleteTeacherFromSemester,
+    getOwnTeacherAvailabilityInActiveSemester,
   }), [
     getAll,
     getById,
@@ -290,5 +300,6 @@ export const useSemesterApi = () => {
     createTeacherInSemester,
     updateTeacherInSemester,
     deleteTeacherFromSemester,
+    getOwnTeacherAvailabilityInActiveSemester,
   ]);
 };

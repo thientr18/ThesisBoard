@@ -43,6 +43,10 @@ function TeacherAvailabilityManagementContent({
   currentPage,
   setCurrentPage,
   pageSize,
+  formError,
+  setFormError,
+  deleteError,
+  setDeleteError,
 }: any) {
   const { collapsed } = useLayoutContext();
   const sidebarWidth = collapsed ? SIDEBAR_COLLAPSED_WIDTH : SIDEBAR_WIDTH;
@@ -149,6 +153,7 @@ function TeacherAvailabilityManagementContent({
               onEdit={handleOpenEditForm}
               canManage={isAdminOrModerator}
               onDelete={() => handleDeleteTeacherAvailability(editingTeacher)}
+              deleteError={deleteError}
             />
 
             {isAdminOrModerator && (
@@ -158,6 +163,7 @@ function TeacherAvailabilityManagementContent({
                 initialData={editingTeacher}
                 onSubmit={handleSubmitTeacherAvailability}
                 onCancel={() => setFormVisible(false)}
+                error={formError}
               />
             )}
           </div>
@@ -196,6 +202,10 @@ export default function TeacherAvailabilityManagement() {
 
   // Permissions
   const isAdminOrModerator = Array.isArray(user?.roles) && user.roles.some((role: any) => role.name === "admin" || role.name === "moderator");
+
+  // Error submit
+  const [formError, setFormError] = useState<string | null>(null);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
 
   // Load user
   useEffect(() => {
@@ -295,6 +305,7 @@ export default function TeacherAvailabilityManagement() {
 
   const handleSubmitTeacherAvailability = async (payload: any) => {
     if (!semesterId) return;
+    setFormError(null);
     try {
       if (editingTeacher) {
         await updateTeacherInSemester(semesterId, editingTeacher.teacherId, payload);
@@ -303,24 +314,30 @@ export default function TeacherAvailabilityManagement() {
         await createTeacherInSemester(semesterId, payload);
       }
       setFormVisible(false);
-      // reload teachers
       const { data } = await getTeachersInSemester(semesterId);
       setTeachers(data ?? []);
       setTotalItems((data ?? []).length);
-    } catch (err) {
-      setError("Failed to save teacher availability.");
+    } catch (err: any) {
+      let message = "Failed to save teacher availability.";
+      if (err?.response?.data?.message) message = err.response.data.message;
+      else if (err?.message) message = err.message;
+      setFormError(message);
     }
   };
 
   const handleDeleteTeacherAvailability = async (teacherAvailability: any) => {
     if (!semesterId) return;
+    setDeleteError(null);
     try {
       await deleteTeacherFromSemester(semesterId, teacherAvailability.teacherId);
       const { data } = await getTeachersInSemester(semesterId);
       setTeachers(data ?? []);
       setTotalItems((data ?? []).length);
-    } catch (err) {
-      setError("Failed to delete teacher from semester.");
+    } catch (err: any) {
+      let message = "Failed to delete teacher from semester.";
+      if (err?.response?.data?.message) message = err.response.data.message;
+      else if (err?.message) message = err.message;
+      setDeleteError(message);
     }
   };
 
@@ -354,6 +371,10 @@ export default function TeacherAvailabilityManagement() {
         currentPage={currentPage}
         setCurrentPage={setCurrentPage}
         pageSize={pageSize}
+        formError={formError}
+        setFormError={setFormError}
+        deleteError={deleteError}
+        setDeleteError={setDeleteError}
       />
     </LayoutProvider>
   );

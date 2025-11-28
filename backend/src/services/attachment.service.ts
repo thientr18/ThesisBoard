@@ -3,9 +3,10 @@ import { Attachment } from "../models/Attachment";
 import { AppError } from "../utils/AppError";
 import fs from "fs";
 import path from "path";
+import { th } from "zod/locales";
 
 // Define valid entity types as a union type
-export type EntityType = "topic" | "submission" | "announcement" | "topic_application" | "thesis_proposal";
+export type EntityType = "topic" | "prethesis_submission" | "thesis_submission" | "announcement" | "topic_application" | "thesis_proposal" | "system" | "other";
 
 export class AttachmentService {
   private attachmentRepository: AttachmentRepository;
@@ -32,10 +33,8 @@ export class AttachmentService {
       if (!fs.existsSync(filePath)) {
         throw new AppError(`Uploaded file not found: ${file.filename}`, 500, 'FILE_NOT_FOUND');
       }
-
-      await fs.promises.writeFile(filePath, file.buffer);
       
-      const attachment = await Attachment.create({
+      const attachment = await this.attachmentRepository.create({
         entityType,
         entityId,
         fileUrl,
@@ -61,7 +60,7 @@ export class AttachmentService {
     entityId: number,
     uploadedByUserId: number
   ): Promise<Attachment> {
-    const attachment = await Attachment.create({
+    const attachment = await this.attachmentRepository.create({
       entityType,
       entityId,
       fileUrl,
@@ -86,6 +85,16 @@ export class AttachmentService {
         entityId
       }
     });
+  }
+
+  public async getDownloadInfo(id: string): Promise<{ attachment: Attachment, filePath: string }> {
+    const attachment = await this.attachmentRepository.findById(Number(id));
+    if (!attachment) throw new AppError('Attachment not found', 404, 'NOT_FOUND');
+
+    const filePath = path.join(process.cwd(), 'uploads', path.basename(attachment.fileUrl));
+    if (!fs.existsSync(filePath)) throw new AppError('File not found', 404, 'FILE_NOT_FOUND');
+
+    return { attachment, filePath };
   }
 
   /**

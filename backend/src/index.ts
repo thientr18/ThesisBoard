@@ -14,6 +14,7 @@ const app = express();
 app.use(express.static(path.join(__dirname, '../frontend/public')));
 app.use(express.json());
 app.use(morgan('dev'));
+app.use('/uploads', express.static(path.join(process.cwd(), './uploads')));
 
 const corsOptions = {
     origin: ['http://localhost:5173'],
@@ -35,7 +36,7 @@ async function start() {
         await sequelize.sync();
         console.log("✅ Models synchronized.");
 
-        const PORT = process.env.PORT || 5000;
+        const PORT = process.env.PORT || 8080;
         app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
     } catch (error) {
         console.error("❌ FAILED TO CONNECT TO DATABASE:", error);

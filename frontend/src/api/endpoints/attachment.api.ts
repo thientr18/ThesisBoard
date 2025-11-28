@@ -33,23 +33,17 @@ export const useAttachmentApi = () => {
   }, [authApi]);
 
   const uploadFiles = useCallback(async (
-    files: File | File[],
+    files: FileList,
     entityType: string,
     entityId: string
   ): Promise<ApiResponse<Attachment[]>> => {
+    const formData = new FormData();
+    Array.from(files).forEach(file => formData.append('files', file));
     try {
-      const formData = new FormData();
-      if (Array.isArray(files)) {
-        files.forEach(f => formData.append('files', f));
-      } else {
-        formData.append('files', files);
-      }
-      formData.append('entityType', entityType);
-      formData.append('entityId', entityId);
-
-      // Let browser set multipart boundary automatically
-      const res = await authApi.post(BASE_PATH, formData);
-      return { data: res.data as Attachment[], error: null };
+      const res = await authApi.post(`${BASE_PATH}/${entityType}/${entityId}`, formData, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+      });
+      return { data: res.data.data, error: null };
     } catch (e) {
       return { data: null, error: e instanceof Error ? e.message : 'Failed to upload files' };
     }
@@ -68,6 +62,17 @@ export const useAttachmentApi = () => {
     }
   }, [authApi]);
 
+  const downloadAttachment = useCallback(async (id: string): Promise<ApiResponse<Blob>> => {
+    try {
+      const res = await authApi.get(`${BASE_PATH}/download/${id}`, {
+        responseType: 'blob',
+      });
+      return { data: res.data as Blob, error: null };
+    } catch (e) {
+      return { data: null, error: e instanceof Error ? e.message : 'Failed to download attachment' };
+    }
+  }, [authApi]);
+
   const deleteAttachment = useCallback(async (id: string): Promise<ApiResponse<void>> => {
     try {
       await authApi.delete(`${BASE_PATH}/${id}`);
@@ -82,6 +87,7 @@ export const useAttachmentApi = () => {
     getById,
     uploadFiles,
     createExternalLink,
+    downloadAttachment,
     delete: deleteAttachment
-  }), [getByEntity, getById, uploadFiles, createExternalLink, deleteAttachment]);
+  }), [getByEntity, getById, uploadFiles, createExternalLink, downloadAttachment, deleteAttachment]);
 };

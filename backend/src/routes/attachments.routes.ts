@@ -5,9 +5,13 @@ import { checkJwt } from '../middlewares/auth.middleware';
 import { AttachmentController } from '../controllers/attachment.controller';
 import { upload } from '../config/multer.config';
 import { AppError } from '../utils/AppError';
+import { attachUserFromJwt } from '../middlewares/user.middleware';
+import path from 'path';
+import fs from 'fs';
 
 const router = Router();
 router.use(checkJwt);
+router.use(attachUserFromJwt);
 
 const attachmentController = new AttachmentController();
 
@@ -33,18 +37,19 @@ const handleAttachmentRequest = (req: Request, res: Response, next: NextFunction
     );
   }
 };
-
 // Routes
-router.post('/',
-  allowedPermissions(['upload:attachments']),
+router.post('/:entityType/:entityId',
+  allowedPermissions(['upload:attachments', 'student:all', 'teacher:all', 'moderator:all', 'admin:all']),
   handleAttachmentRequest);
-  
+
+  router.get('/download/:id', attachmentController.downloadAttachment.bind(attachmentController));
+
 router.get('/:entityType/:entityId',
-  allowedPermissions(['download:attachments']),
-  attachmentController.getAttachmentsByEntity);
-  
+  allowedPermissions(['download:attachments', 'student:all', 'teacher:all', 'moderator:all', 'admin:all']),
+  attachmentController.getAttachmentsByEntity.bind(attachmentController));  
+
 router.delete('/:id',
-  allowedPermissions(['delete:attachments']),
-  attachmentController.deleteAttachment);
+  allowedPermissions(['delete:attachments', 'student:all', 'teacher:all', 'moderator:all', 'admin:all']),
+  attachmentController.deleteAttachment.bind(attachmentController));
 
 export default router;

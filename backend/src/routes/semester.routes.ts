@@ -13,11 +13,11 @@ router.use(attachUserFromJwt);
 
 // Student-Semester routes
 router.get("/student-semesters/student/:studentId",
-    allowedPermissions(['view:semesters', 'admin:all', 'moderator:all', 'teacher:base']),
+    allowedPermissions(['view:semesters', 'admin:all', 'moderator:all', 'teacher:all', 'student:all']),
     semesterController.getSemesterForStudent
 );
 router.get("/student-semesters/semester/:semesterId",
-    allowedPermissions(['view:semesters', 'admin:all', 'moderator:all', 'teacher:base']),
+    allowedPermissions(['view:semesters', 'admin:all', 'moderator:all', 'teacher:all']),
     semesterController.getStudentsInSemester
 )
 router.get("/student-semesters/:studentId/:semesterId",
@@ -39,7 +39,7 @@ router.delete("/student-semesters/:studentId/:semesterId",
 
 // Teacher Availability routes
 router.get("/teacher/:semesterId",
-    allowedPermissions(['view:semesters', 'admin:all', 'moderator:all', 'teacher:base']),
+    allowedPermissions(['view:semesters', 'admin:all', 'moderator:all', 'teacher:all']),
     semesterController.getTeachersInSemester
 );
 router.post("/teacher/:semesterId",
@@ -54,6 +54,10 @@ router.delete("/teacher/:semesterId/:teacherId",
     allowedPermissions(['manage:semesters', 'admin:all', 'moderator:all']),
     semesterController.deleteTeacherFromSemester
 );
+router.get("/teacher/availability/own",
+    allowedPermissions(['view:semesters', 'admin:all', 'moderator:all', 'teacher:all']),
+    semesterController.getOwnTeacherAvailabilityInActiveSemester
+);
 
 // Semester routes
 router.post('/current/:id',
@@ -65,7 +69,7 @@ router.patch('/unset-current/:id',
     semesterController.unsetCurrentSemester
 );
 router.get('/current',
-    allowedPermissions(['view:semesters', 'admin:all', 'moderator:all', 'teacher:base', 'student:pre_thesis', 'student:thesis']),
+    allowedPermissions(['view:semesters', 'admin:all', 'moderator:all', 'teacher:all', 'student:pre_thesis', 'student:thesis']),
     semesterController.getCurrentSemester
 );
 router.post('/active/:id',
@@ -77,11 +81,11 @@ router.patch('/unset-active/:id',
     semesterController.unsetActiveSemester
 );
 router.get('/active',
-    allowedPermissions(['view:semesters', 'admin:all', 'moderator:all', 'teacher:base', 'student:pre_thesis', 'student:thesis']),
+    allowedPermissions(['view:semesters', 'admin:all', 'moderator:all', 'teacher:all', 'student:pre_thesis', 'student:thesis', 'student:all']),
     semesterController.getActiveSemester
 );
 router.get('/:id',
-    allowedPermissions(['view:semesters', 'admin:all', 'moderator:all']),
+    allowedPermissions(['view:semesters', 'admin:all', 'moderator:all', 'teacher:all', 'student:pre_thesis', 'student:thesis', 'student:all']),
     semesterController.getSemesterById
 );
 router.put('/:id',
@@ -93,7 +97,7 @@ router.delete('/:id',
     semesterController.deleteSemester
 );
 router.get('/',
-    allowedPermissions(['view:semesters', 'admin:all', 'moderator:all']),
+    allowedPermissions(['view:semesters', 'admin:all', 'moderator:all', 'teacher:all', 'student:pre_thesis', 'student:thesis', 'student:all']),
     semesterController.getAllSemesters
 );
 router.post('/',

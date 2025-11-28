@@ -15,7 +15,7 @@ router.get('/',
     notificationController.getNotifications);
 
 router.get('/unread/count',
-    allowedPermissions(['view:notifications']),
+    allowedPermissions(['view:notifications', 'student:all', 'teacher:all', 'admin:all', 'moderator:all']),
     notificationController.getUnreadCount);
 
 router.patch('/:id/read',

@@ -13,12 +13,37 @@ export class TopicApplicationRepository extends GenericRepository<TopicApplicati
 
   async findByStudentAndTopic(studentId: number, topicId: number, semesterId?: number): Promise<TopicApplication | null> {
     return TopicApplication.findOne({
-      where: { studentId, topicId, ...(semesterId && { semesterId }) }
+      where: { studentId, topicId }
     });
   }
 
   async findByStudentId(studentId: number, semesterId?: number): Promise<TopicApplication[]> {
-    return this.findAll({ studentId, ...(semesterId && { semesterId }) });
+    if (!semesterId) {
+      return this.findAll({ studentId });
+    }
+    return TopicApplication.findAll({
+      where: { studentId },
+      include: [{
+        model: Topic,
+        as: 'topic',
+        where: { semesterId }
+      }]
+    });
+  }
+
+  async findByTeacherId(teacherId: number, semesterId?: number): Promise<TopicApplication[]> {
+    const includeOptions: any = {
+      model: Topic,
+      as: 'topic',
+      where: { teacherId }
+    };
+    if (semesterId) {
+      includeOptions.where.semesterId = semesterId;
+    }
+
+    return TopicApplication.findAll({
+      include: [includeOptions]
+    });
   }
 
   async findByTopicId(topicId: number, semesterId?: number): Promise<TopicApplication[]> {
@@ -27,6 +52,17 @@ export class TopicApplicationRepository extends GenericRepository<TopicApplicati
 
   async findByStatus(status: TopicApplication['status'], semesterId?: number): Promise<TopicApplication[]> {
     return this.findAll({ status, ...(semesterId && { semesterId }) });
+  }
+  
+
+  async findByTopicIds(topicIds: number[]): Promise<TopicApplication[]> {
+    return TopicApplication.findAll({ where: { topicId: topicIds } });
+  }
+
+  async countAcceptedApplications(topicId: number): Promise<number> {
+    return TopicApplication.count({
+      where: { topicId, status: 'accepted' }
+    });
   }
 
   // Update application status with optional note

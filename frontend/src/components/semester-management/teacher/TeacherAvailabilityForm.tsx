@@ -5,6 +5,7 @@ import TextInput from "../../common/inputs/TextInput";
 import PrimaryButton from "../../common/buttons/PrimaryButton";
 import SecondaryButton from "../../common/buttons/SecondaryButton";
 import { useUserApi } from "../../../api/endpoints/user.api";
+import { Alert } from "../../common/feedback/Alert";
 
 export interface TeacherAvailabilityPayload {
   teacherId: number;
@@ -21,6 +22,7 @@ export interface TeacherAvailabilityFormProps {
   initialData?: Partial<TeacherAvailabilityPayload>;
   onSubmit: (payload: TeacherAvailabilityPayload) => void;
   onCancel: () => void;
+  error?: string | null;
 }
 
 const isOpenOptions = [
@@ -35,6 +37,7 @@ const TeacherAvailabilityForm: React.FC<TeacherAvailabilityFormProps> = ({
   initialData,
   onSubmit,
   onCancel,
+  error,
 }) => {
   const [formData, setFormData] = useState<TeacherAvailabilityPayload>({
     teacherId: 0,
@@ -94,6 +97,11 @@ const TeacherAvailabilityForm: React.FC<TeacherAvailabilityFormProps> = ({
       maskClosable
     >
       <form onSubmit={handleSubmit}>
+        {error && (
+          <div className="mb-4">
+            <Alert type="error" message={error} showIcon />
+          </div>
+        )}
         <SelectInput
           label="Teacher"
           options={teachers.map((t) => ({

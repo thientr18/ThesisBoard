@@ -2,13 +2,14 @@ import React from "react";
 import { Card as AntCard } from "antd";
 
 export interface CardProps {
-  title?: string;
+  title?: React.ReactNode;
   extra?: React.ReactNode;
   children?: React.ReactNode;
   loading?: boolean;
   hoverable?: boolean;
   bordered?: boolean;
   className?: string;
+  style?: React.CSSProperties;
   onClick?: () => void;
 }
 

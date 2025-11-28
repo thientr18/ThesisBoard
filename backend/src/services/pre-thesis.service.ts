@@ -14,16 +14,21 @@ import { PreThesisRepository } from '../repositories/pre-thesis.repository';
 import { TopicApplicationRepository } from '../repositories/topic-application.repository';
 import { TopicRepository } from '../repositories/topic.repository';
 import { SemesterRepository } from '../repositories/semester.repository';
+import { TeacherAvailabilityRepository } from '../repositories/teacher-availability.repository';
 
 export class PreThesisService {
   private preThesisRepository: PreThesisRepository;
   private topicApplicationRepository: TopicApplicationRepository;
   private topicRepository: TopicRepository;
+  private semesterRepository: SemesterRepository;
+  private teacherAvailabilityRepository: TeacherAvailabilityRepository;
 
   constructor() {
     this.preThesisRepository = new PreThesisRepository();
     this.topicApplicationRepository = new TopicApplicationRepository();
     this.topicRepository = new TopicRepository();
+    this.semesterRepository = new SemesterRepository();
+    this.teacherAvailabilityRepository = new TeacherAvailabilityRepository();
   }
 
   // Topic-related methods
@@ -43,6 +48,10 @@ export class PreThesisService {
     return this.topicRepository.findById(id);
   }
 
+  async getTopicsBySemester(semesterId: number): Promise<Topic[]> {
+    return this.topicRepository.findBySemesterId(semesterId);
+  }
+
   async getTeacherTopics(teacherId: number, semesterId?: number): Promise<Topic[]> {
     return this.topicRepository.findByTeacherId(teacherId, semesterId);
   }
@@ -51,11 +60,40 @@ export class PreThesisService {
     return this.topicRepository.searchTopics(query, semesterId);
   }
 
-  async getTopicsByTag(tag: string, semesterId?: number): Promise<Topic[]> {
-    return this.topicRepository.findByTag(tag, semesterId);
+  async createTopic(data: {
+    title: string;
+    description: string;
+    requirements?: string;
+    tags?: string[];
+    maxSlots?: number | null;
+    semesterId: number;
+    teacherId: number;
+  }): Promise<Topic> {
+    return this.topicRepository.create(data);
+  }
+
+  async updateTopic(
+    id: number,
+    data: {
+      title?: string;
+      description?: string;
+      requirements?: string;
+      tags?: string[];
+      maxSlots?: number | null;
+      status?: 'open' | 'closed';
+    }
+  ): Promise<Topic | null> {
+    return this.topicRepository.update(id, data);
+  }
+
+  async deleteTopic(id: number): Promise<boolean> {
+    return this.topicRepository.delete(id);
   }
 
   // Application-related methods
+  async getApplicationsByTopicIds(topicIds: number[]): Promise<TopicApplication[]> {
+    return this.topicApplicationRepository.findByTopicIds(topicIds);
+  }
   async applyToTopic(
     topicId: number, 
     studentId: number, 
@@ -64,16 +102,6 @@ export class PreThesisService {
     const topic = await this.topicRepository.findById(topicId);
     if (!topic) throw new AppError('Topic not found', 404, 'TOPIC_NOT_FOUND');
     if (topic.status === 'closed') throw new AppError('Topic is closed for applications', 400, 'TOPIC_CLOSED');
-
-    // Check if the student already has an application for this topic
-    const existingApplication = await this.topicApplicationRepository.findByStudentAndTopic(
-      studentId, 
-      topicId
-    );
-    
-    if (existingApplication && existingApplication.status !== 'cancelled') {
-      throw new AppError('Student already applied to this topic', 400, 'STUDENT_ALREADY_APPLIED');
-    }
     
     // Check if student already has an accepted application
     const acceptedApplications = await this.topicApplicationRepository.findByStudentId(studentId);
@@ -107,12 +135,33 @@ export class PreThesisService {
     return this.topicApplicationRepository.findByStudentId(studentId, semesterId);
   }
 
-  async getApplicationsByTopic(topicId: number): Promise<TopicApplication[]> {
+  async getApplicationsByTeacher(teacherId: number, semesterId?: number): Promise<TopicApplication[]> {
+    return this.topicApplicationRepository.findByTeacherId(teacherId, semesterId);
+  }
+
+  async getApplicationsByTopicId(topicId: number): Promise<TopicApplication[]> {
     return this.topicApplicationRepository.findByTopicId(topicId);
   }
 
   async getApplicationById(id: number): Promise<TopicApplication | null> {
     return this.topicApplicationRepository.findById(id);
+  }
+
+  getApplicationByStudentAndTopic(studentId: number, topicId: number) {
+    return this.topicApplicationRepository.findByStudentAndTopic(studentId, topicId);
+  }
+
+  async countAcceptedApplicationsOfTopic(topicId: number): Promise<number> {
+    return this.topicApplicationRepository.countAcceptedApplications(topicId);
+  }
+
+  async countAcceptedApplicationsOfTeaccher(teacherId: number, semesterId: number): Promise<number> {
+    const applications = await this.topicApplicationRepository.findByTeacherId(teacherId, semesterId);
+    return applications.filter(app => app.status === 'accepted').length;
+  }
+
+  async updateApplication(id: number, data: { proposalTitle?: string, proposalAbstract?: string, note?: string | null, status?: 'pending' | 'accepted' | 'rejected' | 'cancelled' }): Promise<TopicApplication | null> {
+    return this.topicApplicationRepository.update(id, data);
   }
   
   async updateApplicationStatus(
@@ -139,10 +188,27 @@ export class PreThesisService {
         }
 
         // Check if student already has a pre-thesis for this semester
-        const existingPreThesis = await this.preThesisRepository.findByStudent(application.studentId);
+        const existingPreThesis = await this.preThesisRepository.findByStudent(application.studentId, topic.semesterId);
         if (existingPreThesis.length > 0) {
           await transaction.rollback();
           throw new AppError('Student already has a pre-thesis for this semester', 400, 'STUDENT_ALREADY_PRETHESIS');
+        }
+
+        // check if topic has available slots
+        if (topic.maxSlots !== null) {
+          const acceptedCount = await this.topicApplicationRepository.countAcceptedApplications(topic.id);
+          if (acceptedCount >= topic.maxSlots) {
+            await transaction.rollback();
+            throw new AppError('No slots available for this topic', 400, 'NO_SLOT_AVAILABLE');
+          }
+        }
+
+        // check if teacher has exceeded max supervisee limit (if any)
+        const maxPreThesisOfTeacher = await this.countAcceptedApplicationsOfTeaccher(topic.teacherId, topic.semesterId);
+        const availability = await this.teacherAvailabilityRepository.findById(topic.teacherId);
+        if (availability && availability.maxPreThesis !== null && maxPreThesisOfTeacher >= availability.maxPreThesis) {
+          await transaction.rollback();
+          throw new AppError('Teacher has reached maximum supervisee limit', 400, 'TEACHER_MAX_SUPERVISEES_REACHED');
         }
 
         // Update the application status
@@ -234,13 +300,13 @@ export class PreThesisService {
     });
   }
 
-  async updatePreThesisStatus(id: number, status: 'in_progress' | 'completed' | 'cancelled'): Promise<PreThesis | null> {
+  async updatePreThesisStatus(id: number, status: 'in_progress' | 'completed'): Promise<PreThesis | null> {
     return this.preThesisRepository.updateStatus(id, status);
   }
 
-  async gradePreThesis(id: number, finalScore: number): Promise<PreThesis | null> {
-    if (finalScore < 0 || finalScore > 10) {
-      throw new AppError('Final score must be between 0 and 10', 400, 'INVALID_SCORE');
+  async gradePreThesis(id: number, finalScore: number, feedback?: string): Promise<PreThesis | null> {
+    if (finalScore < 0 || finalScore > 100) {
+      throw new AppError('Final score must be between 0 and 100', 400, 'INVALID_SCORE');
     }
     
     const preThesis = await this.preThesisRepository.findById(id);
@@ -251,14 +317,11 @@ export class PreThesisService {
     // Update score and mark as completed if score is passing
     const updatedPreThesis = await this.preThesisRepository.update(id, { 
       finalScore,
-      status: finalScore >= 5 ? 'completed' : 'in_progress'
+      feedback,
+      status: 'completed'
     });
     
     return updatedPreThesis;
-  }
-
-  async cancelPreThesis(id: number): Promise<PreThesis | null> {
-    return this.preThesisRepository.updateStatus(id, 'cancelled');
   }
 
   // Statistics and reports
@@ -272,8 +335,7 @@ export class PreThesisService {
     return {
       total: allPreTheses.length,
       in_progress: allPreTheses.filter(pt => pt.status === 'in_progress').length,
-      completed: allPreTheses.filter(pt => pt.status === 'completed').length,
-      cancelled: allPreTheses.filter(pt => pt.status === 'cancelled').length
+      completed: allPreTheses.filter(pt => pt.status === 'completed').length
     };
   }
 

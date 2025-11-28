@@ -12,7 +12,6 @@ import type { StudentDetails, TeacherDetails } from '../types/user.types';
 import { UserSchema, TeacherSchema, StudentSchema, UpdateUserSchema } from '../validators/user.validator';
 import sequelize from '../models/db';
 import { Op } from 'sequelize';
-import { Semester } from '../models/Semester';
 
 export class UserService {
   private userRepository: UserRepository;
@@ -95,6 +94,14 @@ export class UserService {
       }
     }
     return studentDetailsList;
+  }
+
+  async getStudentByUserId(userId: number): Promise<StudentDetails | null> {
+    const student = await this.studentRepository.findByUserId(userId);
+    if (!student) {
+      throw new AppError('Student not found', 404, 'STUDENT_NOT_FOUND');
+    }
+    return student ? this.getStudentById(student.id) : null;
   }
 
   async createStudent(input: unknown) {
@@ -311,6 +318,11 @@ export class UserService {
       phone: teacher.phone,
     };
     return result;
+  }
+
+  async getTeacherIdByUserId(userId: number): Promise<number | null> {
+    const teacher = await this.teacherRepository.findByUserId(userId);
+    return teacher ? teacher.id : null;
   }
 
   async getAllTeachers(): Promise<TeacherDetails[]> {

@@ -97,7 +97,7 @@ const adminModeratorMenu: MenuItem[] = [
     key: "prethesis",
     label: "Pre-Thesis Management",
     icon: <FileProtectOutlined />,
-    path: "/prethesis",
+    path: "/prethesis/projects",
   },
   {
     key: "thesis",
@@ -106,22 +106,10 @@ const adminModeratorMenu: MenuItem[] = [
     path: "/thesis",
   },
   {
-    key: "committee",
-    label: "Defense Committee",
-    icon: <TeamOutlined />,
-    path: "/committee",
-  },
-  {
     key: "announcement",
     label: "Announcement",
     icon: <NotificationOutlined />,
     path: "/announcements",
-  },
-  {
-    key: "settings",
-    label: "Settings",
-    icon: <SettingOutlined />,
-    path: "/settings",
   },
 ];
 
@@ -133,16 +121,16 @@ const studentMenu: MenuItem[] = [
     path: "/dashboard",
   },
   {
-    key: "project",
-    label: "Project",
+    key: "projects",
+    label: "Projects",
     icon: <ProjectOutlined />,
-    path: "/project",
+    path: "/projects",
   },
   {
     key: "registration",
     label: "Registration",
     icon: <FormOutlined />,
-    path: "/registration",
+    path: "/registrations",
   },
 ];
 
@@ -154,16 +142,36 @@ const teacherMenu: MenuItem[] = [
     path: "/dashboard",
   },
   {
-    key: "project",
-    label: "Project",
-    icon: <ProjectOutlined />,
-    path: "/project",
+    key: "prethesis",
+    label: "Pre-Thesis",
+    icon: <FileProtectOutlined />,
+    path: "/prethesis",
+    children: [
+      {
+        key: "prethesis-topic",
+        label: "Topic",
+        icon: <BookOutlined />,
+        path: "/prethesis/topics",
+      },
+      {
+        key: "prethesis-application",
+        label: "Application",
+        icon: <FormOutlined />,
+        path: "/prethesis/applications",
+      },
+      {
+        key: "prethesis-projects",
+        label: "Projects",
+        icon: <ProjectOutlined />,
+        path: "/prethesis/projects",
+      },
+    ],
   },
   {
-    key: "registration",
-    label: "Registration",
-    icon: <FormOutlined />,
-    path: "/registration",
+    key: "thesis",
+    label: "Thesis",
+    icon: <BookOutlined />,
+    path: "/thesis",
   },
 ];
 

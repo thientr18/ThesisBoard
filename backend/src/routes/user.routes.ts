@@ -30,7 +30,7 @@ router.delete('/student/:studentId', allowedPermissions(['admin:all', 'moderator
 // Teacher-specific operations
 router.post('/teacher', allowedPermissions(['admin:all', 'moderator:all', 'create:users']), userController.createTeacher);
 router.get('/teachers', allowedPermissions(['admin:all', 'moderator:all', 'read:users']), userController.getAllTeachers);
-router.get('/teacher/:teacherId', allowedPermissions(['admin:all', 'moderator:all', 'read:users']), userController.getTeacherById);
+router.get('/teacher/:teacherId', allowedPermissions(['admin:all', 'moderator:all', 'read:users', 'teacher:all']), userController.getTeacherById);
 router.put('/teacher/:teacherId', allowedPermissions(['admin:all', 'moderator:all', 'update:users']), userController.updateTeacher);
 router.delete('/teacher/:teacherId', allowedPermissions(['admin:all', 'moderator:all', 'delete:users']), userController.deleteTeacher);
 

@@ -101,6 +101,9 @@ export class SemesterService {
     async getStudentSemester(studentId: number, semesterId: number) {
         return this.studentSemesterRepository.getStudentSemester(studentId, semesterId);
     }
+    async getStudentInActiveSemester(studentId: number) {
+        return this.studentSemesterRepository.getStudentInActiveSemester(studentId);
+    }
 
     async addStudentToSemester(data: Partial<StudentSemester>) {
         return this.studentSemesterRepository.create(data);
@@ -226,5 +229,22 @@ export class SemesterService {
         }
 
         return this.teacherAvailabilityRepository.delete(id);
+    }
+
+    async getTeacherAvailabilityInSemester(teacherId: number, semesterId: number) {
+        const semester = await this.semesterRepository.findById(semesterId);
+        if (!semester) {
+            throw new AppError('No semester found', 404, 'SEMESTER_NOT_FOUND');
+        }
+        const availability = await this.teacherAvailabilityRepository.getTeacherSemester(teacherId, semesterId);
+        if (!availability) {
+            throw new AppError('No teacher availability found for this semester', 404, 'TEACHER_AVAILABILITY_NOT_FOUND');
+        }
+
+        const result = {
+            semester,
+            availability
+        };
+        return result;
     }
 }

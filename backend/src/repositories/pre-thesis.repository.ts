@@ -1,6 +1,12 @@
 import { Op } from 'sequelize';
 import { PreThesis } from '../models/PreThesis';
 import { GenericRepository } from './generic.repository';
+import { Teacher } from '../models/Teacher';
+import { Student } from '../models/Student';
+import { Semester } from '../models/Semester';
+import User from '../models/User';
+import { TopicApplication } from '../models/TopicApplication';
+import { Topic } from '../models/Topic';
 
 export class PreThesisRepository extends GenericRepository<PreThesis, number> {
   constructor() {
@@ -12,7 +18,30 @@ export class PreThesisRepository extends GenericRepository<PreThesis, number> {
       where: {
         studentId,
         semesterId
-      }
+      },
+      include: [
+        {
+          model: Teacher,
+          as: 'supervisorTeacher',
+          include: [{ model: User, as: 'user' }]
+        },
+        {
+          model: Student,
+          as: 'student',
+          include: [{ model: User, as: 'user' }]
+        },
+        { model: Semester, as: 'semester' },
+        {
+          model: TopicApplication,
+          as: 'topicApplication',
+          include: [
+            {
+              model: Topic,
+              as: 'topic'
+            }
+          ]
+        }
+      ]
     });
   }
 
@@ -21,7 +50,30 @@ export class PreThesisRepository extends GenericRepository<PreThesis, number> {
       where: {
         supervisorTeacherId,
         ...(semesterId && { semesterId })
-      }
+      },
+      include: [
+        {
+          model: Teacher,
+          as: 'supervisorTeacher',
+          include: [{ model: User, as: 'user' }]
+        },
+        {
+          model: Student,
+          as: 'student',
+          include: [{ model: User, as: 'user' }]
+        },
+        { model: Semester, as: 'semester' },
+        {
+          model: TopicApplication,
+          as: 'topicApplication',
+          include: [
+            {
+              model: Topic,
+              as: 'topic'
+            }
+          ]
+        }
+      ]
     });
   }
 
@@ -30,13 +82,59 @@ export class PreThesisRepository extends GenericRepository<PreThesis, number> {
       where: {
         status,
         ...(semesterId && { semesterId })
-      }
+      },
+      include: [
+        {
+          model: Teacher,
+          as: 'supervisorTeacher',
+          include: [{ model: User, as: 'user' }]
+        },
+        {
+          model: Student,
+          as: 'student',
+          include: [{ model: User, as: 'user' }]
+        },
+        { model: Semester, as: 'semester' },
+        {
+          model: TopicApplication,
+          as: 'topicApplication',
+          include: [
+            {
+              model: Topic,
+              as: 'topic'
+            }
+          ]
+        }
+      ]
     });
   }
 
   async findByTopicApplication(topicApplicationId: number): Promise<PreThesis | null> {
     return this.model.findOne({
-      where: { topicApplicationId }
+      where: { topicApplicationId },
+      include: [
+        {
+          model: Teacher,
+          as: 'supervisorTeacher',
+          include: [{ model: User, as: 'user' }]
+        },
+        {
+          model: Student,
+          as: 'student',
+          include: [{ model: User, as: 'user' }]
+        },
+        { model: Semester, as: 'semester' },
+        {
+          model: TopicApplication,
+          as: 'topicApplication',
+          include: [
+            {
+              model: Topic,
+              as: 'topic'
+            }
+          ]
+        }
+      ]
     });
   }
 
@@ -44,8 +142,31 @@ export class PreThesisRepository extends GenericRepository<PreThesis, number> {
     return this.model.findAll({
       where: {
         studentId,
-        ...(semesterId && { semesterId })
-      }
+        ...(semesterId && { semesterId }),
+      },
+      include: [
+        {
+          model: Teacher,
+          as: 'supervisorTeacher',
+          include: [{ model: User, as: 'user' }]
+        },
+        {
+          model: Student,
+          as: 'student',
+          include: [{ model: User, as: 'user' }]
+        },
+        { model: Semester, as: 'semester' },
+        {
+          model: TopicApplication,
+          as: 'topicApplication',
+          include: [
+            {
+              model: Topic,
+              as: 'topic'
+            }
+          ]
+        }
+      ]
     });
   }
 
@@ -53,7 +174,30 @@ export class PreThesisRepository extends GenericRepository<PreThesis, number> {
     return this.model.findAll({
       where: {
         semesterId
-      }
+      },
+      include: [
+        {
+          model: Teacher,
+          as: 'supervisorTeacher',
+          include: [{ model: User, as: 'user' }]
+        },
+        {
+          model: Student,
+          as: 'student',
+          include: [{ model: User, as: 'user' }]
+        },
+        { model: Semester, as: 'semester' },
+        {
+          model: TopicApplication,
+          as: 'topicApplication',
+          include: [
+            {
+              model: Topic,
+              as: 'topic'
+            }
+          ]
+        }
+      ]
     });
   }
 
@@ -73,7 +217,30 @@ export class PreThesisRepository extends GenericRepository<PreThesis, number> {
           [Op.gte]: minimumScore
         },
         ...(semesterId && { semesterId })
-      }
+      },
+      include: [
+        {
+          model: Teacher,
+          as: 'supervisorTeacher',
+          include: [{ model: User, as: 'user' }]
+        },
+        {
+          model: Student,
+          as: 'student',
+          include: [{ model: User, as: 'user' }]
+        },
+        { model: Semester, as: 'semester' },
+        {
+          model: TopicApplication,
+          as: 'topicApplication',
+          include: [
+            {
+              model: Topic,
+              as: 'topic'
+            }
+          ]
+        }
+      ]
     });
   }
 }
