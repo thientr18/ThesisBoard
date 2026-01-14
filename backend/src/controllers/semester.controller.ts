@@ -324,4 +324,13 @@ export class SemesterController {
             next(error);
         }
     };
+
+    getSemesterPopulationStats = async (req: Request, res: Response, next: NextFunction) => {
+        try {
+            const stats = await this.semesterService.getSemesterPopulationStats();
+            res.json(stats);
+        } catch (error) {
+            next(error);
+        }
+    };
 }

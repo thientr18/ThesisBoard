@@ -302,12 +302,12 @@ export default function TeacherManagement() {
 
     let filtered = [...teachers];
 
-    // Keyword search (name)
+    // Keyword search
     if (keyword) {
       filtered = filtered.filter(
         (s) =>
-          s.teacherCode?.toLowerCase().includes(keyword) ||
-          s.phone?.toLowerCase().includes(keyword)
+          s.fullName?.toLowerCase().includes(keyword) ||
+          s.teacherCode?.toLowerCase().includes(keyword)
       );
     }
 

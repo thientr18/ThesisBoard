@@ -10,7 +10,6 @@ export class ThesisRegistration extends Model<InferAttributes<ThesisRegistration
   declare title: string | null;
   declare abstract: string | null;
   declare status: 'pending_approval' | 'cancelled' | 'approved' | 'rejected';
-  declare submittedByTeacherId: number | null;
   declare decisionReason: string | null;
   declare approvedByUserId: number | null;
   declare submittedAt: CreationOptional<Date>;
@@ -26,7 +25,6 @@ ThesisRegistration.init(
     title: { type: DataTypes.STRING(255), allowNull: true },
     abstract: { type: DataTypes.TEXT, allowNull: true },
     status: { type: DataTypes.ENUM('pending_approval', 'cancelled', 'approved', 'rejected'), defaultValue: 'pending_approval' },
-    submittedByTeacherId: { type: DataTypes.BIGINT, allowNull: false, field: 'submitted_by_teacher_id' },
     decisionReason: { type: DataTypes.TEXT, allowNull: true, field: 'decision_reason' },
     approvedByUserId: { type: DataTypes.BIGINT, allowNull: true, field: 'approved_by_user_id' },
     submittedAt: { type: DataTypes.DATE, allowNull: false, defaultValue: DataTypes.NOW, field: 'submitted_at' },

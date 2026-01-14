@@ -1,4 +1,4 @@
-import { Model, ModelStatic, Op } from 'sequelize';
+import { FindOptions, Model, ModelStatic, Op } from 'sequelize';
 import { BaseRepository } from './base.repository.interface';
 
 export class GenericRepository<T extends Model, ID> implements BaseRepository<T, ID> {
@@ -12,12 +12,19 @@ export class GenericRepository<T extends Model, ID> implements BaseRepository<T,
     return this.model.findByPk(id as any) as Promise<T | null>;
   }
   
-  async findAll(filters?: any, offset?: number, limit?: number,  order?: Array<[string, string]>): Promise<T[]> {
+  async findAll(
+    filters?: any, 
+    offset?: number, 
+    limit?: number, 
+    order?: Array<[string, string]>,
+    options?: Omit<FindOptions<T>, 'where' | 'offset' | 'limit' | 'order'>
+  ): Promise<T[]> {
     return this.model.findAll({
       where: filters || {},
       ...(offset !== undefined && { offset }),
       ...(limit !== undefined && { limit }),
-      ...(order !== undefined && { order })
+      ...(order !== undefined && { order }),
+      ...options
     }) as Promise<T[]>;
   }
 

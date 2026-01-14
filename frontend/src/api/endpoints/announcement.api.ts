@@ -24,6 +24,24 @@ type ServerResponse<T> = {
   };
 };
 
+const handleApiError = (error: unknown): string => {
+  if (error instanceof Error) {
+    const anyErr = error as any;
+    if (anyErr?.response?.data) {
+      const data = anyErr.response.data;
+      if (data.message) {
+        let msg = data.message;
+        if (data.code) msg += ` (code: ${data.code})`;
+        if (data.details) msg += `: ${JSON.stringify(data.details)}`;
+        return msg;
+      }
+      return JSON.stringify(data);
+    }
+    return error.message;
+  }
+  return 'An unexpected error occurred';
+};
+
 export const useAnnouncementApi = () => {
   const authApi = useAuthenticatedApi();
 
@@ -34,7 +52,7 @@ export const useAnnouncementApi = () => {
       const data = Array.isArray(dtos) ? dtos.map(mapAnnouncement) : [];
       return { data, error: null };
     } catch (e) {
-      return { data: null, error: e instanceof Error ? e.message : 'Failed to fetch announcements' };
+      return { data: null, error: handleApiError(e) };
     }
   }, [authApi]);
 
@@ -63,7 +81,7 @@ export const useAnnouncementApi = () => {
       const data = Array.isArray(dtos) ? dtos.map(mapAnnouncement) : [];
       return { data, error: null };
     } catch (e) {
-      return { data: null, error: e instanceof Error ? e.message : 'Failed to fetch pinned announcements' };
+      return { data: null, error: handleApiError(e) };
     }
   }, [authApi]);
 
@@ -74,7 +92,7 @@ export const useAnnouncementApi = () => {
       const data = Array.isArray(dtos) ? dtos.map(mapAnnouncement) : [];
       return { data, error: null };
     } catch (e) {
-      return { data: null, error: e instanceof Error ? e.message : 'Failed to fetch public slides' };
+      return { data: null, error: handleApiError(e) };
     }
   }, [authApi]);
 
@@ -84,7 +102,7 @@ export const useAnnouncementApi = () => {
       const dto = res.data?.data;
       return dto ? { data: mapAnnouncement(dto), error: null } : { data: null, error: 'Not found' };
     } catch (e) {
-      return { data: null, error: e instanceof Error ? e.message : 'Failed to fetch announcement' };
+      return { data: null, error: handleApiError(e) };
     }
   }, [authApi]);
 
@@ -94,7 +112,7 @@ export const useAnnouncementApi = () => {
       const dto = res.data?.data;
       return dto ? { data: mapAnnouncement(dto), error: null } : { data: null, error: 'Invalid response' };
     } catch (e) {
-      return { data: null, error: e instanceof Error ? e.message : 'Failed to create announcement' };
+      return { data: null, error: handleApiError(e) };
     }
   }, [authApi]);
 
@@ -104,7 +122,7 @@ export const useAnnouncementApi = () => {
       const dto = res.data?.data;
       return dto ? { data: mapAnnouncement(dto), error: null } : { data: null, error: 'Invalid response' };
     } catch (e) {
-      return { data: null, error: e instanceof Error ? e.message : 'Failed to update announcement' };
+      return { data: null, error: handleApiError(e) };
     }
   }, [authApi]);
 
@@ -113,7 +131,7 @@ export const useAnnouncementApi = () => {
       await authApi.delete(`${BASE_PATH}/${id}`);
       return { data: null, error: null };
     } catch (e) {
-      return { data: null, error: e instanceof Error ? e.message : 'Failed to delete announcement' };
+      return { data: null, error: handleApiError(e) };
     }
   }, [authApi]);
 
@@ -123,7 +141,7 @@ export const useAnnouncementApi = () => {
       const count = res.data?.data ?? 0;
       return { data: count, error: null };
     } catch (e) {
-      return { data: null, error: e instanceof Error ? e.message : 'Failed to fetch announcement count' };
+      return { data: null, error: handleApiError(e) };
     }
   }, [authApi]);
 
@@ -133,7 +151,7 @@ export const useAnnouncementApi = () => {
       const count = res.data?.data ?? 0;
       return { data: count, error: null };
     } catch (e) {
-      return { data: null, error: e instanceof Error ? e.message : 'Failed to fetch pinned announcement count' };
+      return { data: null, error: handleApiError(e) };
     }
   }, [authApi]);
 
@@ -143,7 +161,7 @@ export const useAnnouncementApi = () => {
       const count = res.data?.data ?? 0;
       return { data: count, error: null };
     } catch (e) {
-      return { data: null, error: e instanceof Error ? e.message : 'Failed to fetch weekly announcement count' };
+      return { data: null, error: handleApiError(e) };
     }
   }, [authApi]);
 

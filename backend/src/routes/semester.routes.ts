@@ -11,6 +11,13 @@ const semesterController = new SemesterController();
 router.use(checkJwt);
 router.use(attachUserFromJwt);
 
+
+// Semester statistics routes
+router.get('/statistics/population',
+    allowedPermissions(['view:semesters', 'admin:all', 'moderator:all', 'teacher:all']),
+    semesterController.getSemesterPopulationStats
+);
+
 // Student-Semester routes
 router.get("/student-semesters/student/:studentId",
     allowedPermissions(['view:semesters', 'admin:all', 'moderator:all', 'teacher:all', 'student:all']),

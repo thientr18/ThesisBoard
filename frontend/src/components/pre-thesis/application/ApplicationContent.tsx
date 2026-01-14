@@ -13,8 +13,8 @@ const ApplicationContent = ({ user }: { user: any | null }) => {
   const sidebarWidth = collapsed ? SIDEBAR_COLLAPSED_WIDTH : SIDEBAR_WIDTH;
   const { getApplicationsByTeacher } = usePreThesisApi();
   const { getActive } = useSemesterApi();
-  const [applications, setApplications] = useState<any[]>([]); // bỏ type
-  const [selected, setSelected] = useState<any | null>(null);   // bỏ type
+  const [applications, setApplications] = useState<any[]>([]);
+  const [selected, setSelected] = useState<any | null>(null);
   const [filter, setFilter] = useState<string>("");
 
   useEffect(() => {

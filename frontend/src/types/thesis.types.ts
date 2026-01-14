@@ -1,3 +1,5 @@
+import type { Attachment } from "./attachment.types";
+
 export type Status = 'PENDING' | 'APPROVED' | 'REJECTED';
 export type ThesisStatus = 'REGISTERED' | 'IN_PROGRESS' | 'REVIEWING' | 'DEFENDED' | 'COMPLETED' | 'FAILED';
 export type EvaluationType = 'SUPERVISOR' | 'REVIEWER' | 'COMMITTEE';
@@ -5,23 +7,40 @@ export type TeacherRole = 'SUPERVISOR' | 'REVIEWER' | 'COMMITTEE_MEMBER' | 'COMM
 
 export interface User {
   id: string;
-  name: string;
+  fullName: string;
   email: string;
 }
 
 export interface ThesisProposal {
-  id: string;
+  id: number;
   title: string;
-  description: string;
-  objectives: string;
-  studentId: string;
-  student?: User;
-  supervisorId?: string;
-  supervisor?: User;
-  status: Status;
-  feedbackNote?: string;
+  abstract: string | null;
+  note: string | null;
+  status: 'submitted' | 'accepted' | 'rejected' | 'cancelled';
+  studentId: number;
+  targetTeacherId: number;
+  semesterId: number;
+  decidedAt?: string | null;
   createdAt: string;
   updatedAt: string;
+  // Populated relations
+  targetTeacher?: {
+    id: number;
+    user: {
+      id: number;
+      name: string;
+      email: string;
+    }
+  };
+  student?: {
+    id: number;
+    user: {
+      id: number;
+      fullName: string;
+      email: string;
+    }
+  };
+  attachments?: Attachment[];
 }
 
 export interface ThesisRegistration {
@@ -50,6 +69,7 @@ export interface Thesis {
   finalGrade?: number;
   createdAt: string;
   updatedAt: string;
+  thesis?: any;
 }
 
 export interface ThesisAssignment {

@@ -1,6 +1,8 @@
 import { ThesisAssignment } from '../models/ThesisAssignment';
 import { GenericRepository } from './generic.repository';
 import { Op } from 'sequelize';
+import { Teacher } from '../models/Teacher';
+import { User } from '../models/User';
 
 export class ThesisAssignmentRepository extends GenericRepository<ThesisAssignment, number> {
   constructor() {
@@ -9,7 +11,14 @@ export class ThesisAssignmentRepository extends GenericRepository<ThesisAssignme
 
   async findByThesisId(thesisId: number, semesterId?: number): Promise<ThesisAssignment[]> {
     return this.model.findAll({
-      where: { thesisId, ...(semesterId && { semesterId }) }
+      where: { thesisId, ...(semesterId && { semesterId }) },
+      include: [
+        { 
+          model: Teacher, 
+          as: 'teacher',
+          include: [{ model: User, as: 'user' }]
+        }
+      ]
     });
   }
 
@@ -51,7 +60,24 @@ export class ThesisAssignmentRepository extends GenericRepository<ThesisAssignme
     role: ThesisAssignment['role'],
     assignedByUserId: number
   ): Promise<ThesisAssignment> {
-    const [assignment, created] = await this.model.findOrCreate({
+    // Tìm cả bản ghi đã bị xóa mềm (paranoid: false)
+    let assignment = await this.model.findOne({
+      where: { thesisId, teacherId, role },
+      paranoid: false
+    });
+
+    if (assignment) {
+      if (assignment.deletedAt) {
+        await assignment.restore();
+      }
+      await assignment.update({
+        assignedByUserId,
+        assignedAt: new Date()
+      });
+      return assignment;
+    }
+
+    const [newAssignment] = await this.model.findOrCreate({
       where: { thesisId, teacherId, role },
       defaults: {
         thesisId,
@@ -62,15 +88,7 @@ export class ThesisAssignmentRepository extends GenericRepository<ThesisAssignme
       }
     });
 
-    if (!created) {
-      // Update the assignedByUserId and assignedAt if the record already exists
-      await assignment.update({
-        assignedByUserId,
-        assignedAt: new Date()
-      });
-    }
-
-    return assignment;
+    return newAssignment;
   }
 
   async removeAssignment(

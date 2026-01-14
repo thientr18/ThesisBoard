@@ -1,35 +1,34 @@
-import React from 'react';
-import { List, Empty, Spin } from 'antd';
-import type { Notification } from '../../types/notification.types';
-import NotificationItem from './NotificationItem';
+import React from "react";
+import NotificationItem from "./NotificationItem";
+import type { Notification } from "../../types/notification.types";
 
 interface NotificationListProps {
   notifications: Notification[];
-  loading?: boolean;
-  error?: string | null;
+  onDismiss?: (id: number) => void;
   onItemClick?: (notification: Notification) => void;
 }
 
 const NotificationList: React.FC<NotificationListProps> = ({
   notifications,
-  loading,
-  error,
+  onDismiss,
   onItemClick,
 }) => {
-  if (loading) {
-    return <div className="flex justify-center items-center h-40"><Spin size="small" /></div>;
-  }
-  if (error) {
-    return <div className="p-4 text-red-500 text-sm">{error}</div>;
-  }
-  if (notifications.length === 0) {
-    return <Empty description="Không có thông báo" image={Empty.PRESENTED_IMAGE_SIMPLE} />;
+  if (!notifications.length) {
+    return (
+      <div className="py-8 text-center text-gray-400">No notifications</div>
+    );
   }
   return (
-    <List
-      dataSource={notifications}
-      renderItem={(n) => <NotificationItem notification={n} onClick={onItemClick} />}
-    />
+    <div className="flex flex-col gap-3 px-1">
+      {notifications.map(n => (
+        <NotificationItem
+          key={n.id}
+          notification={n}
+          onDismiss={onDismiss}
+          onClick={onItemClick}
+        />
+      ))}
+    </div>
   );
 };
 

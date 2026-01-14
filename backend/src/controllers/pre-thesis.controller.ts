@@ -105,25 +105,55 @@ export class PreThesisController {
   updateTopic = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
       const topicId = Number(req.params.id);
-      let { maxSlots, teacherId, semesterId } = req.body;
+      let { maxSlots, teacherId, semesterId, title, description, requirements, tags } = req.body;
 
-      if (!teacherId || !semesterId) {
-        const oldTopic = await this.preThesisService.getTopicById(topicId);
-        if (!oldTopic) throw new AppError('Topic not found', 404, 'TOPIC_NOT_FOUND');
-        teacherId = teacherId || oldTopic.teacherId;
-        semesterId = semesterId || oldTopic.semesterId;
+      const oldTopic = await this.preThesisService.getTopicById(topicId);
+      if (!oldTopic) throw new AppError('Topic not found', 404, 'TOPIC_NOT_FOUND');
+      teacherId = teacherId || oldTopic.teacherId;
+      semesterId = semesterId || oldTopic.semesterId;
+
+      const applications = await this.preThesisService.getApplicationsByTopicId(topicId);
+      const hasApplied = applications.some(app => ['pending', 'accepted'].includes(app.status));
+      if (hasApplied) {
+        if (title && title !== oldTopic.title) {
+          throw new AppError('Cannot edit title after students have applied', 400, 'TOPIC_EDIT_FORBIDDEN');
+        }
+        if (description && description !== oldTopic.description ) {
+          throw new AppError('Cannot edit description after students have applied', 400, 'TOPIC_EDIT_FORBIDDEN');
+        }
+        if (requirements && requirements !== oldTopic.requirements) {
+          throw new AppError('Cannot edit requirements after students have applied', 400, 'TOPIC_EDIT_FORBIDDEN');
+        }
+        if (tags && JSON.stringify(tags) !== JSON.stringify(oldTopic.tags)) {
+          throw new AppError('Cannot edit tags after students have applied', 400, 'TOPIC_EDIT_FORBIDDEN');
+        }
       }
 
+      // minSlots is number of pre-thesis already created for this topic
+      const applicationIds = applications.map(app => app.id);
+      let preThesisCount = 0;
+      if (applicationIds.length > 0) {
+        preThesisCount = await this.preThesisService.countPreThesisByTopicApplicationIds(applicationIds);
+      }
+      if (maxSlots !== undefined && maxSlots < preThesisCount) {
+        throw new AppError(
+          `maxSlots cannot be less than the number of pre-thesis already created (${preThesisCount})`,
+          400,
+          'INVALID_MAXSLOTS'
+        );
+      }
+      
       // counts teacher's slots for each topic in the semester
       const teacherTopics = await this.preThesisService.getTeacherTopics(teacherId, semesterId);
       if (!teacherTopics) {
         throw new AppError('Teacher topics not found', 404, 'TEACHER_TOPICS_NOT_FOUND');
       }
-      const totalSlots = teacherTopics.reduce((sum, topic) => sum + (topic.maxSlots || 0), 0);
+      const otherTopics = teacherTopics.filter(topic => topic.id !== topicId);
+      const totalSlotsExcludingCurrent = otherTopics.reduce((sum, topic) => sum + (topic.maxSlots || 0), 0);
 
       const teacherAvailableSlots = (await this.semesterService.getTeacherAvailabilityInSemester(teacherId, semesterId)).availability.maxPreThesis;
-      if (totalSlots + maxSlots > teacherAvailableSlots) {
-        throw new AppError(`Exceeds available slots. You can only create ${teacherAvailableSlots - totalSlots} more slots.`, 400, 'EXCEEDS_AVAILABLE_SLOTS');
+      if (totalSlotsExcludingCurrent + maxSlots > teacherAvailableSlots) {
+        throw new AppError(`Exceeds available slots. You can only create ${teacherAvailableSlots - totalSlotsExcludingCurrent} more slots.`, 400, 'EXCEEDS_AVAILABLE_SLOTS');
       }
 
       const updatedTopic = await this.preThesisService.updateTopic(topicId, req.body);
@@ -249,6 +279,7 @@ export class PreThesisController {
       const application = await this.preThesisService.applyToTopic(
         Number(topicId),
         Number(student?.id),
+        Number(topic.semesterId),
         { proposalTitle, proposalAbstract }
       );
       
@@ -280,7 +311,7 @@ export class PreThesisController {
     }
   };
 
-  getMyApplications = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+  getMyApplicationsByStudent = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
       const userId = req.user?.id;
       const student = await this.userService.getStudentByUserId(Number(userId));
@@ -490,6 +521,22 @@ export class PreThesisController {
     }
   };
 
+  getPreThesisForStudentAndSemester = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const userId = req.user?.id;
+      const student = await this.userService.getStudentByUserId(Number(userId));
+      if (!student) throw new AppError('User is not a student', 403, 'NOT_A_STUDENT');
+      const semesterId = Number(req.params.semesterId);
+      const preThesis = await this.preThesisService.getPreThesisByStudent(Number(student.id), semesterId);
+      res.status(200).json({
+        status: 'success',
+        data: preThesis
+      });
+    } catch (error) {
+      next(error);
+    }
+  };
+
   getPreThesesByTeacher = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
       const userId = req.user?.id;
@@ -658,6 +705,7 @@ export class PreThesisController {
     }
   };
 
+
   /**
    * Controller for generating pre-thesis academic reports as PDF
    */
@@ -715,16 +763,16 @@ export class PreThesisController {
             ? (preThesis.finalScore >= 50 ? 'Pass' : 'Fail')
             : 'Not Graded'
         },
+        departmentHead: {
+          name: 'Dr. Nguyen Van A',
+          title: 'Head of Computer Science Department'
+        },
         semester: semester?.name || '',
         date: new Date(),
         universityInfo: {
           name: "International University - Vietnam National University HCM City",
-          address: "Quarter 33, Linh Xuan Ward, Ho Chi Minh City, Vietnam",
+          address: "Quarter 6, Linh Trung Ward, Thu Duc City, Ho Chi Minh City, Vietnam",
           contact: "info@hcmiu.edu.vn | (028) 37244270"
-        },
-        departmentHead: {
-          name: '',
-          title: ''
         }
       };
 
@@ -742,6 +790,30 @@ export class PreThesisController {
         message: 'Failed to generate pre-thesis report',
         error: error instanceof Error ? error.message : 'Unknown error'
       });
+    }
+  };
+
+  getPreThesisOutcomeStats = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const stats = await this.preThesisService.getOutcomeStats();
+      res.status(200).json({
+        status: 'success',
+        data: stats
+      });
+    } catch (error) {
+      next(error);
+    }
+  };
+
+  getPreThesisGradeDistribution = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const stats = await this.preThesisService.getGradeDistribution();
+      res.status(200).json({
+        status: 'success',
+        data: stats
+      });
+    } catch (error) {
+      next(error);
     }
   };
 }

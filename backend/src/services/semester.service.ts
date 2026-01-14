@@ -9,6 +9,7 @@ import { AppError } from '../utils/AppError';
 import { PreThesis } from '../models/PreThesis';
 import { Topic } from '../models/Topic';
 import { Thesis } from '../models/Thesis';
+import { TeacherAvailability } from '../models/TeacherAvailability';
 
 export class SemesterService {
     private semesterRepository: SemesterRepository;
@@ -238,7 +239,7 @@ export class SemesterService {
         }
         const availability = await this.teacherAvailabilityRepository.getTeacherSemester(teacherId, semesterId);
         if (!availability) {
-            throw new AppError('No teacher availability found for this semester', 404, 'TEACHER_AVAILABILITY_NOT_FOUND');
+            throw new AppError('Teacher not added to this semester', 404, 'TEACHER_AVAILABILITY_NOT_FOUND');
         }
 
         const result = {
@@ -246,5 +247,36 @@ export class SemesterService {
             availability
         };
         return result;
+    }
+
+    async getSemesterPopulationStats() {
+        const semesters = await this.semesterRepository.findAll({}, 0, 4, [['startDate', 'DESC']]);
+        
+        const stats = await Promise.all(
+            semesters.map(async (semester) => {
+                const [studentCount, teacherCount] = await Promise.all([
+                    StudentSemester.count({
+                        where: {
+                            semesterId: semester.id,
+                            status: ['enrolled', 'completed']
+                        }
+                    }),
+                    TeacherAvailability.count({
+                        where: {
+                            semesterId: semester.id
+                        }
+                    })
+                ]);
+
+                return {
+                    semester: semester.name,
+                    studentCount,
+                    teacherCount
+                };
+            })
+        );
+
+        // Reverse to get oldest to newest order
+        return stats.reverse();
     }
 }

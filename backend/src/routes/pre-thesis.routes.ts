@@ -62,7 +62,7 @@ router.put(
 router.get(
   '/applications/student/me/:semesterId',
   allowedPermissions(['student:pre_thesis', 'student:all', 'admin:all']),
-  preThesisController.getMyApplications
+  preThesisController.getMyApplicationsByStudent
 );
 router.get(
   '/applications/teacher/me/:semesterId',
@@ -97,14 +97,14 @@ router.get(
 
 // PreThesis routes
 router.get(
-  '/pretheses/:id',
-  allowedPermissions(['view:pre_theses', 'teacher:all', 'teacher:all', 'student:all', 'moderator:all', 'admin:all']),
-  preThesisController.getPreThesisById
-);
-router.get(
   '/pretheses/student/me',
   allowedPermissions(['student:pre_thesis', 'student:all', 'view:pre_theses', 'moderator:all', 'admin:all']),
   preThesisController.getMyPreTheses
+);
+router.get(
+  '/pretheses/student/me/semester/:semesterId',
+  allowedPermissions(['student:pre_thesis', 'student:all', 'view:pre_theses', 'moderator:all', 'admin:all']),
+  preThesisController.getPreThesisForStudentAndSemester
 );
 router.get(
   '/pretheses/teacher/me/:semesterId',
@@ -115,6 +115,11 @@ router.get(
   '/pretheses/administrator/me/:semesterId',
   allowedPermissions(['admin:all', 'moderator:all', 'view:pre_theses']),
   preThesisController.getPreThesesByAdministrator
+);
+router.get(
+  '/pretheses/:id',
+  allowedPermissions(['view:pre_theses', 'teacher:all', 'teacher:all', 'student:all', 'moderator:all', 'admin:all']),
+  preThesisController.getPreThesisById
 );
 router.get(
   '/pretheses',
@@ -139,16 +144,27 @@ router.get('/reports/:preThesisId',
 );
 
 // Statistics routes
+// router.get(
+//   '/stats/pretheses/:semesterId',
+//   allowedPermissions(['view:topic_applications', 'export:pre_thesis_reports', 'teacher:all', 'moderator:all', 'admin:all']),
+//   preThesisController.getPreThesisStats
+// );
+
+// router.get(
+//   '/stats/applications/:semesterId',
+//   allowedPermissions(['view:topic_applications', 'export:pre_thesis_reports', 'teacher:all', 'moderator:all', 'admin:all']),
+//   preThesisController.getApplicationStats
+// );
 router.get(
-  '/stats/pretheses/:semesterId',
-  allowedPermissions(['view:topic_applications', 'export:pre_thesis_reports', 'teacher:all', 'moderator:all', 'admin:all']),
-  preThesisController.getPreThesisStats
+  '/stats/outcomes',
+  allowedPermissions(['view:pre_theses', 'teacher:all', 'moderator:all', 'admin:all']),
+  preThesisController.getPreThesisOutcomeStats
 );
 
 router.get(
-  '/stats/applications/:semesterId',
-  allowedPermissions(['view:topic_applications', 'export:pre_thesis_reports', 'teacher:all', 'moderator:all', 'admin:all']),
-  preThesisController.getApplicationStats
+  '/stats/grades',
+  allowedPermissions(['view:pre_theses', 'teacher:all', 'moderator:all', 'admin:all']),
+  preThesisController.getPreThesisGradeDistribution
 );
 
 export default router;

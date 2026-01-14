@@ -8,6 +8,24 @@ import type {
   UpdateNotificationRequest
 } from '../../types/notification.types';
 
+const handleApiError = (error: unknown): string => {
+  if (error instanceof Error) {
+    const anyErr = error as any;
+    if (anyErr?.response?.data) {
+      const data = anyErr.response.data;
+      if (data.message) {
+        let msg = data.message;
+        if (data.code) msg += ` (code: ${data.code})`;
+        if (data.details) msg += `: ${JSON.stringify(data.details)}`;
+        return msg;
+      }
+      return JSON.stringify(data);
+    }
+    return error.message;
+  }
+  return 'An unexpected error occurred';
+};
+
 /**
  * Hook returning authenticated notification API methods.
  * Ensures hooks (useAuth0) are only called inside React hook/component trees.
@@ -18,11 +36,11 @@ export const useNotificationAPI = () => {
   const getAll = useCallback(async (): Promise<ApiResponse<Notification[]>> => {
     try {
       const response = await authApi.get('/api/notifications');
-      return { data: response.data as Notification[], error: null };
+      return { data: response.data?.data as Notification[], error: null };
     } catch (error) {
       return {
         data: null,
-        error: error instanceof Error ? error.message : 'Failed to fetch notifications'
+        error: handleApiError(error)
       };
     }
   }, [authApi]);
@@ -30,11 +48,11 @@ export const useNotificationAPI = () => {
   const getById = useCallback(async (id: string): Promise<ApiResponse<Notification>> => {
     try {
       const response = await authApi.get(`/api/notifications/${id}`);
-      return { data: response.data as Notification, error: null };
+      return { data: response.data?.data as Notification, error: null };
     } catch (error) {
       return {
         data: null,
-        error: error instanceof Error ? error.message : 'Failed to fetch notification'
+        error: handleApiError(error)
       };
     }
   }, [authApi]);
@@ -42,11 +60,11 @@ export const useNotificationAPI = () => {
   const getUnreadCount = useCallback(async (): Promise<ApiResponse<NotificationCount>> => {
     try {
       const response = await authApi.get('/api/notifications/unread/count');
-      return { data: response.data as NotificationCount, error: null };
+      return { data: response.data?.data as NotificationCount, error: null };
     } catch (error) {
       return {
         data: null,
-        error: error instanceof Error ? error.message : 'Failed to fetch unread count'
+        error: handleApiError(error)
       };
     }
   }, [authApi]);
@@ -64,15 +82,15 @@ export const useNotificationAPI = () => {
         const response = await authApi.post('/api/notifications', formData, {
           headers: { 'Content-Type': 'multipart/form-data' },
         });
-        return { data: response.data as Notification, error: null };
+        return { data: response.data?.data as Notification, error: null };
       } else {
         const response = await authApi.post('/api/notifications', data);
-        return { data: response.data as Notification, error: null };
+        return { data: response.data?.data as Notification, error: null };
       }
     } catch (error) {
       return {
         data: null,
-        error: error instanceof Error ? error.message : 'Failed to create notification'
+        error: handleApiError(error)
       };
     }
   }, [authApi]);
@@ -80,11 +98,11 @@ export const useNotificationAPI = () => {
   const update = useCallback(async (id: string, payload: UpdateNotificationRequest): Promise<ApiResponse<Notification>> => {
     try {
       const response = await authApi.put(`/api/notifications/${id}`, payload);
-      return { data: response.data as Notification, error: null };
+      return { data: response.data?.data as Notification, error: null };
     } catch (error) {
       return {
         data: null,
-        error: error instanceof Error ? error.message : 'Failed to update notification'
+        error: handleApiError(error)
       };
     }
   }, [authApi]);
@@ -92,11 +110,11 @@ export const useNotificationAPI = () => {
   const markAsRead = useCallback(async (id: string): Promise<ApiResponse<Notification>> => {
     try {
       const response = await authApi.patch(`/api/notifications/${id}/read`);
-      return { data: response.data as Notification, error: null };
+      return { data: response.data?.data as Notification, error: null };
     } catch (error) {
       return {
         data: null,
-        error: error instanceof Error ? error.message : 'Failed to mark notification as read'
+        error: handleApiError(error)
       };
     }
   }, [authApi]);
@@ -108,7 +126,7 @@ export const useNotificationAPI = () => {
     } catch (error) {
       return {
         data: null,
-        error: error instanceof Error ? error.message : 'Failed to mark all as read'
+        error: handleApiError(error)
       };
     }
   }, [authApi]);
@@ -120,7 +138,7 @@ export const useNotificationAPI = () => {
     } catch (error) {
       return {
         data: null,
-        error: error instanceof Error ? error.message : 'Failed to delete notification'
+        error: handleApiError(error)
       };
     }
   }, [authApi]);
@@ -132,7 +150,7 @@ export const useNotificationAPI = () => {
     } catch (error) {
       return {
         data: null,
-        error: error instanceof Error ? error.message : 'Failed to delete all notifications'
+        error: handleApiError(error)
       };
     }
   }, [authApi]);

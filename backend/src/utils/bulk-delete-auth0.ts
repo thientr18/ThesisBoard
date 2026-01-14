@@ -6,7 +6,7 @@ async function bulkDeleteAllUsers() {
   const auth0Service = new Auth0Service();
   try {
     let page = 0;
-    const perPage = 150;
+    const perPage = 100;
     let totalDeleted = 0;
     while (true) {
       const { users } = await auth0Service.getUsers(undefined, page, perPage);
@@ -19,7 +19,6 @@ async function bulkDeleteAllUsers() {
         } catch (err) {
           console.error(`Failed to delete user ${user.user_id}:`, err);
         }
-        // Optional: delay to avoid rate limit
         await new Promise(res => setTimeout(res, 200));
       }
       page++;

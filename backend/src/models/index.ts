@@ -114,8 +114,8 @@ function applyAssociations() {
     ThesisRegistration.belongsTo(Semester, { foreignKey: 'semesterId', as: 'semester' });
     Semester.hasMany(ThesisRegistration, { foreignKey: 'semesterId', as: 'thesisRegistrations' });
 
-    ThesisRegistration.belongsTo(Teacher, { foreignKey: 'submittedByTeacherId', as: 'submittedByTeacher' });
-    Teacher.hasMany(ThesisRegistration, { foreignKey: 'submittedByTeacherId', as: 'submittedRegistrations' });
+    ThesisRegistration.belongsTo(Teacher, { foreignKey: 'supervisorTeacherId', as: 'submittedByTeacher' });
+    Teacher.hasMany(ThesisRegistration, { foreignKey: 'supervisorTeacherId', as: 'submittedRegistrations' });
 
     ThesisRegistration.belongsTo(User, { foreignKey: 'approvedByUserId', as: 'approvedByUser' });
     User.hasMany(ThesisRegistration, { foreignKey: 'approvedByUserId', as: 'approvedRegistrations' });

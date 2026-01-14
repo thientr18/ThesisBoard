@@ -85,9 +85,24 @@ export class UserController {
     }
   };
 
+  getTeacherByUserId = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const { userId } = req.params;
+      console.log("userId:", userId);
+      const teacher = await this.userService.getTeacherByUserId(parseInt(userId));
+      res.status(200).json({
+        status: 'success',
+        teacher
+      });
+    } catch (error) {
+      next(error);
+    }
+  };
+
   getTeacherById = async (req: Request, res: Response, next: NextFunction) => {
     try {
       const { teacherId } = req.params;
+      console.log("teacherId:", teacherId);
       const teacher = await this.userService.getTeacherById(parseInt(teacherId));
       res.status(200).json({
         status: 'success',

@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { usePreThesisApi } from '../../../api/endpoints/pre-thesis.api';
-import { Card, List, Spin, Alert, Empty } from 'antd';
-import { Link } from "react-router-dom";
+import { List, Spin, Alert, Empty } from 'antd';
 
 interface AllTeacherPreThesesProps {
   user: any;
@@ -38,35 +37,24 @@ const AllTeacherPreTheses: React.FC<AllTeacherPreThesesProps> = ({ user, semeste
 
   return (
     <div>
-      <h3 className="text-xl font-semibold mb-6">Pre-Thesis Projects for {semester.name}</h3>
+      <h3 className="text-lg font-semibold mb-4">Pre-Thesis Projects for {semester.name}</h3>
       <List
-        grid={{ gutter: 16, xs: 1, sm: 2, md: 3, lg: 3, xl: 4, xxl: 4 }}
+        itemLayout="horizontal"
         dataSource={preTheses}
         renderItem={pt => (
-          <List.Item>
-            <Link to={`/prethesis/${pt.id}`}>
-              <Card
-                title={
-                  <div className="flex flex-col">
-                    <span className="text-base font-semibold text-blue-700">
-                      {pt.topicApplication?.topic?.title || pt.title || 'No Topic Title'}
-                    </span>
-                    <span className="text-xs text-gray-400 mt-1">
-                      Status: {pt.status === 'in_progress' ? 'In Progress' : pt.status}
-                    </span>
-                  </div>
-                }
-                className="shadow-md hover:shadow-xl transition-shadow duration-200 border border-gray-100"
-                bodyStyle={{ padding: '1rem' }}
-              >
-                <div className="mb-2">
-                  <span className="font-medium text-gray-700">Student:</span>{' '}
-                  <span className="text-blue-600 font-medium">
-                    {pt.student?.user?.fullName || 'Unknown Student'}
-                  </span>
+          <List.Item className="hover:bg-gray-50 transition cursor-pointer px-2 py-2 rounded"
+            onClick={() => window.location.href = `/prethesis/${pt.id}`}>
+            <div className="w-full">
+              <div className="font-medium text-gray-900">{pt.topicApplication?.topic?.title || pt.title || 'No Topic Title'}</div>
+              <div className="flex flex-row items-center justify-between mt-1">
+                <div className="text-xs text-gray-500">
+                  Status: {pt.status === 'in_progress' ? 'In Progress' : pt.status}
                 </div>
-              </Card>
-            </Link>
+                <div className="text-xs text-gray-700">
+                  Student: <span className="text-blue-600 font-medium">{pt.student?.user?.fullName || 'Unknown Student'}</span>
+                </div>
+              </div>
+            </div>
           </List.Item>
         )}
       />

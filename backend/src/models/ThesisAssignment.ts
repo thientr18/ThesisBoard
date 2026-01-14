@@ -5,9 +5,12 @@ export class ThesisAssignment extends Model<InferAttributes<ThesisAssignment>, I
   declare id: CreationOptional<number>;
   declare thesisId: number;
   declare teacherId: number;
-  declare role: 'reviewer' | 'committee_member' | 'chair' | 'secretary' | 'member';
+  declare role: 'reviewer' | 'committee_member';
   declare assignedByUserId: number;
   declare assignedAt: CreationOptional<Date>;
+  declare createdAt: CreationOptional<Date>;
+  declare updatedAt: CreationOptional<Date>;
+  declare deletedAt: CreationOptional<Date | null>;
 }
 
 ThesisAssignment.init(
@@ -15,9 +18,12 @@ ThesisAssignment.init(
     id: { type: DataTypes.BIGINT, primaryKey: true, autoIncrement: true },
     thesisId: { type: DataTypes.BIGINT, allowNull: false, field: 'thesis_id' },
     teacherId: { type: DataTypes.BIGINT, allowNull: false, field: 'teacher_id' },
-    role: { type: DataTypes.ENUM('reviewer', 'committee_member', 'chair', 'secretary', 'member'), allowNull: false },
+    role: { type: DataTypes.ENUM('reviewer', 'committee_member'), allowNull: false },
     assignedByUserId: { type: DataTypes.BIGINT, allowNull: false, field: 'assigned_by_user_id' },
     assignedAt: { type: DataTypes.DATE, allowNull: false, defaultValue: DataTypes.NOW, field: 'assigned_at' },
+    createdAt: { type: DataTypes.DATE, allowNull: false, defaultValue: DataTypes.NOW, field: 'created_at' },
+    updatedAt: { type: DataTypes.DATE, allowNull: false, defaultValue: DataTypes.NOW, field: 'updated_at' },
+    deletedAt: { type: DataTypes.DATE, allowNull: true, field: 'deleted_at' },
   },
   {
     sequelize,

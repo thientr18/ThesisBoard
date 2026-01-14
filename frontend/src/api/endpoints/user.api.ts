@@ -15,6 +15,24 @@ import type {
 
 const BASE_PATH = '/api/users';
 
+const handleApiError = (error: unknown): string => {
+  if (error instanceof Error) {
+    const anyErr = error as any;
+    if (anyErr?.response?.data) {
+      const data = anyErr.response.data;
+      if (data.message) {
+        let msg = data.message;
+        if (data.code) msg += ` (code: ${data.code})`;
+        if (data.details) msg += `: ${JSON.stringify(data.details)}`;
+        return msg;
+      }
+      return JSON.stringify(data);
+    }
+    return error.message;
+  }
+  return 'An unexpected error occurred';
+};
+
 export const useUserApi = () => {
   const authApi = useAuthenticatedApi();
 
@@ -24,7 +42,7 @@ export const useUserApi = () => {
       const user = (response.data.user ?? null) as UserWithRoles;
       return { data: user, error: null };
     } catch (error) {
-      return { data: null, error: error instanceof Error ? error.message : 'Failed to fetch current user' };
+      return { data: null, error: handleApiError(error) };
     }
   }, [authApi]);
 
@@ -33,7 +51,7 @@ export const useUserApi = () => {
       await authApi.put(`${BASE_PATH}/change-password`, { currentPassword, newPassword });
       return { data: true, error: null };
     } catch (error) {
-      return { data: null, error: error instanceof Error ? error.message : 'Failed to change password' };
+      return { data: null, error: handleApiError(error) };
     }
   }, [authApi]);
 
@@ -42,7 +60,7 @@ export const useUserApi = () => {
       const response = await authApi.get(`${BASE_PATH}/${id}`);
       return { data: response.data.user as User, error: null };
     } catch (error) {
-      return { data: null, error: error instanceof Error ? error.message : `Failed to fetch user with ID ${id}` };
+      return { data: null, error: handleApiError(error) };
     }
   }, [authApi]);
 
@@ -51,7 +69,7 @@ export const useUserApi = () => {
       const response = await authApi.get(`${BASE_PATH}/search`, { params });
       return { data: response.data.users as User[], error: null };
     } catch (error) {
-      return { data: null, error: error instanceof Error ? error.message : 'Failed to search users' };
+      return { data: null, error: handleApiError(error) };
     }
   }, [authApi]);
 
@@ -60,7 +78,7 @@ export const useUserApi = () => {
       const response = await authApi.get(`${BASE_PATH}/statistics`);
       return { data: response.data.statistics as UserStatistics, error: null };
     } catch (error) {
-      return { data: null, error: error instanceof Error ? error.message : 'Failed to fetch user statistics' };
+      return { data: null, error: handleApiError(error) };
     }
   }, [authApi]);
   
@@ -69,7 +87,7 @@ export const useUserApi = () => {
       await authApi.patch(`${BASE_PATH}/${id}/activate`);
       return { data: null, error: null };
     } catch (error) {
-      return { data: null, error: error instanceof Error ? error.message : `Failed to activate user with ID ${id}` };
+      return { data: null, error: handleApiError(error) };
     }
   }, [authApi]);
 
@@ -78,7 +96,7 @@ export const useUserApi = () => {
       await authApi.patch(`${BASE_PATH}/${id}/deactivate`);
       return { data: null, error: null };
     } catch (error) {
-      return { data: null, error: error instanceof Error ? error.message : `Failed to deactivate user with ID ${id}` };
+      return { data: null, error: handleApiError(error) };
     }
   }, [authApi]);
 
@@ -87,7 +105,7 @@ export const useUserApi = () => {
       await authApi.post(`${BASE_PATH}/roles`, payload);
       return { data: true, error: null };
     } catch (error) {
-      return { data: null, error: error instanceof Error ? error.message : 'Failed to assign role to user' };
+      return { data: null, error: handleApiError(error) };
     }
   }, [authApi]);
 
@@ -96,7 +114,7 @@ export const useUserApi = () => {
       await authApi.delete(`${BASE_PATH}/roles`, { data: payload } as any);
       return { data: true, error: null };
     } catch (error) {
-      return { data: null, error: error instanceof Error ? error.message : 'Failed to remove role from user' };
+      return { data: null, error: handleApiError(error) };
     }
   }, [authApi]);
 
@@ -108,7 +126,7 @@ export const useUserApi = () => {
       const response = await authApi.post(`${BASE_PATH}/student`, payload);
       return { data: response.data.data as User, error: null };
     } catch (error) {
-      return { data: null, error: error instanceof Error ? error.message : 'Failed to create student' };
+      return { data: null, error: handleApiError(error) };
     }
   }, [authApi]);
 
@@ -117,7 +135,7 @@ export const useUserApi = () => {
       const response = await authApi.get(`${BASE_PATH}/students`);
       return { data: response.data.students as Student[], error: null };
     } catch (error) {
-      return { data: null, error: error instanceof Error ? error.message : 'Failed to fetch students' };
+      return { data: null, error: handleApiError(error) };
     }
   }, [authApi]);
 
@@ -126,7 +144,7 @@ export const useUserApi = () => {
       const response = await authApi.get(`${BASE_PATH}/student/${id}`);
       return { data: response.data.student as Student, error: null };
     } catch (error) {
-      return { data: null, error: error instanceof Error ? error.message : `Failed to fetch student with ID ${id}` };
+      return { data: null, error: handleApiError(error) };
     }
   }, [authApi]);
 
@@ -135,7 +153,7 @@ export const useUserApi = () => {
       const response = await authApi.put(`${BASE_PATH}/student/${id}`, payload);
       return { data: response.data.student as User, error: null }; 
     } catch (error) {
-      return { data: null, error: error instanceof Error ? error.message : `Failed to update student with ID ${id}` };
+      return { data: null, error: handleApiError(error) };
     }
   }, [authApi]);
 
@@ -144,7 +162,7 @@ export const useUserApi = () => {
       await authApi.delete(`${BASE_PATH}/student/${id}`);
       return { data: true, error: null };
     } catch (error) {
-      return { data: null, error: error instanceof Error ? error.message : `Failed to delete student with ID ${id}` };
+      return { data: null, error: handleApiError(error) };
     }
   }, [authApi]);
 
@@ -154,7 +172,7 @@ export const useUserApi = () => {
       const response = await authApi.post(`${BASE_PATH}/teacher`, payload);
       return { data: response.data.data as User, error: null };
     } catch (error) {
-      return { data: null, error: error instanceof Error ? error.message : 'Failed to create teacher' };
+      return { data: null, error: handleApiError(error) };
     }
   }, [authApi]);
 
@@ -163,7 +181,16 @@ export const useUserApi = () => {
       const response = await authApi.get(`${BASE_PATH}/teachers`);
       return { data: response.data.teachers as Teacher[], error: null };
     } catch (error) {
-      return { data: null, error: error instanceof Error ? error.message : 'Failed to fetch teachers' };
+      return { data: null, error: handleApiError(error) };
+    }
+  }, [authApi]);
+
+  const getTeacherByUserId = useCallback(async (userId: number): Promise<ApiResponse<Teacher>> => {
+    try {
+      const response = await authApi.get(`${BASE_PATH}/teacher/user/${userId}`);
+      return { data: response.data.teacher as Teacher, error: null };
+    } catch (error) {
+      return { data: null, error: handleApiError(error) };
     }
   }, [authApi]);
 
@@ -172,7 +199,7 @@ export const useUserApi = () => {
       const response = await authApi.get(`${BASE_PATH}/teacher/${id}`);
       return { data: response.data.teacher as Teacher, error: null };
     } catch (error) {
-      return { data: null, error: error instanceof Error ? error.message : `Failed to fetch teacher with ID ${id}` };
+      return { data: null, error: handleApiError(error) };
     }
   }, [authApi]);
 
@@ -181,7 +208,7 @@ export const useUserApi = () => {
       const response = await authApi.put(`${BASE_PATH}/teacher/${id}`, payload);
       return { data: response.data.data as User, error: null };
     } catch (error) {
-      return { data: null, error: error instanceof Error ? error.message : `Failed to update teacher with ID ${id}` };
+      return { data: null, error: handleApiError(error) };
     }
   }, [authApi]);
 
@@ -190,7 +217,7 @@ export const useUserApi = () => {
       await authApi.delete(`${BASE_PATH}/teacher/${id}`);
       return { data: true, error: null };
     } catch (error) {
-      return { data: null, error: error instanceof Error ? error.message : `Failed to delete teacher with ID ${id}` };
+      return { data: null, error: handleApiError(error) };
     }
   }, [authApi]);
 
@@ -200,7 +227,7 @@ export const useUserApi = () => {
       const response = await authApi.post(`${BASE_PATH}/administrator`, payload);
       return { data: response.data.data as User, error: null };
     } catch (error) {
-      return { data: null, error: error instanceof Error ? error.message : 'Failed to create administrator' };
+      return { data: null, error: handleApiError(error) };
     }
   }, [authApi]);
 
@@ -209,7 +236,7 @@ export const useUserApi = () => {
       const response = await authApi.get(`${BASE_PATH}/administrators`);
       return { data: response.data.administrators as User[], error: null };
     } catch (error) {
-      return { data: null, error: error instanceof Error ? error.message : 'Failed to fetch administrators' };
+      return { data: null, error: handleApiError(error) };
     }
   }, [authApi]);
 
@@ -218,7 +245,7 @@ export const useUserApi = () => {
       const response = await authApi.get(`${BASE_PATH}/administrator/${id}`);
       return { data: response.data.user as User, error: null };
     } catch (error) {
-      return { data: null, error: error instanceof Error ? error.message : `Failed to fetch administrator with ID ${id}` };
+      return { data: null, error: handleApiError(error) };
     }
   }, [authApi]);
 
@@ -227,7 +254,7 @@ export const useUserApi = () => {
       const response = await authApi.put(`${BASE_PATH}/administrator/${id}`, payload);
       return { data: response.data.data as User, error: null };
     } catch (error) {
-      return { data: null, error: error instanceof Error ? error.message : `Failed to update administrator with ID ${id}` };
+      return { data: null, error: handleApiError(error) };
     }
   }, [authApi]);
 
@@ -236,7 +263,7 @@ export const useUserApi = () => {
       await authApi.delete(`${BASE_PATH}/administrator/${id}`);
       return { data: true, error: null };
     } catch (error) {
-      return { data: null, error: error instanceof Error ? error.message : `Failed to delete administrator with ID ${id}` };
+      return { data: null, error: handleApiError(error) };
     }
   }, [authApi]);
 
@@ -257,6 +284,7 @@ export const useUserApi = () => {
     deleteStudent,
     createTeacher,
     getAllTeachers,
+    getTeacherByUserId,
     getTeacherById,
     updateTeacher,
     deleteTeacher,
@@ -282,6 +310,7 @@ export const useUserApi = () => {
     deleteStudent,
     createTeacher,
     getAllTeachers,
+    getTeacherByUserId,
     getTeacherById,
     updateTeacher,
     deleteTeacher,

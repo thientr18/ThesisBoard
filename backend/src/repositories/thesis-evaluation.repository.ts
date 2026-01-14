@@ -15,6 +15,20 @@ export class ThesisEvaluationRepository extends GenericRepository<ThesisEvaluati
     return this.findAll({ evaluatorTeacherId });
   }
 
+  async findByThesisIdAndTeacher(
+    thesisId: number,
+    teacherId: number,
+    role: string
+  ): Promise<ThesisEvaluation | null> {
+    return await ThesisEvaluation.findOne({
+      where: {
+        thesisId,
+        evaluatorTeacherId: teacherId,
+        role
+      }
+    });
+  }
+
   async getAverageScoreByThesisId(thesisId: number): Promise<number | null> {
     const evaluations = await this.findByThesisId(thesisId);
     if (evaluations.length === 0) return null;
@@ -26,15 +40,5 @@ export class ThesisEvaluationRepository extends GenericRepository<ThesisEvaluati
   async countEvaluatorsByThesisId(thesisId: number): Promise<number> {
     const evaluations = await this.findByThesisId(thesisId);
     return evaluations.length;
-  }
-  
-  async isThesisFullyEvaluated(
-    thesisId: number, 
-    requiredRoles: (ThesisEvaluation['role'])[]
-  ): Promise<boolean> {
-    const evaluations = await this.findByThesisId(thesisId);
-    const evaluatedRoles = new Set(evaluations.map(e => e.role));
-    
-    return requiredRoles.every(role => evaluatedRoles.has(role));
   }
 }

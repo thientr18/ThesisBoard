@@ -4,13 +4,14 @@ export type ApiResponse<T> = {
 };
 
 export interface Notification {
-  id: string;
-  message: string;
-  type: NotificationType;
+  id: number;
+  content: string;
+  type: string;
   isRead: boolean;
   createdAt: string;
-  userId: string;
+  userId: number;
   metadata?: Record<string, any>;
+  title?: string;
 }
 
 export type NotificationType = 'INFO' | 'WARNING' | 'ERROR' | 'SUCCESS';

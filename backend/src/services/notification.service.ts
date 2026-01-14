@@ -16,7 +16,7 @@ export class NotificationService {
     type: string;
     title: string;
     content: string;
-    entityType?: string;
+    entityType?: Notification['entityType'];
     entityId?: number;
   }): Promise<Notification> {
     return this.notificationRepository.create({
@@ -113,7 +113,7 @@ export class NotificationService {
     userIds: number[],
     title: string,
     content: string,
-    entityType: string,
+    entityType: Notification['entityType'],
     entityId: number,
     type: string = 'ENTITY_UPDATE'
   ): Promise<Notification[]> {

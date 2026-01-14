@@ -325,6 +325,14 @@ export class UserService {
     return teacher ? teacher.id : null;
   }
 
+  async getTeacherByUserId(userId: number): Promise<TeacherDetails | null> {
+    const teacher = await this.teacherRepository.findByUserId(userId);
+    if (!teacher) {
+      throw new AppError('Teacher not found', 404, 'TEACHER_NOT_FOUND');
+    }
+    return teacher ? this.getTeacherById(teacher.id) : null;
+  }
+
   async getAllTeachers(): Promise<TeacherDetails[]> {
     const teachers = await this.teacherRepository.findAll();
     const teacherDetailsList: TeacherDetails[] = [];

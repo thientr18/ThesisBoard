@@ -1,4 +1,4 @@
-import { Transaction } from 'sequelize';
+import { Op, Transaction } from 'sequelize';
 import { sequelize } from '../models/db';
 import { AppError } from '../utils/AppError';
 import * as path from 'path';
@@ -7,6 +7,7 @@ import * as ejs from 'ejs';
 import puppeteer from 'puppeteer';
 
 // Import repositories
+import { StudentSemesterRepository } from '../repositories/student-semester.repository';
 import { DefenseSessionRepository } from '../repositories/defense-session.repository';
 import { TeacherAvailabilityRepository } from '../repositories/teacher-availability.repository';
 import { ThesisAssignmentRepository } from '../repositories/thesis-assignment.repository';
@@ -15,6 +16,10 @@ import { ThesisFinalGradeRepository } from '../repositories/thesis-final-grade.r
 import { ThesisProposalRepository } from '../repositories/thesis-proposal.repository';
 import { ThesisRegistrationRepository } from '../repositories/thesis-registration.repository';
 import { ThesisRepository } from '../repositories/thesis.repository';
+import { SemesterRepository } from '../repositories/semester.repository';
+import { TeacherRepository } from '../repositories/teacher.repository';
+import { StudentRepository } from '../repositories/student.repository';
+import { UserRepository } from '../repositories/user.repository';
 
 // Import notification service
 import { NotificationService } from './notification.service';
@@ -29,8 +34,11 @@ import { DefenseSession } from '../models/DefenseSession';
 
 import { ThesisRegistrationReportData } from '../types/report.types';
 import { ThesisEvaluationReportData } from '../types/report.types';
+import { TeacherAvailability } from '../models/TeacherAvailability';
+import { Semester } from '../models/Semester';
 
 export class ThesisService {
+  private studentSemesterRepository: StudentSemesterRepository = new StudentSemesterRepository();
   private defenseSessionRepository: DefenseSessionRepository;
   private teacherAvailabilityRepository: TeacherAvailabilityRepository;
   private thesisAssignmentRepository: ThesisAssignmentRepository;
@@ -39,9 +47,15 @@ export class ThesisService {
   private thesisProposalRepository: ThesisProposalRepository;
   private thesisRegistrationRepository: ThesisRegistrationRepository;
   private thesisRepository: ThesisRepository;
+  private teacherRepository: TeacherRepository;
+  private semesterRepository: SemesterRepository;
+  private studentRepository: StudentRepository;
+  private userRepository: UserRepository;
+
   private notificationService: NotificationService;
 
   constructor() {
+    this.studentSemesterRepository = new StudentSemesterRepository();
     this.defenseSessionRepository = new DefenseSessionRepository();
     this.teacherAvailabilityRepository = new TeacherAvailabilityRepository();
     this.thesisAssignmentRepository = new ThesisAssignmentRepository();
@@ -50,6 +64,11 @@ export class ThesisService {
     this.thesisProposalRepository = new ThesisProposalRepository();
     this.thesisRegistrationRepository = new ThesisRegistrationRepository();
     this.thesisRepository = new ThesisRepository();
+    this.teacherRepository = new TeacherRepository();
+    this.semesterRepository = new SemesterRepository();
+    this.studentRepository = new StudentRepository();
+    this.userRepository = new UserRepository();
+    
     this.notificationService = new NotificationService();
   }
 
@@ -66,13 +85,23 @@ export class ThesisService {
     semesterId: number;
     note: string | null;
   }): Promise<ThesisProposal> {
+    // Check if semester is active
+    const semester = await this.semesterRepository.findById(proposalData.semesterId);
+    if (!semester || !semester.isActive) {
+      throw new AppError(
+        'You can only submit proposals for an active semester.',
+        400,
+        'SEMESTER_NOT_ACTIVE'
+      );
+    }
+
     // Check if teacher has available capacity
-    const availability = await this.teacherAvailabilityRepository.findByTeacherAndSemester(
+    const availability = await this.teacherAvailabilityRepository.getTeacherSemester(
       proposalData.targetTeacherId, 
       proposalData.semesterId
     );
 
-    if (!availability || !availability.isOpen || availability.maxThesis <= 0) {
+    if (!availability || !availability.isOpen || availability.maxThesis < 1) {
       throw new AppError(
         'Selected teacher is not available for thesis supervision this semester',
         400,
@@ -80,18 +109,130 @@ export class ThesisService {
       );
     }
 
-    // Check if student already has an active proposal
-    const activeProposal = await this.thesisProposalRepository.findActiveProposalForStudent(
+    const student = await this.studentSemesterRepository.getStudentSemester(
+      proposalData.studentId,
+      proposalData.semesterId
+    );
+    if (!student) {
+      throw new AppError(
+        'Student is not enrolled in the specified semester',
+        400,
+        'STUDENT_NOT_ENROLLED'
+      );
+    }
+    if (student.type !== 'thesis') {
+      throw new AppError(
+        'Student is not registered for thesis work in the specified semester',
+        400,
+        'STUDENT_NOT_REGISTERED_FOR_THESIS'
+      );
+    }
+
+    // Prevent multiple submitted proposals for same student-teacher-semester
+    const existingSubmitted = await this.thesisProposalRepository.findByStudentTeacherSemester(
+      proposalData.studentId,
+      proposalData.targetTeacherId,
+      proposalData.semesterId
+    );
+    if (existingSubmitted && existingSubmitted.status === 'submitted') {
+      throw new AppError(
+        'You already have a submitted proposal with this teacher for this semester.',
+        400,
+        'PROPOSAL_ALREADY_SUBMITTED'
+      );
+    }
+
+    const thesisCount = await this.thesisRepository.count({
+      supervisorTeacherId: proposalData.targetTeacherId,
+      semesterId: proposalData.semesterId,
+      status: { [Op.ne]: 'cancelled' }
+    });
+
+    const registrationCount = await this.thesisRegistrationRepository.count({
+      supervisorTeacherId: proposalData.targetTeacherId,
+      semesterId: proposalData.semesterId,
+      status: { [Op.in]: ['pending_approval', 'approved'] }
+    });
+
+    const proposalCount = await this.thesisProposalRepository.count({
+      targetTeacherId: proposalData.targetTeacherId,
+      semesterId: proposalData.semesterId,
+      status: { [Op.in]: ['accepted'] }
+    });
+
+    if (thesisCount >= availability.maxThesis || registrationCount >= availability.maxThesis || proposalCount >= availability.maxThesis) {
+      throw new AppError(
+        'Selected teacher has reached the maximum number of supervised theses for this semester',
+        400,
+        'TEACHER_CAPACITY_FULL'
+      );
+    }
+
+    const activeRegistration = await this.thesisRegistrationRepository.findByStudentId(
       proposalData.studentId,
       proposalData.semesterId
     );
 
-    if (activeProposal) {
+    if (activeRegistration && activeRegistration.length > 0) {
       throw new AppError(
-        'Student already has an active thesis proposal for this semester',
+        'Student already has an active thesis registration for this semester',
+        400,
+        'REGISTRATION_EXISTS'
+      );
+    }
+
+    const activeThesis = await this.thesisRepository.findByStudentAndSemester(
+      proposalData.studentId,
+      proposalData.semesterId
+    );
+    if (activeThesis) {
+      throw new AppError(
+        'Student already has an active thesis for this semester',
+        400,
+        'THESIS_EXISTS'
+      );
+    }
+
+    // Check if student already has an active proposal
+    const activeProposals = await this.thesisProposalRepository.findActiveProposalForStudent(
+      proposalData.studentId,
+      proposalData.semesterId
+    );
+
+    if (activeProposals?.some(proposal => proposal.status === 'accepted')) {
+      throw new AppError(
+        'Student already has an accepted thesis proposal for this semester',
         400,
         'PROPOSAL_EXISTS'
       );
+    }
+
+
+    const teacher = await this.teacherRepository.findById(proposalData.targetTeacherId);
+    const proposalWithTeacher = await this.thesisProposalRepository.findByStudentTeacherSemester(student.id, proposalData.targetTeacherId, proposalData.semesterId);
+
+    if (proposalWithTeacher?.status === 'cancelled' || proposalWithTeacher?.status === 'rejected') {
+      const updatedProposal = await this.thesisProposalRepository.update(proposalWithTeacher.id, {
+        title: proposalData.title,
+        abstract: proposalData.abstract,
+        note: '',
+        status: 'submitted',
+        targetTeacherId: proposalData.targetTeacherId,
+        decidedAt: null
+      });
+
+      if (!updatedProposal) {
+        throw new AppError('Failed to update thesis proposal', 500, 'UPDATE_FAILED');
+      }
+
+      await this.notificationService.createNotification({
+        userId: Number(teacher?.userId),
+        type: 'THESIS_PROPOSAL',
+        title: 'Thesis Proposal Resubmitted',
+        content: `A thesis proposal "${proposalData.title}" has been resubmitted for your review.`,
+      });
+
+      return updatedProposal;
     }
 
     // Create the proposal
@@ -103,16 +244,14 @@ export class ThesisService {
       abstract: proposalData.abstract || null,
       status: 'submitted',
       note: proposalData.note || null,
-    } as ThesisProposal); // Using 'any' to bypass strict typing issues with optional fields
+    } as ThesisProposal);
     
     // Create notification for the teacher
     await this.notificationService.createNotification({
-      userId: proposalData.targetTeacherId,
+      userId: Number(teacher?.userId),
       type: 'THESIS_PROPOSAL',
       title: 'New Thesis Proposal',
       content: `A new thesis proposal "${proposalData.title}" has been submitted for your review.`,
-      entityType: 'ThesisProposal',
-      entityId: proposal.id
     });
     
     return proposal;
@@ -131,12 +270,41 @@ export class ThesisService {
   async getThesisProposalsByStudent(studentId: number, semesterId?: number): Promise<ThesisProposal[]> {
     return await this.thesisProposalRepository.findByStudentId(studentId, semesterId);
   }
+  
 
   /**
    * Get thesis proposals for a teacher
    */
-  async getThesisProposalsForTeacher(teacherId: number, semesterId?: number): Promise<ThesisProposal[]> {
+  async getThesisProposalsByTeacher(teacherId: number, semesterId?: number): Promise<ThesisProposal[]> {
     return await this.thesisProposalRepository.findByTeacherId(teacherId, semesterId);
+  }
+  
+
+  async updateThesisProposal(
+    proposalId: number,
+    updateData: {
+      title?: string;
+      abstract?: string;
+      note?: string;
+    },
+    userId: number
+  ): Promise<ThesisProposal | null> {
+    const proposal = await this.thesisProposalRepository.findById(proposalId);
+    if (!proposal) {
+      throw new AppError('Thesis proposal not found', 404, 'PROPOSAL_NOT_FOUND');
+    }
+    if (proposal.studentId !== userId) {
+      throw new AppError('Unauthorized to update this proposal', 403, 'FORBIDDEN');
+    }
+    if (proposal.status !== 'submitted') {
+      throw new AppError(
+        'Only proposals in pending state can be updated',
+        400,
+        'INVALID_PROPOSAL_STATUS'
+      );
+    }
+    const updatedProposal = await this.thesisProposalRepository.update(proposalId, updateData);
+    return updatedProposal;
   }
 
   /**
@@ -144,7 +312,7 @@ export class ThesisService {
    */
   async processThesisProposal(
     proposalId: number, 
-    decision: 'accept' | 'reject',
+    decision: 'accepted' | 'rejected' | 'cancelled',
     userId: number,
     note?: string
   ): Promise<ThesisProposal | null> {
@@ -166,45 +334,38 @@ export class ThesisService {
 
     try {
       let processedProposal: ThesisProposal | null = null;
-
-      if (decision === 'accept') {
-        // Check teacher capacity
-        const hasCapacity = await this.teacherAvailabilityRepository.decreaseThesisCapacity(
-          proposal.targetTeacherId, 
-          proposal.semesterId
-        );
-
-        if (!hasCapacity) {
-          await transaction.rollback();
-          throw new AppError(
-            'Teacher no longer has capacity for new theses',
-            400,
-            'NO_CAPACITY'
-          );
-        }
+      const teacher = await this.teacherRepository.findById(proposal.targetTeacherId);
+      const student = await this.studentRepository.findById(proposal.studentId);
+      if (decision === 'accepted') {
 
         processedProposal = await this.thesisProposalRepository.acceptProposal(proposalId, note);
         
         // Create notification for the student
         await this.notificationService.createNotification({
-          userId: proposal.studentId,
+          userId: Number(student?.userId),
           type: 'THESIS_PROPOSAL_ACCEPTED',
           title: 'Thesis Proposal Accepted',
           content: `Your thesis proposal "${proposal.title}" has been accepted. You can now proceed with registration.`,
-          entityType: 'ThesisProposal',
-          entityId: proposal.id
         });
-      } else {
+      } else if (decision === 'rejected') {
         processedProposal = await this.thesisProposalRepository.rejectProposal(proposalId, note);
         
         // Create notification for the student
         await this.notificationService.createNotification({
-          userId: proposal.studentId,
+          userId: Number(student?.userId),
           type: 'THESIS_PROPOSAL_REJECTED',
           title: 'Thesis Proposal Rejected',
           content: `Your thesis proposal "${proposal.title}" has been rejected. ${note ? `Reason: ${note}` : ''}`,
-          entityType: 'ThesisProposal',
-          entityId: proposal.id
+        });
+      } else if (decision === 'cancelled') {
+        processedProposal = await this.thesisProposalRepository.cancelProposal(proposalId, note);
+
+        // Create notification for the student
+        await this.notificationService.createNotification({
+          userId: Number(student?.userId),
+          type: 'THESIS_PROPOSAL_CANCELLED',
+          title: 'Thesis Proposal Cancelled',
+          content: `Your thesis proposal "${proposal.title}" has been cancelled. ${note ? `Reason: ${note}` : ''}`,
         });
       }
 
@@ -216,6 +377,33 @@ export class ThesisService {
     }
   }
 
+  async getTeachersAvailable(semesterId: number): Promise<TeacherAvailability[]> {
+    return await this.teacherAvailabilityRepository.getTeachersInSemester(semesterId);
+  }
+
+  /**
+   * Get teachers' availability with accepted proposals and remaining capacity
+   */
+  async getTeachersAvailabilityWithCapacity(semesterId: number) {
+    const availabilities = await this.teacherAvailabilityRepository.getTeachersInSemester(semesterId);
+
+    // For each teacher, count accepted proposals and calculate remaining capacity
+    const results = await Promise.all(availabilities.map(async (availability) => {
+      const acceptedCount = await this.thesisProposalRepository.countAcceptedProposals(
+        availability.teacherId,
+        semesterId
+      );
+      return {
+        ...availability.toJSON(),
+        acceptedProposals: acceptedCount,
+        remainingCapacity: Math.max(0, availability.maxThesis - acceptedCount)
+      };
+    }));
+
+    return results;
+  }
+
+    
   // ============= THESIS REGISTRATION METHODS =============
 
   /**
@@ -228,51 +416,101 @@ export class ThesisService {
     semesterId: number;
     title: string | null;
     abstract: string | null;
-    expectedResults?: string;
-    submittedByUserId: number;
+    decisionReason?: string;
+    submittedByTeacherId: number;
   }): Promise<ThesisRegistration> {
-    // Check if student already has a registration for this semester
-    const existingRegistrations = await this.thesisRegistrationRepository.findByStudentId(
-      data.studentId, 
-      data.semesterId
-    );
+    const transaction = await sequelize.transaction();
+    try {
+      // Check if student already has a registration for this semester
+      const existingRegistrations = await this.thesisRegistrationRepository.findByStudentId(
+        data.studentId, 
+        data.semesterId
+      );
 
-    if (existingRegistrations.some(reg => 
-        reg.status === 'pending_approval' || 
-        reg.status === 'approved')) {
+      if (existingRegistrations.some(reg => 
+          reg.status === 'pending_approval' || 
+          reg.status === 'approved')) {
+        throw new AppError(
+          'Student already has an active thesis registration for this semester',
+          400,
+          'REGISTRATION_EXISTS'
+        );
+      }
+
+      // Create the registration
+      const registration = await this.thesisRegistrationRepository.create(
+        {
+          studentId: data.studentId,
+          supervisorTeacherId: data.supervisorTeacherId,
+          semesterId: data.semesterId,
+          title: data.title || null,
+          abstract: data.abstract || null,
+          status: 'pending_approval',
+          decisionReason: data.decisionReason || null,
+          approvedByUserId: null,
+          decidedAt: null,
+          submittedAt: new Date()
+        } as ThesisRegistration,
+          { transaction }
+      );
+
+      const otherProposals = await this.thesisProposalRepository.findByStudentId(data.studentId);
+
+      for (const proposal of otherProposals) {
+        if (proposal.id !== data.proposalId && proposal.status === 'submitted') {
+          await this.thesisProposalRepository.cancelProposal(proposal.id, 'Cancelled due to thesis registration.', transaction);
+        }
+      }
+
+      const teacher = await this.teacherRepository.findById(data.supervisorTeacherId);
+      // Create notification for the supervisor
+      await this.notificationService.createNotification({
+        userId: Number(teacher?.userId),
+        type: 'THESIS_REGISTRATION',
+        title: 'New Thesis Registration',
+        content: `A new thesis registration "${data.title}" has been submitted for your approval.`,
+      });
+      
+      await transaction.commit();
+      return registration;
+    } catch (error) {
+      await transaction.rollback();
+      throw error;
+    }
+  }
+
+  async updateThesisRegistration(
+    registrationId: number,
+    updateData: {
+      title?: string;
+      abstract?: string;
+      decisionReason?: string;
+    },
+    userId: number
+  ): Promise<ThesisRegistration | null> {
+    const registration = await this.thesisRegistrationRepository.findById(registrationId);
+    if (!registration) {
+      throw new AppError('Thesis registration not found', 404, 'REGISTRATION_NOT_FOUND');
+    }
+
+    const supervisor = await this.teacherRepository.findById(registration.supervisorTeacherId);
+    if (supervisor?.userId !== userId) {
+      throw new AppError('Unauthorized to update this registration', 403, 'FORBIDDEN');
+    }
+
+    if (registration.status !== 'pending_approval' && registration.status !== 'rejected') {
       throw new AppError(
-        'Student already has an active thesis registration for this semester',
+        'Only registrations in pending approval or rejected state can be updated',
         400,
-        'REGISTRATION_EXISTS'
+        'INVALID_REGISTRATION_STATUS'
       );
     }
 
-    // Create the registration
-    const registration = await this.thesisRegistrationRepository.create({
-      studentId: data.studentId,
-      supervisorTeacherId: data.supervisorTeacherId,
-      semesterId: data.semesterId,
-      title: data.title || null,
-      abstract: data.abstract || null,
-      status: 'pending_approval',
-      submittedByTeacherId: data.submittedByUserId,
-      decisionReason: data.expectedResults || null,
-      approvedByUserId: null,
-      decidedAt: null,
-      submittedAt: new Date()
-    } as ThesisRegistration);
-    
-    // Create notification for the supervisor
-    await this.notificationService.createNotification({
-      userId: data.supervisorTeacherId,
-      type: 'THESIS_REGISTRATION',
-      title: 'New Thesis Registration',
-      content: `A new thesis registration "${data.title}" has been submitted for your approval.`,
-      entityType: 'ThesisRegistration',
-      entityId: registration.id
-    });
-    
-    return registration;
+    const updatedFields: any = { ...updateData, status: 'pending_approval' };
+
+    const updatedRegistration = await this.thesisRegistrationRepository.update(registrationId, updatedFields);
+
+    return updatedRegistration;
   }
 
   /**
@@ -280,7 +518,7 @@ export class ThesisService {
    */
   async processThesisRegistration(
     registrationId: number,
-    decision: 'approve' | 'reject',
+    decision: 'approved' | 'rejected',
     userId: number,
     decisionReason?: string
   ): Promise<ThesisRegistration | null> {
@@ -302,8 +540,10 @@ export class ThesisService {
 
     try {
       let processedRegistration: ThesisRegistration | null = null;
-
-      if (decision === 'approve') {
+      const student = await this.studentRepository.findById(registration.studentId);
+      const supervisor = await this.teacherRepository.findById(registration.supervisorTeacherId);
+      
+      if (decision === 'approved') {
         processedRegistration = await this.thesisRegistrationRepository.approveRegistration(
           registrationId,
           userId,
@@ -312,7 +552,7 @@ export class ThesisService {
         );
 
         // Create actual thesis entry
-        const thesis = await this.thesisRepository.create({
+        await this.thesisRepository.create({
           studentId: registration.studentId,
           title: registration.title,
           abstract: registration.abstract || null,
@@ -320,17 +560,28 @@ export class ThesisService {
           semesterId: registration.semesterId,
           status: 'in_progress',
         } as Thesis);
-        
+
+        const otherRegistration = await this.thesisRegistrationRepository.findByStudentId(registration.studentId);
+        for (const reg of otherRegistration) {
+          if (reg.id !== registrationId && reg.status === 'pending_approval') {
+            await this.thesisRegistrationRepository.cancelRegistration(reg.id, userId, 'Cancelled due to another registration approval', transaction);
+          }
+        }
+
         // Create notification for the student
         await this.notificationService.createNotification({
-          userId: registration.studentId,
+          userId: Number(student?.userId),
           type: 'THESIS_REGISTRATION_APPROVED',
           title: 'Thesis Registration Approved',
           content: `Your thesis registration "${registration.title}" has been approved. Your thesis is now officially registered.`,
-          entityType: 'Thesis',
-          entityId: thesis.id
         });
 
+        await this.notificationService.createNotification({
+          userId: Number(supervisor?.userId),
+          type: 'THESIS_REGISTRATION_APPROVED',
+          title: 'Thesis Registration Approved',
+          content: `The thesis registration "${registration.title}" has been approved.`,
+        });
       } else {
         processedRegistration = await this.thesisRegistrationRepository.rejectRegistration(
           registrationId,
@@ -341,12 +592,10 @@ export class ThesisService {
         
         // Create notification for the student
         await this.notificationService.createNotification({
-          userId: registration.studentId,
+          userId: Number(student?.userId),
           type: 'THESIS_REGISTRATION_REJECTED',
           title: 'Thesis Registration Rejected',
           content: `Your thesis registration "${registration.title}" has been rejected. ${decisionReason ? `Reason: ${decisionReason}` : ''}`,
-          entityType: 'ThesisRegistration',
-          entityId: registration.id
         });
       }
 
@@ -367,8 +616,6 @@ export class ThesisService {
     semesterId?: number;
     status?: ThesisRegistration['status'];
   }): Promise<ThesisRegistration[]> {
-    const whereClause: any = {};
-
     if (filter.studentId !== undefined) {
       return await this.thesisRegistrationRepository.findByStudentId(filter.studentId, filter.semesterId);
     } else if (filter.supervisorTeacherId !== undefined) {
@@ -392,7 +639,7 @@ export class ThesisService {
   }
 
   /**
-   * Get theses by various filters
+   * Get theses by various filters - Enhanced with defense eligibility
    */
   async getTheses(filter: {
     studentId?: number;
@@ -400,8 +647,106 @@ export class ThesisService {
     semesterId?: number;
     status?: Thesis['status'];
     titleContains?: string;
-  }): Promise<Thesis[]> {
-    return await this.thesisRepository.searchThesesByFilter(filter);
+  }): Promise<any[]> {
+    const theses = await this.thesisRepository.searchThesesByFilter(filter);
+
+    const result = await Promise.all(theses.map(async (thesis) => {
+      const student = await this.studentRepository.findById(thesis.studentId);
+      const studentUser = student ? await this.userRepository.findById(student.userId) : null;
+
+      const supervisor = await this.teacherRepository.findById(thesis.supervisorTeacherId);
+      const supervisorUser = supervisor ? await this.userRepository.findById(supervisor.userId) : null;
+
+      const committeeAssignmentsRaw = await this.thesisAssignmentRepository.findByThesisId(thesis.id);
+      const committeeAssignments = await Promise.all(committeeAssignmentsRaw.map(async (assignment) => {
+        const teacher = await this.teacherRepository.findById(assignment.teacherId);
+        const teacherUser = teacher ? await this.userRepository.findById(teacher.userId) : null;
+        return {
+          ...assignment.toJSON(),
+          teacher: {
+            ...teacher?.toJSON(),
+            user: teacherUser
+          }
+        };
+      }));
+
+      const teacherRole = filter.supervisorTeacherId && thesis.supervisorTeacherId === filter.supervisorTeacherId 
+        ? 'supervisor' 
+        : undefined;
+
+      const defenseSession = await this.defenseSessionRepository.findByThesisId(thesis.id);
+      const evaluations = await this.thesisEvaluationRepository.findByThesisId(thesis.id);
+      const finalGrade = await this.thesisFinalGradeRepository.findByThesisId(thesis.id);
+
+      // Check defense eligibility and committee assignment eligibility
+      const defenseEligibility = await this.isEligibleForDefense(thesis.id);
+      const committeeEligibility = await this.canAssignCommitteeMembers(thesis.id);
+
+      return {
+        thesis,
+        student: { ...student?.toJSON(), user: studentUser },
+        supervisor: { ...supervisor?.toJSON(), user: supervisorUser },
+        committeeAssignments,
+        defenseSession,
+        evaluations,
+        finalGrade,
+        defenseEligibility,
+        committeeEligibility,
+        ...(teacherRole && { teacherRole })
+      };
+    }));
+
+    return result;
+  }
+
+  async getThesesByAssignedTeacher(teacherId: number, semesterId?: number): Promise<any[]> {
+    const thesisIds = await this.thesisAssignmentRepository.findThesesByTeacherId(teacherId);
+    if (thesisIds.length === 0) {
+      return [];
+    }
+    const theses = await this.thesisRepository.findByIdsAndSemester(thesisIds, semesterId);
+    
+    // Format the response to match the structure from getTheses
+    const result = await Promise.all(theses.map(async (thesis) => {
+      const student = await this.studentRepository.findById(thesis.studentId);
+      const studentUser = student ? await this.userRepository.findById(student.userId) : null;
+
+      const supervisor = await this.teacherRepository.findById(thesis.supervisorTeacherId);
+      const supervisorUser = supervisor ? await this.userRepository.findById(supervisor.userId) : null;
+
+      const committeeAssignmentsRaw = await this.thesisAssignmentRepository.findByThesisId(thesis.id);
+      const committeeAssignments = await Promise.all(committeeAssignmentsRaw.map(async (assignment) => {
+        const teacher = await this.teacherRepository.findById(assignment.teacherId);
+        const teacherUser = teacher ? await this.userRepository.findById(teacher.userId) : null;
+        return {
+          ...assignment.toJSON(),
+          teacher: {
+            ...teacher?.toJSON(),
+            user: teacherUser
+          }
+        };
+      }));
+
+      // Get the role for this teacher
+      const teacherAssignment = committeeAssignmentsRaw.find(a => a.teacherId === teacherId);
+
+      const defenseSession = await this.defenseSessionRepository.findByThesisId(thesis.id);
+      const evaluations = await this.thesisEvaluationRepository.findByThesisId(thesis.id);
+      const finalGrade = await this.thesisFinalGradeRepository.findByThesisId(thesis.id);
+
+      return {
+        thesis,
+        student: { ...student?.toJSON(), user: studentUser },
+        supervisor: { ...supervisor?.toJSON(), user: supervisorUser },
+        committeeAssignments,
+        defenseSession,
+        evaluations,
+        finalGrade,
+        teacherRole: teacherAssignment?.role
+      };
+    }));
+
+    return result;
   }
 
   /**
@@ -413,6 +758,8 @@ export class ThesisService {
       return null;
     }
     
+    const student = await this.studentRepository.findById(thesis.studentId);
+    const supervisor = await this.teacherRepository.findById(thesis.supervisorTeacherId);
     const updatedThesis = await this.thesisRepository.updateStatus(thesisId, status);
     
     if (updatedThesis) {
@@ -430,23 +777,19 @@ export class ThesisService {
       
       // Notify student
       await this.notificationService.createNotification({
-        userId: thesis.studentId,
+        userId: Number(student?.userId),
         type: 'THESIS_STATUS_UPDATE',
         title: 'Thesis Status Updated',
         content: `Your thesis "${thesis.title}" ${message}.`,
-        entityType: 'Thesis',
-        entityId: thesis.id
       });
       
       // Notify supervisor
       if (thesis.supervisorTeacherId) {
         await this.notificationService.createNotification({
-          userId: thesis.supervisorTeacherId,
+          userId: Number(supervisor?.userId),
           type: 'THESIS_STATUS_UPDATE',
           title: 'Thesis Status Updated',
           content: `Thesis "${thesis.title}" by your student ${message}.`,
-          entityType: 'Thesis',
-          entityId: thesis.id
         });
       }
     }
@@ -457,7 +800,123 @@ export class ThesisService {
   // ============= THESIS ASSIGNMENT METHODS =============
 
   /**
+   * Check if thesis is eligible for defense scheduling
+   * Requirements:
+   * 1. Must have supervisor evaluation
+   * 2. Must have reviewer evaluation
+   * 3. Average of supervisor + reviewer scores must be >= 50
+   * 4. Must have at least one committee member assigned
+   */
+  async isEligibleForDefense(thesisId: number): Promise<{
+    eligible: boolean;
+    reason?: string;
+    preDefenseScore?: number;
+  }> {
+    const thesis = await this.thesisRepository.findById(thesisId);
+    
+    if (!thesis) {
+      return { eligible: false, reason: 'Thesis not found' };
+    }
+
+    if (thesis.status === 'cancelled') {
+      return { eligible: false, reason: 'Thesis has been cancelled' };
+    }
+
+    if (thesis.status === 'completed') {
+      return { eligible: false, reason: 'Thesis is already completed' };
+    }
+
+    // Check if supervisor and reviewer have evaluated
+    const evaluations = await this.thesisEvaluationRepository.findByThesisId(thesisId);
+    
+    const supervisorEval = evaluations.find(e => e.role === 'supervisor');
+    const reviewerEval = evaluations.find(e => e.role === 'reviewer');
+
+    if (!supervisorEval) {
+      return { eligible: false, reason: 'Supervisor evaluation is required' };
+    }
+
+    if (!reviewerEval) {
+      return { eligible: false, reason: 'Reviewer evaluation is required' };
+    }
+
+    // Calculate pre-defense average score
+    const preDefenseScore = (Number(supervisorEval.score) + Number(reviewerEval.score)) / 2;
+
+    if (preDefenseScore < 50) {
+      return { 
+        eligible: false, 
+        reason: `Pre-defense score (${preDefenseScore.toFixed(2)}) is below minimum requirement of 50`,
+        preDefenseScore 
+      };
+    }
+
+    // Check if at least one committee member is assigned
+    const assignments = await this.thesisAssignmentRepository.findByThesisId(thesisId);
+    const hasCommittee = assignments.some(a => a.role === 'committee_member');
+
+    if (!hasCommittee) {
+      return { 
+        eligible: false, 
+        reason: 'At least one committee member must be assigned before scheduling defense',
+        preDefenseScore 
+      };
+    }
+
+    return { eligible: true, preDefenseScore };
+  }
+
+  /**
+   * Check if thesis can have committee members assigned
+   * Requirements:
+   * 1. Must have supervisor evaluation
+   * 2. Must have reviewer evaluation  
+   * 3. Average score must be >= 50
+   */
+  async canAssignCommitteeMembers(thesisId: number): Promise<{
+    canAssign: boolean;
+    reason?: string;
+    preDefenseScore?: number;
+  }> {
+    const thesis = await this.thesisRepository.findById(thesisId);
+    
+    if (!thesis) {
+      return { canAssign: false, reason: 'Thesis not found' };
+    }
+
+    if (thesis.status === 'cancelled' || thesis.status === 'completed') {
+      return { canAssign: false, reason: `Thesis is ${thesis.status}` };
+    }
+
+    const evaluations = await this.thesisEvaluationRepository.findByThesisId(thesisId);
+    
+    const supervisorEval = evaluations.find(e => e.role === 'supervisor');
+    const reviewerEval = evaluations.find(e => e.role === 'reviewer');
+
+    if (!supervisorEval) {
+      return { canAssign: false, reason: 'Waiting for supervisor evaluation' };
+    }
+
+    if (!reviewerEval) {
+      return { canAssign: false, reason: 'Waiting for reviewer evaluation' };
+    }
+
+    const preDefenseScore = (Number(supervisorEval.score) + Number(reviewerEval.score)) / 2;
+
+    if (preDefenseScore < 50) {
+      return { 
+        canAssign: false, 
+        reason: `Pre-defense score (${preDefenseScore.toFixed(2)}) is below minimum requirement of 50. Cannot assign committee members.`,
+        preDefenseScore 
+      };
+    }
+
+    return { canAssign: true, preDefenseScore };
+  }
+
+  /**
    * Assign a teacher to a thesis with a specific role
+   * Enhanced with committee member eligibility check
    */
   async assignTeacherToThesis(
     thesisId: number, 
@@ -470,19 +929,18 @@ export class ThesisService {
     if (!thesis) {
       throw new AppError('Thesis not found', 404, 'THESIS_NOT_FOUND');
     }
-    
-    // Ensure teacher has availability for this semester
-    const availability = await this.teacherAvailabilityRepository.findByTeacherAndSemester(
-      teacherId, 
-      thesis.semesterId
-    );
-    
-    if (!availability || !availability.isOpen) {
-      throw new AppError(
-        'Teacher is not available for thesis assignments this semester',
-        400,
-        'TEACHER_UNAVAILABLE'
-      );
+
+    // Check committee member assignment eligibility
+    if (role === 'committee_member') {
+      const eligibility = await this.canAssignCommitteeMembers(thesisId);
+      
+      if (!eligibility.canAssign) {
+        throw new AppError(
+          eligibility.reason || 'Cannot assign committee members at this time',
+          400,
+          'COMMITTEE_ASSIGNMENT_NOT_ALLOWED'
+        );
+      }
     }
     
     const assignment = await this.thesisAssignmentRepository.assignTeacher(
@@ -492,24 +950,23 @@ export class ThesisService {
       assignedByUserId
     );
     
+    const teacher = await this.teacherRepository.findById(teacherId);
+    const student = await this.studentRepository.findById(thesis.studentId);
+    
     // Create notification for the assigned teacher
     await this.notificationService.createNotification({
-      userId: teacherId,
+      userId: Number(teacher?.userId),
       type: 'THESIS_ASSIGNMENT',
       title: 'New Thesis Assignment',
       content: `You have been assigned as ${role} for the thesis "${thesis.title}".`,
-      entityType: 'Thesis',
-      entityId: thesisId
     });
     
     // Create notification for the student
     await this.notificationService.createNotification({
-      userId: thesis.studentId,
+      userId: Number(student?.userId),
       type: 'THESIS_ASSIGNMENT',
       title: 'Thesis Committee Update',
       content: `A teacher has been assigned as ${role} for your thesis.`,
-      entityType: 'Thesis',
-      entityId: thesisId
     });
     
     return assignment;
@@ -523,9 +980,26 @@ export class ThesisService {
     teacherId: number, 
     role: ThesisAssignment['role']
   ): Promise<boolean> {
+    const teacher = await this.teacherRepository.findById(teacherId);
+
     const thesis = await this.thesisRepository.findById(thesisId);
     if (!thesis) {
       throw new AppError('Thesis not found', 404, 'THESIS_NOT_FOUND');
+    }
+    
+    // Check if teacher has already submitted an evaluation
+    const existingEvaluation = await this.thesisEvaluationRepository.findByThesisIdAndTeacher(
+      thesisId,
+      teacherId,
+      role === 'reviewer' ? 'reviewer' : 'committee_member'
+    );
+    
+    if (existingEvaluation) {
+      throw new AppError(
+        'Cannot remove teacher assignment. This teacher has already submitted an evaluation for this thesis.',
+        400,
+        'TEACHER_HAS_EVALUATED'
+      );
     }
     
     const removed = await this.thesisAssignmentRepository.removeAssignment(thesisId, teacherId, role);
@@ -533,12 +1007,10 @@ export class ThesisService {
     if (removed) {
       // Notify the teacher
       await this.notificationService.createNotification({
-        userId: teacherId,
+        userId: Number(teacher?.userId),
         type: 'THESIS_ASSIGNMENT_REMOVED',
         title: 'Thesis Assignment Removed',
         content: `Your assignment as ${role} for the thesis "${thesis.title}" has been removed.`,
-        entityType: 'Thesis',
-        entityId: thesisId
       });
     }
     
@@ -561,8 +1033,13 @@ export class ThesisService {
 
   // ============= DEFENSE SESSION METHODS =============
 
+  async getDefenseSessionByThesisId(thesisId: number): Promise<DefenseSession | null> {
+    return await this.defenseSessionRepository.findByThesisId(thesisId);
+  }
+
   /**
    * Schedule a defense session for a thesis
+   * Enhanced with eligibility check
    */
   async scheduleDefenseSession(data: {
     thesisId: number;
@@ -575,12 +1052,15 @@ export class ThesisService {
     if (!thesis) {
       throw new AppError('Thesis not found', 404, 'THESIS_NOT_FOUND');
     }
+
+    // Check defense eligibility
+    const eligibility = await this.isEligibleForDefense(data.thesisId);
     
-    if (thesis.status !== 'in_progress') {
+    if (!eligibility.eligible) {
       throw new AppError(
-        'Defense can only be scheduled for theses that are in progress',
+        eligibility.reason || 'Thesis is not eligible for defense scheduling',
         400,
-        'INVALID_THESIS_STATUS'
+        'DEFENSE_NOT_ELIGIBLE'
       );
     }
     
@@ -617,25 +1097,24 @@ export class ThesisService {
       minute: '2-digit'
     });
     
+    const student = await this.studentRepository.findById(thesis.studentId);
+    const supervisor = await this.teacherRepository.findById(thesis.supervisorTeacherId);
+    
     // Notify student
     await this.notificationService.createNotification({
-      userId: thesis.studentId,
+      userId: Number(student?.userId),
       type: 'DEFENSE_SCHEDULED',
       title: 'Defense Session Scheduled',
-      content: `Your thesis defense has been scheduled for ${formattedDate} in room ${data.room}.`,
-      entityType: 'DefenseSession',
-      entityId: session.id
+      content: `Your thesis defense has been scheduled for ${formattedDate} in room ${data.room}. Pre-defense score: ${eligibility.preDefenseScore?.toFixed(2)}`
     });
     
     // Notify supervisor
     if (thesis.supervisorTeacherId) {
       await this.notificationService.createNotification({
-        userId: thesis.supervisorTeacherId,
+        userId: Number(supervisor?.userId),
         type: 'DEFENSE_SCHEDULED',
         title: 'Defense Session Scheduled',
-        content: `Defense for thesis "${thesis.title}" has been scheduled for ${formattedDate} in room ${data.room}.`,
-        entityType: 'DefenseSession',
-        entityId: session.id
+        content: `Defense for thesis "${thesis.title}" has been scheduled for ${formattedDate} in room ${data.room}.`
       });
     }
     
@@ -643,13 +1122,12 @@ export class ThesisService {
     const assignments = await this.thesisAssignmentRepository.findByThesisId(data.thesisId);
     for (const assignment of assignments) {
       if (assignment.teacherId !== thesis.supervisorTeacherId) {
+        const teacher = await this.teacherRepository.findById(assignment.teacherId);
         await this.notificationService.createNotification({
-          userId: assignment.teacherId,
+          userId: Number(teacher?.userId),
           type: 'DEFENSE_SCHEDULED',
           title: 'Defense Session Scheduled',
-          content: `Defense for thesis "${thesis.title}" has been scheduled for ${formattedDate} in room ${data.room}.`,
-          entityType: 'DefenseSession',
-          entityId: session.id
+          content: `Defense for thesis "${thesis.title}" has been scheduled for ${formattedDate} in room ${data.room}.`
         });
       }
     }
@@ -674,6 +1152,8 @@ export class ThesisService {
     if (!thesis) {
       return null;
     }
+
+    const student = await this.studentRepository.findById(thesis.studentId);
     
     const updatedSession = await this.defenseSessionRepository.reschedule(sessionId, scheduledAt, room);
     
@@ -692,12 +1172,10 @@ export class ThesisService {
       
       // Notify student
       await this.notificationService.createNotification({
-        userId: thesis.studentId,
+        userId: Number(student?.userId),
         type: 'DEFENSE_RESCHEDULED',
         title: 'Defense Session Rescheduled',
-        content: `Your thesis defense has been rescheduled for ${formattedDate}${roomText}.`,
-        entityType: 'DefenseSession',
-        entityId: sessionId
+        content: `Your thesis defense has been rescheduled for ${formattedDate}${roomText}.`
       });
       
       // Notify supervisor and committee members
@@ -711,13 +1189,12 @@ export class ThesisService {
       const uniqueTeacherIds = [...new Set(teacherIds)];
       
       for (const teacherId of uniqueTeacherIds) {
+        const teacher = await this.teacherRepository.findById(teacherId);
         await this.notificationService.createNotification({
-          userId: teacherId,
+          userId: Number(teacher?.userId),
           type: 'DEFENSE_RESCHEDULED',
           title: 'Defense Session Rescheduled',
-          content: `Defense for thesis "${thesis.title}" has been rescheduled for ${formattedDate}${roomText}.`,
-          entityType: 'DefenseSession',
-          entityId: sessionId
+          content: `Defense for thesis "${thesis.title}" has been rescheduled for ${formattedDate}${roomText}.`
         });
       }
     }
@@ -737,7 +1214,8 @@ export class ThesisService {
     
     // Update session status
     const updatedSession = await this.defenseSessionRepository.updateStatus(sessionId, 'completed');
-    
+    const student = await this.studentRepository.findById((await this.thesisRepository.findById(session.thesisId))?.studentId || 0);
+
     if (updatedSession) {
       // Update thesis status
       await this.thesisRepository.updateStatus(session.thesisId, 'defense_completed');
@@ -746,24 +1224,21 @@ export class ThesisService {
       if (thesis) {
         // Notify student
         await this.notificationService.createNotification({
-          userId: thesis.studentId,
+          userId: Number(student?.userId),
           type: 'DEFENSE_COMPLETED',
           title: 'Defense Session Completed',
-          content: `Your thesis defense has been marked as completed. Please wait for evaluations and final grading.`,
-          entityType: 'DefenseSession',
-          entityId: sessionId
+          content: `Your thesis defense has been marked as completed. Please wait for evaluations and final grading.`
         });
         
         // Notify committee members to submit evaluations
         const assignments = await this.thesisAssignmentRepository.findByThesisId(thesis.id);
         for (const assignment of assignments) {
+          const teacher = await this.teacherRepository.findById(assignment.teacherId);
           await this.notificationService.createNotification({
-            userId: assignment.teacherId,
+            userId: Number(teacher?.userId),
             type: 'EVALUATION_REQUIRED',
             title: 'Thesis Evaluation Required',
-            content: `The defense for thesis "${thesis.title}" is now complete. Please submit your evaluation.`,
-            entityType: 'Thesis',
-            entityId: thesis.id
+            content: `The defense for thesis "${thesis.title}" is now complete. Please submit your evaluation.`
           });
         }
       }
@@ -781,6 +1256,10 @@ export class ThesisService {
 
   // ============= THESIS EVALUATION METHODS =============
 
+  async getThesisEvaluationById(id: number): Promise<ThesisEvaluation | null> {
+    return await this.thesisEvaluationRepository.findById(id);
+  }
+
   /**
    * Submit a thesis evaluation
    */
@@ -797,21 +1276,48 @@ export class ThesisService {
       throw new AppError('Thesis not found', 404, 'THESIS_NOT_FOUND');
     }
     
-    if (thesis.status !== 'defense_completed') {
+    // Once thesis is completed (report generated), no more evaluations allowed
+    if (thesis.status === 'completed') {
       throw new AppError(
-        'Thesis can only be evaluated after defense completion',
+        'Cannot evaluate a completed thesis. The final report has already been generated.',
         400,
-        'INVALID_THESIS_STATUS'
+        'THESIS_ALREADY_COMPLETED'
       );
     }
     
-    // Check if this teacher is assigned to evaluate this thesis
+    // Validation based on role:
+    // - Supervisor and Reviewer can grade when status is 'in_progress' or later (but not 'completed')
+    // - Committee members can only grade after 'defense_completed' (but not 'completed')
+    if (data.role === 'committee_member') {
+      if (thesis.status !== 'defense_completed') {
+        throw new AppError(
+          'Committee members can only evaluate after defense completion',
+          400,
+          'INVALID_THESIS_STATUS'
+        );
+      }
+    } else if (data.role === 'supervisor' || data.role === 'reviewer') {
+      if (thesis.status !== 'in_progress' && 
+          thesis.status !== 'defense_scheduled' && 
+          thesis.status !== 'defense_completed') {
+        throw new AppError(
+          'Supervisor and Reviewer can only evaluate after thesis is in progress',
+          400,
+          'INVALID_THESIS_STATUS'
+        );
+      }
+    }
+    
+    // Check if this teacher is authorized to evaluate
+    const isSupervisor = thesis.supervisorTeacherId === data.evaluatorTeacherId && data.role === 'supervisor';
     const assignments = await this.thesisAssignmentRepository.findByThesisId(data.thesisId);
-    const canEvaluate = assignments.some(
-      assignment => assignment.teacherId === data.evaluatorTeacherId
+    const isAssigned = assignments.some(
+      assignment => assignment.teacherId === data.evaluatorTeacherId && 
+                    ((assignment.role === 'reviewer' && data.role === 'reviewer') ||
+                     (assignment.role === 'committee_member' && data.role === 'committee_member'))
     );
     
-    if (!canEvaluate) {
+    if (!isSupervisor && !isAssigned) {
       throw new AppError(
         'Teacher is not assigned to evaluate this thesis',
         403,
@@ -819,29 +1325,116 @@ export class ThesisService {
       );
     }
     
-    // Create evaluation
-    const evaluation = await this.thesisEvaluationRepository.create({
-      thesisId: data.thesisId,
-      evaluatorTeacherId: data.evaluatorTeacherId,
-      role: data.role,
-      score: data.score,
-      comments: data.comments || null,
-    } as ThesisEvaluation);
+    const existingEvaluation = await this.thesisEvaluationRepository.findByThesisIdAndTeacher(
+      data.thesisId,
+      data.evaluatorTeacherId,
+      data.role
+    );
+
+    let evaluation: ThesisEvaluation;
+    const student = await this.studentRepository.findById(thesis.studentId);
+
+    if (existingEvaluation) {
+      existingEvaluation.score = data.score;
+      existingEvaluation.comments = data.comments || null;
+      evaluation = await existingEvaluation.save();
+
+      // Notify student that an evaluation has been updated (without showing the score)
+      await this.notificationService.createNotification({
+        userId: Number(student?.userId),
+        type: 'EVALUATION_UPDATED',
+        title: 'Thesis Evaluation Updated',
+        content: `An evaluation for your thesis has been updated.`
+      });
+    } else {
+      evaluation = await this.thesisEvaluationRepository.create({
+        thesisId: data.thesisId,
+        evaluatorTeacherId: data.evaluatorTeacherId,
+        role: data.role,
+        score: data.score,
+        comments: data.comments || null,
+      } as ThesisEvaluation);
+
+      // Notify student that an evaluation has been submitted (without showing the score)
+      await this.notificationService.createNotification({
+        userId: Number(student?.userId),
+        type: 'EVALUATION_SUBMITTED',
+        title: 'Thesis Evaluation Submitted',
+        content: `An evaluation for your thesis has been submitted.`
+      });
+    }
+
+    // Check if supervisor and reviewer have both graded
+    await this.checkPreDefenseEligibility(data.thesisId);
     
-    // Notify student that an evaluation has been submitted (without showing the score)
-    await this.notificationService.createNotification({
-      userId: thesis.studentId,
-      type: 'EVALUATION_SUBMITTED',
-      title: 'Thesis Evaluation Submitted',
-      content: `An evaluation for your thesis has been submitted by a committee member.`,
-      entityType: 'ThesisEvaluation',
-      entityId: evaluation.id
-    });
-    
-    // Check if all required evaluations are complete
+    // Check if all evaluations are complete and update final grade
     await this.checkAndFinalizeThesisGrade(data.thesisId);
     
     return evaluation;
+  }
+
+  /**
+   * Check if supervisor and reviewer have both evaluated, and determine defense eligibility
+   */
+  async checkPreDefenseEligibility(thesisId: number): Promise<void> {
+    const thesis = await this.thesisRepository.findById(thesisId);
+    if (!thesis || thesis.status !== 'in_progress') {
+      return;
+    }
+
+    const evaluations = await this.thesisEvaluationRepository.findByThesisId(thesisId);
+    
+    const supervisorEval = evaluations.find(e => e.role === 'supervisor');
+    const reviewerEval = evaluations.find(e => e.role === 'reviewer');
+
+    // Both supervisor and reviewer must have graded
+    if (!supervisorEval || !reviewerEval) {
+      console.log(`Pre-defense eligibility check: Missing evaluations for thesis ${thesisId}`);
+      return;
+    }
+
+    // Calculate average of supervisor and reviewer scores
+    const avgScore = (Number(supervisorEval.score) + Number(reviewerEval.score)) / 2;
+    console.log(`Pre-defense average score for thesis ${thesisId}: ${avgScore}`);
+
+    const student = await this.studentRepository.findById(thesis.studentId);
+    const supervisor = await this.teacherRepository.findById(thesis.supervisorTeacherId);
+
+    if (avgScore < 50) {
+      // Failed - cannot proceed to defense
+      await this.thesisRepository.updateStatus(thesisId, 'cancelled');
+      
+      // Notify student
+      await this.notificationService.createNotification({
+        userId: Number(student?.userId),
+        type: 'THESIS_FAILED',
+        title: 'Thesis Pre-Defense Evaluation Failed',
+        content: `Your thesis has not met the minimum requirements for defense. Average score: ${avgScore.toFixed(2)}. Please contact your supervisor.`
+      });
+
+      // Notify supervisor
+      if (supervisor) {
+        await this.notificationService.createNotification({
+          userId: Number(supervisor.userId),
+          type: 'THESIS_FAILED',
+          title: 'Thesis Pre-Defense Failed',
+          content: `Thesis "${thesis.title}" did not meet minimum requirements. Average score: ${avgScore.toFixed(2)}.`
+        });
+      }
+
+      console.log(`Thesis ${thesisId} marked as cancelled due to low pre-defense score: ${avgScore}`);
+    } else {
+      // Passed - eligible for defense
+      console.log(`Thesis ${thesisId} eligible for defense with score: ${avgScore}`);
+      
+      // Notify student of eligibility
+      await this.notificationService.createNotification({
+        userId: Number(student?.userId),
+        type: 'DEFENSE_ELIGIBLE',
+        title: 'Thesis Eligible for Defense',
+        content: `Your thesis has passed the pre-defense evaluation with an average score of ${avgScore.toFixed(2)}. Your defense session can now be scheduled.`
+      });
+    }
   }
 
   /**
@@ -852,59 +1445,102 @@ export class ThesisService {
   }
 
   // ============= THESIS FINAL GRADE METHODS =============
-
   /**
    * Check if all required evaluations are complete and compute final grade
    */
+  async isFullyEvaluated(thesisId: number): Promise<boolean> {
+    const thesis = await this.thesisRepository.findById(thesisId);
+    if (!thesis) {
+      return false;
+    }
+
+    const assignments = await this.thesisAssignmentRepository.findByThesisId(thesisId);
+    const evaluations = await this.thesisEvaluationRepository.findByThesisId(thesisId);
+
+    // Build list of required evaluators
+    const requiredEvaluators: { teacherId: number, role: ThesisEvaluation['role'] }[] = [];
+    
+    // Supervisor is required
+    if (thesis.supervisorTeacherId) {
+      requiredEvaluators.push({ teacherId: thesis.supervisorTeacherId, role: 'supervisor' });
+    }
+    
+    // Add assigned reviewers and committee members
+    for (const assignment of assignments) {
+      if (assignment.role === 'reviewer') {
+        requiredEvaluators.push({ teacherId: assignment.teacherId, role: 'reviewer' });
+      } else if (assignment.role === 'committee_member') {
+        requiredEvaluators.push({ teacherId: assignment.teacherId, role: 'committee_member' });
+      }
+    }
+    // Check if every required evaluator has submitted an evaluation
+    const allEvaluated = requiredEvaluators.every(req =>
+      evaluations.some(ev =>
+        ev.evaluatorTeacherId === req.teacherId && ev.role === req.role
+      )
+    );
+
+    const result = allEvaluated && requiredEvaluators.length > 0;
+    
+    return result;
+  }
+
+  /**
+   * Check if all required evaluations are complete and compute final grade
+   * Note: This does NOT mark the thesis as completed - that happens when report is exported
+   */
   async checkAndFinalizeThesisGrade(thesisId: number): Promise<void> {
     const thesis = await this.thesisRepository.findById(thesisId);
-    if (!thesis || thesis.status !== 'defense_completed') return;
-    
-    // Get all assignments to determine required evaluators
-    const assignments = await this.thesisAssignmentRepository.findByThesisId(thesisId);
-    const requiredRoles = assignments.map(a => a.role as ThesisEvaluation['role']);
+    if (!thesis) {
+      return;
+    }
     
     // Check if all required evaluations are submitted
-    const isFullyEvaluated = await this.thesisEvaluationRepository.isThesisFullyEvaluated(
-      thesisId, 
-      requiredRoles
-    );
+    const isFullyEvaluated = await this.isFullyEvaluated(thesisId);
     
-    if (isFullyEvaluated) {
-      // Calculate average score
-      const averageScore = await this.thesisEvaluationRepository.getAverageScoreByThesisId(thesisId);
+    if (!isFullyEvaluated) {
+      return;
+    }
+    
+    // Calculate average score
+    const averageScore = await this.thesisEvaluationRepository.getAverageScoreByThesisId(thesisId);
+    
+    if (averageScore === null) {
+      return;
+    }
+    
+    // Check if final grade already exists
+    const existingFinalGrade = await this.thesisFinalGradeRepository.findByThesisId(thesisId);
+    
+    // Create or update final grade
+    await this.thesisFinalGradeRepository.createOrUpdate({
+      thesisId,
+      finalScore: averageScore
+    });
+    
+    console.log(`Final grade ${existingFinalGrade ? 'updated' : 'created'} for thesis ${thesisId}: ${averageScore}`);
+    
+    // Send notifications about grade changes (but DON'T mark as completed)
+    if (!existingFinalGrade || existingFinalGrade.finalScore !== averageScore) {
+      const student = await this.studentRepository.findById(thesis.studentId);
       
-      if (averageScore !== null) {
-        // Create or update final grade
-        await this.thesisFinalGradeRepository.createOrUpdate({
-          thesisId,
-          finalScore: averageScore
-        });
-        
-        // Update thesis status
-        await this.thesisRepository.updateStatus(thesisId, 'completed');
-        
-        // Notify student about final grade
+      // Notify student about final grade
+      await this.notificationService.createNotification({
+        userId: Number(student?.userId),
+        type: 'THESIS_GRADED',
+        title: existingFinalGrade ? 'Thesis Final Grade Updated' : 'Thesis Final Grade Available',
+        content: `Your thesis "${thesis.title}" has been ${existingFinalGrade ? 're-evaluated and the' : 'fully evaluated and'} final score is: ${averageScore.toFixed(2)}.`,
+      });
+      
+      // Notify supervisor about final grade
+      if (thesis.supervisorTeacherId) {
+        const supervisor = await this.teacherRepository.findById(thesis.supervisorTeacherId);
         await this.notificationService.createNotification({
-          userId: thesis.studentId,
+          userId: Number(supervisor?.userId),
           type: 'THESIS_GRADED',
-          title: 'Thesis Final Grade Available',
-          content: `Your thesis "${thesis.title}" has been fully evaluated and graded. Final score: ${averageScore.toFixed(2)}.`,
-          entityType: 'Thesis',
-          entityId: thesisId
+          title: existingFinalGrade ? 'Thesis Final Grade Updated' : 'Thesis Final Grade Computed',
+          content: `Thesis "${thesis.title}" has been ${existingFinalGrade ? 're-evaluated. New' : 'fully evaluated.'} Final score: ${averageScore.toFixed(2)}.`,
         });
-        
-        // Notify supervisor about final grade
-        if (thesis.supervisorTeacherId) {
-          await this.notificationService.createNotification({
-            userId: thesis.supervisorTeacherId,
-            type: 'THESIS_GRADED',
-            title: 'Thesis Final Grade Computed',
-            content: `Thesis "${thesis.title}" has been fully evaluated. Final score: ${averageScore.toFixed(2)}.`,
-            entityType: 'Thesis',
-            entityId: thesisId
-          });
-        }
       }
     }
   }
@@ -926,111 +1562,12 @@ export class ThesisService {
   }
 
   // ============= THESIS REPORT METHODS =============
-
-  /**
- * Generate a thesis registration report as PDF
- * @param registrationId ID of the thesis registration
- * @param includeUniversityInfo Whether to include university info in the report
- */
-  async generateThesisRegistrationReport(
-    registrationId: number, 
-    includeUniversityInfo: boolean = true
-  ): Promise<Buffer> {
-    // Get registration details
-    const registration = await this.thesisRegistrationRepository.findById(registrationId);
-    
-    if (!registration) {
-      throw new AppError('Thesis registration not found', 404, 'REGISTRATION_NOT_FOUND');
-    }
-    
-    // Map the registration status to an allowed value for the report
-    // This ensures compatibility with ThesisRegistrationReportData type
-    const mappedStatus = registration.status === 'cancelled' 
-      ? 'rejected' // Map 'cancelled' to 'rejected' for report purposes
-      : registration.status as 'pending_approval' | 'approved' | 'rejected';
-    
-    // TODO: These would typically come from repositories or services
-    // For this example, we're using mock data to demonstrate the report generation
-    
-    // Fetch related data from repositories (student, supervisor, etc.)
-    // In a real implementation, you would use actual data from the database
-    const mockReportData: ThesisRegistrationReportData = {
-      university: {
-        name: 'International University - HCMC',
-        logo: 'data:image/png;base64,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'
-      },
-      document: {
-        title: 'Thesis Registration Report',
-        semester: 'Fall 2025',
-        department: 'Computer Science',
-        generatedAt: new Date()
-      },
-      student: {
-        fullName: 'John Smith',
-        id: 'ST12345',
-        major: 'Computer Science',
-        faculty: 'School of Engineering',
-        gpa: 3.75,
-        accumulatedCredits: 110
-      },
-      thesis: {
-        title: registration.title || 'Untitled Thesis',
-        type: 'Research',
-        abstract: registration.abstract || 'No abstract provided',
-        keywords: ['Machine Learning', 'Neural Networks', 'Computer Vision']
-      },
-      supervisor: {
-        fullName: 'Dr. Jane Davis',
-        academicTitle: 'Associate Professor',
-        department: 'Computer Science',
-        email: 'jane.davis@university.edu'
-      },
-      registration: {
-        date: registration.submittedAt,
-        status: mappedStatus, // Use the mapped status here
-        notes: registration.decisionReason || ''
-      },
-      footer: {
-        universityContactInfo: 'International University, Quarter 6, Linh Trung Ward, Thu Duc City, Ho Chi Minh City',
-        websiteUrl: 'www.university.edu'
-      }
-    };
-
-    // Render the EJS template with the data
-    const templatePath = path.join(__dirname, '../views/thesis-registration-report.ejs');
-    const html = await ejs.renderFile(templatePath, { data: mockReportData });
-
-    // Launch Puppeteer and generate PDF
-    // Fix the headless option to use boolean instead of string
-    const browser = await puppeteer.launch({ headless: true });
-    const page = await browser.newPage();
-    await page.setContent(html, { waitUntil: 'networkidle0' });
-    
-    const pdfData = await page.pdf({
-      format: 'A4',
-      printBackground: true,
-      margin: {
-        top: '1cm',
-        right: '1cm',
-        bottom: '1cm',
-        left: '1cm'
-      }
-    });
-    
-    await browser.close();
-    
-    // Convert Uint8Array to Buffer before returning
-    return Buffer.from(pdfData);
-  }
-  
   /**
    * Generate a thesis evaluation report as PDF
-   * @param thesisId ID of the thesis
-   * @param includeUniversityInfo Whether to include university info in the report
+   * This also marks the thesis as completed (admin/moderator action)
    */
   async generateThesisEvaluationReport(
-    thesisId: number,
-    includeUniversityInfo: boolean = true
+    thesisId: number
   ): Promise<Buffer> {
     // Get thesis details
     const thesis = await this.thesisRepository.findById(thesisId);
@@ -1053,116 +1590,122 @@ export class ThesisService {
       throw new AppError('Thesis final grade not found', 404, 'FINAL_GRADE_NOT_FOUND');
     }
     
+    // Get student data
+    const student = await this.studentRepository.findById(thesis.studentId);
+    const studentUser = student ? await this.userRepository.findById(student.userId) : null;
+    
+    // Get supervisor data
+    const supervisor = await this.teacherRepository.findById(thesis.supervisorTeacherId);
+    const supervisorUser = supervisor ? await this.userRepository.findById(supervisor.userId) : null;
+    const supervisorEval = evaluations.find(e => e.role === 'supervisor');
+    
+    // Get reviewer data
+    const reviewerEval = evaluations.find(e => e.role === 'reviewer');
+    let reviewer = null;
+    let reviewerUser = null;
+    if (reviewerEval) {
+      reviewer = await this.teacherRepository.findById(reviewerEval.evaluatorTeacherId);
+      reviewerUser = reviewer ? await this.userRepository.findById(reviewer.userId) : null;
+    }
+    
+    // Get committee members data
+    const committeeEvals = evaluations.filter(e => e.role === 'committee_member');
+    const committeeMembers = await Promise.all(
+      committeeEvals.map(async (evaluation) => {
+        const teacher = await this.teacherRepository.findById(evaluation.evaluatorTeacherId);
+        const teacherUser = teacher ? await this.userRepository.findById(teacher.userId) : null;
+        return {
+          fullName: teacherUser?.fullName || 'Unknown',
+          academicTitle: teacher?.title || '',
+          grade: Number(evaluation.score),
+          comments: evaluation.comments || ''
+        };
+      })
+    );
+    
     // Get defense session
     const defenseSession = await this.defenseSessionRepository.findByThesisId(thesisId);
     
-    // Get committee assignments
-    const assignments = await this.thesisAssignmentRepository.findByThesisId(thesisId);
+    // Get semester
+    const semester = await this.semesterRepository.findById(thesis.semesterId);
     
-    // TODO: In a real implementation, you would fetch the actual data from the database
-    // For this example, we're using mock data to demonstrate the report generation
-    
-    // Convert numeric grade to letter grade
     const getLetterGrade = (score: number): string => {
-      if (score >= 9.0) return 'A+';
-      if (score >= 8.5) return 'A';
-      if (score >= 8.0) return 'B+';
-      if (score >= 7.0) return 'B';
-      if (score >= 6.5) return 'C+';
-      if (score >= 5.5) return 'C';
-      if (score >= 5.0) return 'D';
+      if (score >= 90.0) return 'A+';
+      if (score >= 85.0) return 'A';
+      if (score >= 80.0) return 'B+';
+      if (score >= 70.0) return 'B';
+      if (score >= 65.0) return 'C+';
+      if (score >= 55.0) return 'C';
+      if (score >= 50.0) return 'D';
       return 'F';
     };
     
-    // Prepare the report data
     const reportData: ThesisEvaluationReportData = {
-      university: {
-        name: 'International University - HCMC',
-        logo: 'data:image/png;base64,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',
-        referenceNumber: `TE${thesisId}-${new Date().getFullYear()}`
-      },
-      document: {
-        title: 'Thesis Evaluation Report',
-        semester: 'Fall 2025',
-        department: 'Computer Science',
-        generatedAt: new Date()
-      },
       student: {
-        fullName: 'John Smith',
-        id: 'ST12345',
-        major: 'Computer Science',
-        faculty: 'School of Engineering',
-        gpa: 3.75,
-        accumulatedCredits: 110
-      },
-      thesis: {
-        title: thesis.title || 'Untitled Thesis',
-        type: 'Research',
-        abstract: thesis.abstract || 'No abstract provided',
-        defenseDate: defenseSession ? defenseSession.scheduledAt : undefined
+        name: studentUser?.fullName || 'Unknown Student',
+        id: student?.studentIdCode || 'N/A',
+        phone: student?.phone || '',
+        className: student?.className || '',
+        thesisTitle: thesis.title || 'Untitled Thesis'
       },
       supervisor: {
-        fullName: 'Dr. Jane Davis',
-        academicTitle: 'Associate Professor',
-        department: 'Computer Science',
-        email: 'jane.davis@university.edu',
-        comments: 'The student has shown excellent progress and dedication throughout the thesis work.',
-        grade: 8.5
+        name: supervisorUser?.fullName || 'Unknown Supervisor',
+        academicTitle: supervisor?.title || '',
+        grade: supervisorEval ? Number(supervisorEval.score) : 0,
+        comments: supervisorEval?.comments || ''
       },
-      reviewer: {
-        fullName: 'Dr. Michael Johnson',
-        academicTitle: 'Professor',
-        department: 'Computer Science',
-        email: 'michael.johnson@university.edu',
-        comments: 'The literature review is comprehensive, but the methodology could be improved.',
-        grade: 7.8
-      },
-      committee: [
-        {
-          fullName: 'Dr. Sarah Wilson',
-          role: 'Chair',
-          department: 'Computer Science',
-          grade: 8.7,
-          comments: 'Excellent presentation and defense of research findings.'
-        },
-        {
-          fullName: 'Dr. Robert Garcia',
-          role: 'Member',
-          department: 'Computer Science',
-          grade: 8.2,
-          comments: 'Good technical implementation but could use more testing.'
-        },
-        {
-          fullName: 'Dr. Elizabeth Taylor',
-          role: 'Member',
-          department: 'Computer Science',
-          grade: 8.5,
-          comments: 'Strong conceptual framework and well-structured thesis.'
-        }
-      ],
+      reviewer: reviewerEval ? {
+        name: reviewerUser?.fullName || 'Unknown Reviewer',
+        academicTitle: reviewer?.title || '',
+        grade: Number(reviewerEval.score),
+        comments: reviewerEval.comments || ''
+      } : undefined,
+      committee: committeeMembers,
       evaluation: {
-        averageGrade: finalGrade.finalScore,
-        letterGrade: getLetterGrade(finalGrade.finalScore),
-        status: finalGrade.finalScore >= 5.0 ? 'Pass' : 'Fail',
-        remarks: 'The student has successfully completed the thesis requirements.'
+        averageGrade: Number(finalGrade.finalScore),
+        letterGrade: getLetterGrade(Number(finalGrade.finalScore)),
+        status: Number(finalGrade.finalScore) >= 50 ? 'Pass' : 'Fail',
+        defenseDate: defenseSession?.scheduledAt
       },
-      signatures: {
-        supervisorName: 'Dr. Jane Davis',
-        committeeName: 'Dr. Sarah Wilson',
-        departmentHeadName: 'Prof. David Brown',
-        date: new Date()
+      departmentHead: {
+        name: 'Dr. Nguyen Van A',
+        title: 'Head of Computer Science Department'
       },
-      footer: {
-        universityContactInfo: 'International University, Quarter 6, Linh Trung Ward, Thu Duc City, Ho Chi Minh City',
-        websiteUrl: 'www.university.edu'
+      semester: semester?.name || '',
+      date: new Date(),
+      universityInfo: {
+        name: "International University - Vietnam National University HCM City",
+        address: "Quarter 6, Linh Trung Ward, Thu Duc City, Ho Chi Minh City, Vietnam",
+        contact: "info@hcmiu.edu.vn | (028) 37244270"
       }
     };
 
-    // Render the EJS template with the data
-    const templatePath = path.join(__dirname, '../views/thesis-report.ejs');
-    const html = await ejs.renderFile(templatePath, { data: reportData });
+    // Mark thesis as completed when report is generated
+    if (thesis.status !== 'completed') {
+      await this.thesisRepository.updateStatus(thesisId, 'completed');
+      console.log(`Thesis ${thesisId} marked as completed upon report generation`);
+      
+      // Notify student that thesis is officially completed
+      await this.notificationService.createNotification({
+        userId: Number(student?.userId),
+        type: 'THESIS_COMPLETED',
+        title: 'Thesis Officially Completed',
+        content: `Your thesis "${thesis.title}" has been officially completed and the final report has been generated.`,
+      });
+    }
 
-    // Launch Puppeteer and generate PDF
+    const templatePath = path.join(__dirname, '../views/thesis-report.ejs');
+    const html = await ejs.renderFile(templatePath, { 
+      data: reportData,
+      formatDate: (date: Date) => {
+        return date.toLocaleDateString('en-US', {
+          year: 'numeric',
+          month: 'long',
+          day: 'numeric'
+        });
+      }
+    });
+
     const browser = await puppeteer.launch({ 
       headless: true,
       args: ['--no-sandbox', '--disable-setuid-sandbox']
@@ -1183,7 +1726,177 @@ export class ThesisService {
     
     await browser.close();
     
-    // Convert Uint8Array to Buffer before returning
     return Buffer.from(pdfData);
+  }
+
+  // Statistics
+  async getOutcomeStats() {
+    // Get 4 most recent semesters
+    const semesters = await this.semesterRepository.findAll({}, 0, 4, [['startDate', 'DESC']]);
+    const semesterIds = semesters.map(s => s.id);
+
+    const theses = await this.thesisRepository.findAll(
+      {
+        semesterId: { [Op.in]: semesterIds }
+      },
+      0,
+      undefined,
+      undefined,
+      {
+        include: [
+          {
+            model: Semester,
+            as: 'semester',
+            attributes: ['id', 'name', 'startDate']
+          }
+        ]
+      }
+    );
+
+    // Group by semester
+    const semesterMap = new Map<number, {
+      semesterName: string;
+      startDate: Date;
+      completed: number;
+      in_progress: number;
+      cancelled: number;
+      defense_scheduled: number;
+      defense_completed: number;
+    }>();
+
+    theses.forEach((thesis: any) => {
+      const semesterId = thesis.semesterId;
+      const semesterName = thesis.semester?.name || `Semester ${semesterId}`;
+      const startDate = thesis.semester?.startDate || new Date();
+
+      if (!semesterMap.has(semesterId)) {
+        semesterMap.set(semesterId, {
+          semesterName,
+          startDate,
+          completed: 0,
+          in_progress: 0,
+          cancelled: 0,
+          defense_scheduled: 0,
+          defense_completed: 0
+        });
+      }
+
+      const stats = semesterMap.get(semesterId)!;
+
+      switch (thesis.status) {
+        case 'completed':
+          stats.completed++;
+          break;
+        case 'in_progress':
+          stats.in_progress++;
+          break;
+        case 'cancelled':
+          stats.cancelled++;
+          break;
+        case 'defense_scheduled':
+          stats.defense_scheduled++;
+          break;
+        case 'defense_completed':
+          stats.defense_completed++;
+          break;
+      }
+    });
+
+    // Convert map to array and sort by start date (oldest to newest)
+    return Array.from(semesterMap.values())
+      .sort((a, b) => a.startDate.getTime() - b.startDate.getTime())
+      .map(({ semesterName, completed, in_progress, cancelled, defense_scheduled, defense_completed }) => ({
+        semester: semesterName,
+        completed,
+        in_progress,
+        cancelled,
+        defense_scheduled,
+        defense_completed
+      }));
+  }
+
+  async getGradeDistribution() {
+    // Get 4 most recent semesters
+    const semesters = await this.semesterRepository.findAll({}, 0, 4, [['startDate', 'DESC']]);
+    const semesterIds = semesters.map(s => s.id);
+
+    const finalGrades = await this.thesisFinalGradeRepository.findAll(
+      {},
+      0,
+      undefined,
+      undefined,
+      {
+        include: [
+          {
+            model: Thesis,
+            as: 'thesis',
+            where: {
+              semesterId: { [Op.in]: semesterIds }
+            },
+            include: [
+              {
+                model: Semester,
+                as: 'semester',
+                attributes: ['id', 'name', 'startDate']
+              }
+            ]
+          }
+        ]
+      }
+    );
+
+    // Group by semester
+    const semesterMap = new Map<number, {
+      semesterName: string;
+      startDate: Date;
+      excellent: number;
+      good: number;
+      average: number;
+      fail: number;
+    }>();
+
+    finalGrades.forEach((grade: any) => {
+      const thesis = grade.thesis;
+      if (!thesis || !thesis.semester) return;
+
+      const semesterId = thesis.semesterId;
+      const semesterName = thesis.semester.name || `Semester ${semesterId}`;
+      const startDate = thesis.semester.startDate || new Date();
+      const score = Number(grade.finalScore);
+
+      if (!semesterMap.has(semesterId)) {
+        semesterMap.set(semesterId, {
+          semesterName,
+          startDate,
+          excellent: 0,
+          good: 0,
+          average: 0,
+          fail: 0
+        });
+      }
+
+      const stats = semesterMap.get(semesterId)!;
+
+      if (score >= 8.5) {
+        stats.excellent++;
+      } else if (score >= 7.0) {
+        stats.good++;
+      } else if (score >= 5.0) {
+        stats.average++;
+      } else {
+        stats.fail++;
+      }
+    });
+
+    // Convert map to array and sort by start date (oldest to newest)
+    return Array.from(semesterMap.values())
+      .sort((a, b) => a.startDate.getTime() - b.startDate.getTime())
+      .map(({ semesterName, excellent, good, average, fail }) => ({
+        semester: semesterName,
+        excellent,
+        good,
+        average,
+        fail
+      }));
   }
 }

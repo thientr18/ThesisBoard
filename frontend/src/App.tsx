@@ -3,6 +3,7 @@ import { useAuth0 } from '@auth0/auth0-react';
 import { useEffect } from 'react';
 import ProtectedRoute from './routes/ProtectedRoute';
 import Callback from './pages/Callback';
+import NotFound from './pages/error/NotFound';
 import Dashboard from './pages/Dashboard';
 import ProfilePage from './pages/ProfilePage';
 import ChangePassword from './pages/ChangePassword';
@@ -22,8 +23,16 @@ import TeacherAvailabilityPage from './pages/semester/TeacherAvailability';
 import PreThesisTopicPage from './pages/prethesis/TopicPage';
 import PreThesisApplicationPage from './pages/prethesis/ApplicationPage';
 import PreThesisProjectsListPage from './pages/prethesis/PreThesisProjectsListPage';
-import AllProjectStudentPage from './pages/AllProjectsStudentPage';
+import AllProjectStudentPage from './pages/student/AllProjectsStudentPage';
 import PreThesisDetailPage from './pages/prethesis/PreThesisDetailPage';
+
+// Thesis Pages
+import ThesisProposalPage from './pages/thesis/ThesisProposalPage';
+import ThesisDetailPage from './pages/thesis/ThesisDetailPage';
+import ThesisProjectsListPage from './pages/thesis/ThesisProjectListsPage';
+
+// Staticics Page
+import StatisticsPage from './pages/admin/StatisticsPage';
 
 function App() {
   const { isLoading, isAuthenticated, loginWithRedirect } = useAuth0();
@@ -67,6 +76,9 @@ function App() {
             <h2 className="text-xl font-semibold mb-2">Please log in...</h2>
           </div>
         </div>
+      } />
+      <Route path="/not-found" element={
+        <NotFound />
       } />
       <Route path="/me" element={
         <ProtectedRoute>
@@ -154,6 +166,14 @@ function App() {
         }
       />
       <Route
+        path="/registrations"
+        element={
+          <ProtectedRoute>
+            <AllProjectStudentPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
         path="/prethesis/topics"
         element={
           <ProtectedRoute>
@@ -187,6 +207,41 @@ function App() {
       />
 
       {/* Thesis Pages */}
+      {/* For students only */}
+      <Route
+        path="/thesis/registrations"
+        element={
+          <ProtectedRoute>
+            <ThesisProposalPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/thesis/:id"
+        element={
+          <ProtectedRoute>
+            <ThesisDetailPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/thesis/projects"
+        element={
+          <ProtectedRoute>
+            <ThesisProjectsListPage />
+          </ProtectedRoute>
+        }
+      />
+
+      {/* Statistics Page */}
+      <Route
+        path="/statistics"
+        element={
+          <ProtectedRoute>
+            <StatisticsPage />
+          </ProtectedRoute>
+        }
+      />
 
       {/* Redirect root to dashboard */}
       <Route path="/" element={<Navigate to="/dashboard" replace />} />

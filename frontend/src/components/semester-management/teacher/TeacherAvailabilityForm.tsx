@@ -23,6 +23,7 @@ export interface TeacherAvailabilityFormProps {
   onSubmit: (payload: TeacherAvailabilityPayload) => void;
   onCancel: () => void;
   error?: string | null;
+  excludedTeacherIds?: number[];
 }
 
 const isOpenOptions = [
@@ -38,6 +39,7 @@ const TeacherAvailabilityForm: React.FC<TeacherAvailabilityFormProps> = ({
   onSubmit,
   onCancel,
   error,
+  excludedTeacherIds = [],
 }) => {
   const [formData, setFormData] = useState<TeacherAvailabilityPayload>({
     teacherId: 0,
@@ -87,6 +89,11 @@ const TeacherAvailabilityForm: React.FC<TeacherAvailabilityFormProps> = ({
     onSubmit({ ...formData });
   };
 
+  // Filter teachers for selection
+  const availableTeachers = mode === "create"
+    ? teachers.filter(t => !excludedTeacherIds.includes(t.id))
+    : teachers;
+
   return (
     <Modal
       open={open}
@@ -104,7 +111,7 @@ const TeacherAvailabilityForm: React.FC<TeacherAvailabilityFormProps> = ({
         )}
         <SelectInput
           label="Teacher"
-          options={teachers.map((t) => ({
+          options={availableTeachers.map((t) => ({
             label: `${t.fullName} (${t.teacherCode})`,
             value: t.id,
           }))}

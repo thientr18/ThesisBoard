@@ -374,33 +374,65 @@ export default function StudentSemesterManagement() {
     if (!semesterId) return;
     try {
       if (editingStudent) {
-        await updateStudentInSemester(editingStudent.studentId, semesterId, payload);
+        // Update the student
+        const { data, error } = await updateStudentInSemester(editingStudent.studentId, semesterId, payload);
+        if (error) {
+          setError(error);
+          return;
+        }
+        
+        // Update the local state without reloading
+        setStudents(prevStudents => 
+          prevStudents.map(s => 
+            s.studentId === editingStudent.studentId 
+              ? { ...s, ...payload } 
+              : s
+          )
+        );
         setEditingStudent(null);
+        setDetailVisible(false);
       } else {
-        await createStudentInSemester(semesterId, payload);
+        // Create new student
+        const { data, error } = await createStudentInSemester(semesterId, payload);
+        if (error) {
+          setError(error);
+          return;
+        }
+        
+        // Reload the list to get the new student with full data
+        const studentsResponse = await getStudentsInSemester(
+          semesterId,
+          currentPage,
+          pageSize,
+          search,
+          studentCode,
+          status ?? undefined,
+          type ?? undefined
+        );
+        setStudents(studentsResponse.data?.students ?? []);
+        setTotalItems(studentsResponse.data?.total ?? 0);
       }
       setFormVisible(false);
     } catch (err) {
+      setError(err instanceof Error ? err.message : String(err));
     }
   };
 
   const handleDeleteStudentSemester = async (studentId: number) => {
     if (!semesterId) return;
     try {
-      await deleteStudentFromSemester(studentId, semesterId);
-      const { data } = await getStudentsInSemester(
-        semesterId,
-        currentPage,
-        pageSize,
-        search,
-        studentCode,
-        status ?? undefined,
-        type ?? undefined
-      );
-      setStudents(data?.students ?? []);
-      setTotalItems(data?.total ?? 0);
+      const { error } = await deleteStudentFromSemester(studentId, semesterId);
+      if (error) {
+        setError(error);
+        return;
+      }
+      
+      setStudents(prevStudents => prevStudents.filter(s => s.studentId !== studentId));
+      setTotalItems(prev => prev - 1);
+      setDetailVisible(false);
+      setEditingStudent(null);
     } catch (err) {
-      setError("Failed to delete student from semester.");
+      setError(err instanceof Error ? err.message : String(err));
     }
   };
 

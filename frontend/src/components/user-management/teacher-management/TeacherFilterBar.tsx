@@ -29,7 +29,7 @@ const TeacherFilterBar: React.FC<TeacherFilterBarProps> = ({
     <div className="flex flex-col sm:flex-row gap-4 items-center bg-white p-4 rounded-xl shadow-sm">
       <Input
         className="w-full sm:w-64"
-        placeholder="Search by name"
+        placeholder="Search by name or teacher code"
         value={searchValue}
         onChange={e => setSearchValue(e.target.value)}
         allowClear

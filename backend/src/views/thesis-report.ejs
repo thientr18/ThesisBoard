@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Thesis Evaluation Report</title>
+  <style>
+    body {
+      font-family: 'Times New Roman', Times, serif;
+      margin: 0;
+      padding: 0;
+      color: #333;
+      font-size: 12pt;
+      line-height: 1.5;
+    }
+    .container { width: 100%; max-width: 100%; padding: 20px; }
+    .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; border-bottom: 2px solid #2c3e50; padding-bottom: 15px; }
+    .header-left { display: flex; align-items: center; }
+    .university-name { font-size: 14pt; font-weight: bold; }
+    .header-right { text-align: right; }
+    .report-title { text-align: center; font-size: 18pt; font-weight: bold; margin: 30px 0; text-transform: uppercase; }
+    .section { margin-bottom: 25px; }
+    .section-title { font-size: 14pt; font-weight: bold; margin-bottom: 10px; color: #2c3e50; border-bottom: 1px solid #ddd; padding-bottom: 5px; }
+    .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
+    .info-item { margin-bottom: 8px; }
+    .label { font-weight: bold; margin-right: 8px; }
+    .evaluation-table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+    .evaluation-table th, .evaluation-table td { border: 1px solid #ddd; padding: 10px; text-align: left; }
+    .evaluation-table th { background-color: #f2f2f2; font-weight: bold; }
+    .signature-section { display: flex; justify-content: space-between; margin-top: 50px; page-break-inside: avoid; }
+    .signature { text-align: center; width: 45%; }
+    .signature-line { border-top: 1px solid #333; margin-top: 50px; margin-bottom: 5px; width: 80%; display: inline-block; }
+    .footer { margin-top: 30px; text-align: center; font-size: 10pt; color: #666; border-top: 1px solid #ddd; padding-top: 10px; }
+    .status { display: inline-block; padding: 5px 15px; font-weight: bold; border-radius: 5px; }
+    .status-pass { background-color: #dff0d8; color: #3c763d; }
+    .status-fail { background-color: #f2dede; color: #a94442; }
+    .final-grade-box { background-color: #f9f9f9; border: 2px solid #2c3e50; padding: 15px; text-align: center; margin: 20px 0; }
+    .final-grade-box .grade { font-size: 24pt; font-weight: bold; color: #2c3e50; }
+    .final-grade-box .letter { font-size: 18pt; color: #555; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <!-- Header Section -->
+    <div class="header">
+      <div class="header-left">
+        <div class="university-name">
+          <%= data.universityInfo.name %>
+        </div>
+      </div>
+      <div class="header-right">
+        <div>Semester: <%= data.semester %></div>
+        <div>Date: <%= formatDate(data.date) %></div>
+      </div>
+    </div>
+    
+    <!-- Report Title -->
+    <h1 class="report-title">Thesis Evaluation Report</h1>
+    
+    <!-- Student Information Section -->
+    <div class="section">
+      <h2 class="section-title">Student Information</h2>
+      <div class="info-grid">
+        <div class="info-item">
+          <span class="label">Student Name:</span>
+          <span><%= data.student.name %></span>
+        </div>
+        <div class="info-item">
+          <span class="label">Student ID:</span>
+          <span><%= data.student.id %></span>
+        </div>
+        <div class="info-item">
+          <span class="label">Phone:</span>
+          <span><%= data.student.phone %></span>
+        </div>
+        <div class="info-item">
+          <span class="label">Class Name:</span>
+          <span><%= data.student.className %></span>
+        </div>
+      </div>
+      <div class="info-item" style="margin-top: 15px;">
+        <span class="label">Thesis Title:</span>
+        <span><strong><%= data.student.thesisTitle %></strong></span>
+      </div>
+      <% if (data.evaluation.defenseDate) { %>
+      <div class="info-item">
+        <span class="label">Defense Date:</span>
+        <span><%= formatDate(data.evaluation.defenseDate) %></span>
+      </div>
+      <% } %>
+    </div>
+    
+    <!-- Evaluation Details Section -->
+    <div class="section">
+      <h2 class="section-title">Evaluation Details</h2>
+      <table class="evaluation-table">
+        <thead>
+          <tr>
+            <th>Role</th>
+            <th>Evaluator</th>
+            <th>Grade</th>
+            <th>Comments</th>
+          </tr>
+        </thead>
+        <tbody>
+          <!-- Supervisor -->
+          <tr>
+            <td><strong>Supervisor</strong></td>
+            <td><%= data.supervisor.academicTitle %> <%= data.supervisor.name %></td>
+            <td><strong><%= data.supervisor.grade.toFixed(1) %></strong></td>
+            <td><%= data.supervisor.comments %></td>
+          </tr>
+          
+          <!-- Reviewer -->
+          <% if (data.reviewer) { %>
+          <tr>
+            <td><strong>Reviewer</strong></td>
+            <td><%= data.reviewer.academicTitle %> <%= data.reviewer.name %></td>
+            <td><strong><%= data.reviewer.grade.toFixed(1) %></strong></td>
+            <td><%= data.reviewer.comments %></td>
+          </tr>
+          <% } %>
+          
+          <!-- Committee Members -->
+          <% data.committee.forEach((member, index) => { %>
+          <tr>
+            <td><strong>Committee Member <%= index + 1 %></strong></td>
+            <td><%= member.academicTitle %> <%= member.fullName %></td>
+            <td><strong><%= member.grade.toFixed(1) %></strong></td>
+            <td><%= member.comments %></td>
+          </tr>
+          <% }) %>
+        </tbody>
+      </table>
+    </div>
+    
+    <!-- Final Grade Section -->
+    <div class="section">
+      <h2 class="section-title">Final Evaluation</h2>
+      <div class="final-grade-box">
+        <div>
+          <span class="label">Final Grade:</span>
+          <span class="grade"><%= data.evaluation.averageGrade.toFixed(2) %></span>
+          <span class="letter">(<%= data.evaluation.letterGrade %>)</span>
+        </div>
+        <div style="margin-top: 10px;">
+          <span class="label">Status:</span>
+          <span class="status <%= data.evaluation.status === 'Pass' ? 'status-pass' : 'status-fail' %>">
+            <%= data.evaluation.status %>
+          </span>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Signature Section -->
+    <div class="signature-section">
+      <div class="signature">
+        <div>Prepared by:</div>
+        <div><strong><%= data.supervisor.academicTitle %> <%= data.supervisor.name %></strong></div>
+        <div>Supervisor</div>
+        <span class="signature-line"></span>
+        <div>Date: <%= formatDate(data.date) %></div>
+      </div>
+      
+      <div class="signature">
+        <div>Approved by:</div>
+        <div><strong><%= data.departmentHead.name %></strong></div>
+        <div><%= data.departmentHead.title %></div>
+        <span class="signature-line"></span>
+        <div>Date: <%= formatDate(data.date) %></div>
+      </div>
+    </div>
+    
+    <!-- Footer -->
+    <div class="footer">
+      <div><%= data.universityInfo.address %></div>
+      <div><%= data.universityInfo.contact %></div>
+    </div>
+  </div>
+</body>
+</html>

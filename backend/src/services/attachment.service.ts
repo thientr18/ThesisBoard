@@ -6,7 +6,7 @@ import path from "path";
 import { th } from "zod/locales";
 
 // Define valid entity types as a union type
-export type EntityType = "topic" | "prethesis_submission" | "thesis_submission" | "announcement" | "topic_application" | "thesis_proposal" | "system" | "other";
+export type EntityType = "topic" | "prethesis_submission" | "thesis_submission" | "announcement" | "topic_application" | "thesis_proposal" |  "thesis_registration" | "system" | "other";
 
 export class AttachmentService {
   private attachmentRepository: AttachmentRepository;

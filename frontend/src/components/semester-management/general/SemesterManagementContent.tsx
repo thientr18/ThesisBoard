@@ -324,11 +324,11 @@ export default function SemesterManagement() {
         s.code.toLowerCase().includes(semesterCode)
       );
     }
-    if (status) {
-      if (status === "active") {
+    if (status && status !== "all") {
+      if (status === "current") {
+        filtered = filtered.filter(s => s.isCurrent);
+      } else if (status === "active") {
         filtered = filtered.filter(s => s.isActive);
-      } else if (status === "inactive") {
-        filtered = filtered.filter(s => !s.isActive);
       }
     }
 

@@ -309,9 +309,9 @@ export default function StudentManagement() {
     if (keyword) {
       filtered = filtered.filter(
         (s) =>
+          s.fullName?.toLowerCase().includes(keyword) ||
           s.studentIdCode?.toLowerCase().includes(keyword) ||
-          s.className?.toLowerCase().includes(keyword) ||
-          s.phone?.toLowerCase().includes(keyword)
+          s.className?.toLowerCase().includes(keyword)
       );
     }
 

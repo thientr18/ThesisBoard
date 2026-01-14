@@ -243,4 +243,12 @@ export class PreThesisRepository extends GenericRepository<PreThesis, number> {
       ]
     });
   }
+
+  async countPreThesisByTopicApplicationIds(topicApplicationIds: number[]): Promise<number> {
+    return this.model.count({
+      where: {
+        topicApplicationId: topicApplicationIds
+      }
+    });
+  }
 }

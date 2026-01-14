@@ -25,6 +25,7 @@ export class AttachmentController {
       'announcement',
       'topic_application',
       'thesis_proposal',
+      'thesis_registration',
       'system',
       'other'
     ].includes(entityType);

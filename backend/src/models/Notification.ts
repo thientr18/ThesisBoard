@@ -7,7 +7,7 @@ export class Notification extends Model<InferAttributes<Notification>, InferCrea
   declare type: string | null;
   declare title: string | null;
   declare content: string | null;
-  declare entityType: string | null;
+  declare entityType: 'topic' | 'prethesis_submission' | 'thesis_submission' | 'announcement' | 'topic_application' | 'thesis_proposal' | 'system' | 'other' | null;
   declare entityId: number | null;
   declare isRead: boolean;
 }
@@ -19,7 +19,10 @@ Notification.init(
     type: { type: DataTypes.STRING(64), allowNull: true },
     title: { type: DataTypes.STRING(255), allowNull: true },
     content: { type: DataTypes.TEXT, allowNull: true },
-    entityType: { type: DataTypes.STRING(64), allowNull: true, field: 'entity_type' },
+    entityType: { 
+      type: DataTypes.ENUM('topic', 'prethesis_submission', 'thesis_submission', 'announcement', 'topic_application', 'thesis_proposal', 'system', 'other'), 
+      allowNull: true, 
+      field: 'entity_type' },
     entityId: { type: DataTypes.BIGINT, allowNull: true, field: 'entity_id' },
     isRead: { type: DataTypes.BOOLEAN, defaultValue: false, field: 'is_read' },
   },

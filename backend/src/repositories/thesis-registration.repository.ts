@@ -2,33 +2,72 @@ import { Op, Transaction } from 'sequelize';
 import { GenericRepository } from './generic.repository';
 import { ThesisRegistration } from '../models/ThesisRegistration';
 import { AppError } from '../utils/AppError';
-
+import { Student } from '../models/Student';
+import { Teacher } from '../models/Teacher';
+import { User } from '../models/User';
 export class ThesisRegistrationRepository extends GenericRepository<ThesisRegistration, number> {
   constructor() {
     super(ThesisRegistration);
   }
 
+  async count(options?: object): Promise<number> {
+    return this.model.count({
+      where: { ...options }
+    });
+  }
+
   async findByStudentId(studentId: number, semesterId?: number): Promise<ThesisRegistration[]> {
     return this.model.findAll({
-      where: { studentId, ...(semesterId && { semesterId }) }
+      where: { studentId, ...(semesterId && { semesterId }) },
+      include: [
+        { model: Student, as: 'student', include: [{ model: User, as: 'user' }] },
+        { model: Teacher, as: 'supervisorTeacher', include: [{ model: User, as: 'user' }] }
+      ]
     });
   }
 
   async findBySupervisorId(supervisorTeacherId: number, semesterId?: number): Promise<ThesisRegistration[]> {
     return this.model.findAll({
-      where: { supervisorTeacherId, ...(semesterId && { semesterId }) }
+      where: { supervisorTeacherId, ...(semesterId && { semesterId }) },
+      include: [
+        { model: Student, as: 'student', include: [{ model: User, as: 'user' }] },
+        { model: Teacher, as: 'supervisorTeacher', include: [{ model: User, as: 'user' }] }
+      ]
     });
   }
 
   async findBySemesterId(semesterId: number): Promise<ThesisRegistration[]> {
     return this.model.findAll({
-      where: { semesterId }
+      where: { semesterId },
+      include: [
+        { model: Student, as: 'student', include: [{ model: User, as: 'user' }] },
+        { model: Teacher, as: 'supervisorTeacher', include: [{ model: User, as: 'user' }] }
+      ]
     });
   }
 
   async findByStatus(status: ThesisRegistration['status'], semesterId?: number): Promise<ThesisRegistration[]> {
     return this.model.findAll({
-      where: { status, ...(semesterId && { semesterId }) }
+      where: { status, ...(semesterId && { semesterId }) },
+      include: [
+        { model: Student, as: 'student', include: [{ model: User, as: 'user' }] },
+        { model: Teacher, as: 'supervisorTeacher', include: [{ model: User, as: 'user' }] }
+      ]
+    });
+  }
+
+  findAll(filters?: any, offset?: number, limit?: number, order?: Array<[string, string]>): Promise<ThesisRegistration[]> {
+    const whereClause: any = { ...filters };
+
+    return this.model.findAll({
+      where: whereClause,
+      include: [
+        { model: Student, as: 'student', include: [{ model: User, as: 'user' }] },
+        { model: Teacher, as: 'supervisorTeacher', include: [{ model: User, as: 'user' }] }
+      ],
+      offset,
+      limit,
+      order
     });
   }
 
@@ -88,13 +127,13 @@ export class ThesisRegistrationRepository extends GenericRepository<ThesisRegist
     return registration;
   }
 
-  async rejectRegistration(id: number, rejectedByUserId: number, decisionReason?: string, transaction?: Transaction): Promise<ThesisRegistration | null> {
+  async rejectRegistration(id: number, rejectedByUserId?: number, decisionReason?: string, transaction?: Transaction): Promise<ThesisRegistration | null> {
     const registration = await this.model.findByPk(id);
     if (!registration) {
       throw new AppError('Thesis registration not found', 404);
     }
     registration.status = 'rejected';
-    registration.approvedByUserId = rejectedByUserId;
+    registration.approvedByUserId = rejectedByUserId || null;
     registration.decisionReason = decisionReason || null;
     registration.decidedAt = new Date();
     await registration.save();

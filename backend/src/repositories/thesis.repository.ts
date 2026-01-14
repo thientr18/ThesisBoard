@@ -1,10 +1,22 @@
 import { Op } from 'sequelize';
 import { GenericRepository } from './generic.repository';
 import { Thesis } from '../models/Thesis';
+import { Teacher } from '../models/Teacher';
+import { Student } from '../models/Student';
+import { ThesisAssignment } from '../models/ThesisAssignment';
+import { ThesisEvaluation } from '../models/ThesisEvaluation';
+import { DefenseSession } from '../models/DefenseSession';
+import { ThesisFinalGrade } from '../models/ThesisFinalGrade';
 
 export class ThesisRepository extends GenericRepository<Thesis, number> {
   constructor() {
     super(Thesis);
+  }
+
+  async count(options?: object): Promise<number> {
+    return this.model.count({
+      where: { ...options }
+    });
   }
 
   async findByStudentId(studentId: number, semesterId?: number): Promise<Thesis[]> {
@@ -108,5 +120,17 @@ export class ThesisRepository extends GenericRepository<Thesis, number> {
         status: 'completed'
       }
     });
+  }
+
+  async findByIdsAndSemester(thesisIds: number[], semesterId?: number): Promise<Thesis[]> {
+    const whereClause: any = {
+      id: {
+        [Op.in]: thesisIds
+      }
+    };
+    if (semesterId !== undefined) {
+      whereClause.semesterId = semesterId;
+    }
+    return this.model.findAll({ where: whereClause });
   }
 }

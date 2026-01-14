@@ -18,43 +18,31 @@ router.get(
   allowedPermissions(['view:announcements', 'admin:all', 'moderator:all']),
   announcementController.getAllAnnouncements
 );
-
-
 router.get(
   '/pinned',
   allowedPermissions(['view:announcements', 'admin:all', 'moderator:all']),
   announcementController.getPinnedAnnouncements
 );
-
-// Get announcement slides
 router.get(
   '/slide',
   allowedPermissions(['view:announcements', 'admin:all', 'moderator:all']),
   announcementController.getAnnouncementSlides
 );
-
-// Get announcement by ID
 router.get(
   '/:id',
   allowedPermissions(['view:announcements', 'admin:all', 'moderator:all']),
   announcementController.getAnnouncementById
 );
-
-// Create announcement - restricted to staff
 router.post(
   '/',
   allowedPermissions(['create:announcements', 'admin:all', 'moderator:all', 'access:admin_dashboard']),
   announcementController.createAnnouncement
 );
-
-// Update announcement - restricted to staff and original creator
 router.put(
   '/:id',
   allowedPermissions(['update:announcements', 'admin:all', 'moderator:all']),
   announcementController.updateAnnouncement
 );
-
-// Delete announcement - restricted to admin and moderator
 router.delete(
   '/:id',
   allowedPermissions(['delete:announcements', 'admin:all', 'moderator:all']),

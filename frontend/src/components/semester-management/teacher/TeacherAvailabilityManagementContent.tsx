@@ -47,6 +47,7 @@ function TeacherAvailabilityManagementContent({
   setFormError,
   deleteError,
   setDeleteError,
+  teachers,
 }: any) {
   const { collapsed } = useLayoutContext();
   const sidebarWidth = collapsed ? SIDEBAR_COLLAPSED_WIDTH : SIDEBAR_WIDTH;
@@ -164,6 +165,7 @@ function TeacherAvailabilityManagementContent({
                 onSubmit={handleSubmitTeacherAvailability}
                 onCancel={() => setFormVisible(false)}
                 error={formError}
+                excludedTeacherIds={teachers.map((t: any) => t.teacher?.id)}
               />
             )}
           </div>
@@ -375,6 +377,7 @@ export default function TeacherAvailabilityManagement() {
         setFormError={setFormError}
         deleteError={deleteError}
         setDeleteError={setDeleteError}
+        teachers={teachers}
       />
     </LayoutProvider>
   );

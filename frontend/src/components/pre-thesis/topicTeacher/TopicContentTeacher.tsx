@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { Spin, Alert, Card } from "antd";
 import { Title, Text } from "../../common/display/Typography";
 import Sidebar from "../../common/navigation/Sidebar";
@@ -6,7 +6,6 @@ import Navbar from "../../common/navigation/Navbar";
 import { LayoutProvider, useLayoutContext, SIDEBAR_WIDTH, SIDEBAR_COLLAPSED_WIDTH } from "../../../contexts/LayoutContext";
 import { usePreThesisApi } from "../../../api/endpoints/pre-thesis.api";
 import { useSemesterApi } from "../../../api/endpoints/semester.api";
-
 import TopicCard from "./TopicCard";
 import TopicDetail from "./TopicDetail";
 import TopicForm from "./TopicForm";
@@ -23,30 +22,67 @@ function TopicContentTeacher({ user }: { user: any | null }) {
   const [availability, setAvailability] = useState<any | null>(null);
   const [topics, setTopics] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+
+  // error states
   const [error, setError] = useState<string | null>(null);
+  const [errorDetail, setErrorDetail] = useState<string | null>(null);
   const [formError, setFormError] = useState<string | null>(null);
 
   // Modal/detail
   const [detailVisible, setDetailVisible] = useState(false);
   const [selectedTopic, setSelectedTopic] = useState<any | null>(null);
 
-  // Fetch semester on mount
+  // Fetch semester & availability on mount
   useEffect(() => {
     (async () => {
-      const { data: availabilityData } = await getOwnTeacherAvailabilityInActiveSemester();
-      setActiveSemester(availabilityData?.semester || null);
-      setAvailability(availabilityData?.availability || null);
+      setError(null);
+      setErrorDetail(null);
+      try {
+        const { data: availabilityData, error: availError } = await getOwnTeacherAvailabilityInActiveSemester();
+        if (availError) {
+          setError("Failed to fetch active semester or availability.");
+          setErrorDetail(availError);
+          setAvailability(null);
+          setActiveSemester(null);
+          setLoading(false);
+          return;
+        }
+        setAvailability(availabilityData?.availability || null);
+        setActiveSemester(availabilityData?.semester || null);
+      } catch (err: any) {
+        setError("An unexpected error occurred while fetching semester and availability.");
+        setErrorDetail(String(err?.message ?? err));
+        setAvailability(null);
+        setActiveSemester(null);
+        setLoading(false);
+      }
     })();
   }, [getOwnTeacherAvailabilityInActiveSemester]);
 
   // Fetch topics
   useEffect(() => {
+    if (!activeSemester?.id) return;
     setLoading(true);
+    setError(null);
+    setErrorDetail(null);
     (async () => {
-      const { data, error } = await getOwnTopicsInActiveSemester(activeSemester?.id);
-      if (error) setError(error);
-      setTopics(Array.isArray(data) ? data : []);
-      setLoading(false);
+      try {
+        const { data, error: topicsError } = await getOwnTopicsInActiveSemester(activeSemester.id);
+        if (topicsError) {
+          setError("Failed to fetch topics for the active semester.");
+          setErrorDetail(topicsError);
+          setTopics([]);
+          setLoading(false);
+          return;
+        }
+        setTopics(Array.isArray(data) ? data : []);
+        setLoading(false);
+      } catch (err: any) {
+        setError("Failed to fetch topics for the active semester.");
+        setErrorDetail(String(err?.message ?? err));
+        setTopics([]);
+        setLoading(false);
+      }
     })();
   }, [getOwnTopicsInActiveSemester, activeSemester?.id]);
 
@@ -62,12 +98,53 @@ function TopicContentTeacher({ user }: { user: any | null }) {
   }, []);
 
   const reloadTopics = useCallback(async () => {
+    if (!activeSemester?.id) return;
     setLoading(true);
-    const { data, error } = await getOwnTopicsInActiveSemester(activeSemester?.id);
-    if (error) setError(error);
-    setTopics(Array.isArray(data) ? data : []);
+    setError(null);
+    setErrorDetail(null);
+    try {
+      const { data, error: topicsError } = await getOwnTopicsInActiveSemester(activeSemester.id);
+      if (topicsError) {
+        setError("Failed to fetch topics for the active semester.");
+        setErrorDetail(topicsError);
+      }
+      setTopics(Array.isArray(data) ? data : []);
+    } catch (err: any) {
+      setError("Failed to fetch topics for the active semester.");
+      setErrorDetail(String(err?.message ?? err));
+      setTopics([]);
+    }
     setLoading(false);
   }, [getOwnTopicsInActiveSemester, activeSemester?.id]);
+
+  if (error) {
+    return (
+      <>
+        <Sidebar user={user}/>
+        <div
+          className="flex-1 flex flex-col"
+          style={{
+            marginLeft: sidebarWidth,
+            transition: "margin-left 0.3s cubic-bezier(0.4,0,0.2,1)",
+            minHeight: "100vh",
+          }}
+        >
+          <Navbar user={user} pageName="Pre-Thesis Topics" />
+          <div className="min-h-screen bg-gray-50">
+            <div className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+              <Alert
+                type="error"
+                message="Error"
+                description={error}
+                showIcon
+                className="mb-4"
+              />
+            </div>
+          </div>
+        </div>
+      </>
+    );
+  }
 
   return (
     <>
@@ -83,9 +160,6 @@ function TopicContentTeacher({ user }: { user: any | null }) {
         <Navbar user={user} pageName="Pre-Thesis Topics" />
         <div className="min-h-screen bg-gray-50">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-            {error && (
-              <Alert type="error" message="Failed to load topics" description={error} showIcon className="mb-4" />
-            )}
             {/* Semester & Teacher Availability Display */}
             <div className="mb-4">
               <Title level={4} className="text-gray-700">
@@ -162,7 +236,7 @@ function TopicContentTeacher({ user }: { user: any | null }) {
               </div>
             ) : (
               <>
-                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6 mb-8">
+                <div className="grid grid-cols-1 gap-6 mb-8">
                   {topics.map(topic => (
                     <TopicCard
                       key={topic.id}

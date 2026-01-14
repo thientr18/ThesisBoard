@@ -95,6 +95,7 @@ const StudentForm: React.FC<StudentFormProps> = ({
           setSemesters([]);
         }
       });
+      
       setFormData({
         email: "",
         fullName: "",
@@ -103,7 +104,7 @@ const StudentForm: React.FC<StudentFormProps> = ({
         cohortYear: null,
         className: "",
         phone: "",
-        dob: initialData?.dob ? dayjs(initialData.dob) : null,
+        dob: null,
         gender: null,
         status: "active",
         semesterId: null,
@@ -112,6 +113,10 @@ const StudentForm: React.FC<StudentFormProps> = ({
         type: undefined,
         role: "student",
         ...initialData,
+        // Ensure dob is dayjs object if it exists
+        ...(initialData?.dob && {
+          dob: dayjs.isDayjs(initialData.dob) ? initialData.dob : dayjs(initialData.dob)
+        }),
       });
     }
   }, [open, initialData, getAll]);

@@ -6,38 +6,53 @@ import { usePreThesisApi } from '../../api/endpoints/pre-thesis.api';
 import { useAttachmentApi } from '../../api/endpoints/attachment.api';
 import Sidebar from '../../components/common/navigation/Sidebar';
 import Navbar from '../../components/common/navigation/Navbar';
-import { Upload, Button, List, message, InputNumber, Form, Input, Popconfirm, Tooltip } from 'antd';
-import { UploadOutlined, DeleteOutlined, DownloadOutlined } from '@ant-design/icons';
-import { Card, Descriptions, Divider } from 'antd';
+import { Upload, Button, List, message, InputNumber, Form, Input, Popconfirm, Tooltip, Card, Descriptions, Divider, Spin, Alert, Empty, Tag } from 'antd';
+import { UploadOutlined, DeleteOutlined, DownloadOutlined, UserOutlined, PhoneOutlined, MailOutlined, FileTextOutlined } from '@ant-design/icons';
 import { saveAs } from 'file-saver';
 
+// --- Student & Supervisor Card ---
 function StudentTeacherCard({ student, teacher }: { student: any, teacher: any }) {
   return (
-    <Card
-      title="Student & Supervisor"
-      className="mb-4 shadow"
+    <Card 
+      title={<span className="text-lg font-semibold">Student & Supervisor</span>} 
+      className="mb-4 shadow-md hover:shadow-lg transition-shadow" 
       bodyStyle={{ padding: '1.5rem' }}
-      headStyle={{ fontWeight: 700, fontSize: 18 }}
     >
-      <Descriptions
-        column={2}
-        size="middle"
-        labelStyle={{ fontWeight: 600 }}
-        contentStyle={{ color: '#222' }}
-        className="mb-2"
-      >
-        <Descriptions.Item label="Student Name">{student?.fullName || '-'}</Descriptions.Item>
-        <Descriptions.Item label="Supervisor">{teacher?.title ? `${teacher.title} ` : ''}{teacher?.fullName || '-'}</Descriptions.Item>
-        <Descriptions.Item label="Student ID">{student?.studentIdCode || '-'}</Descriptions.Item>
-        <Descriptions.Item label="Supervisor Email">{teacher?.email || '-'}</Descriptions.Item>
-        <Descriptions.Item label="Email">{student?.email || '-'}</Descriptions.Item>
-        <Descriptions.Item label="Office">{teacher?.office || '-'}</Descriptions.Item>
-        <Descriptions.Item label="Class">{student?.className || '-'}</Descriptions.Item>
-        <Descriptions.Item label="Supervisor Phone">{teacher?.phone || '-'}</Descriptions.Item>
-        <Descriptions.Item label="Phone">{student?.phone || '-'}</Descriptions.Item>
-        <Descriptions.Item label="DOB">{student?.dob || '-'}</Descriptions.Item>
-        <Descriptions.Item label="Gender">{student?.gender || '-'}</Descriptions.Item>
-      </Descriptions>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="space-y-3">
+          <h3 className="text-base font-semibold text-gray-700 border-b pb-2">Student Information</h3>
+          <Descriptions column={1} size="small" bordered>
+            <Descriptions.Item label={<span><UserOutlined /> Name</span>}>
+              {student?.fullName || <span className="text-gray-400">N/A</span>}
+            </Descriptions.Item>
+            <Descriptions.Item label="Student ID">{student?.studentIdCode || '-'}</Descriptions.Item>
+            <Descriptions.Item label={<span><MailOutlined /> Email</span>}>
+              {student?.email ? <a href={`mailto:${student.email}`} className="text-blue-600">{student.email}</a> : '-'}
+            </Descriptions.Item>
+            <Descriptions.Item label="Class">{student?.className || '-'}</Descriptions.Item>
+            <Descriptions.Item label={<span><PhoneOutlined /> Phone</span>}>
+              {student?.phone || '-'}
+            </Descriptions.Item>
+            <Descriptions.Item label="DOB">{student?.dob || '-'}</Descriptions.Item>
+            <Descriptions.Item label="Gender">{student?.gender || '-'}</Descriptions.Item>
+          </Descriptions>
+        </div>
+        <div className="space-y-3">
+          <h3 className="text-base font-semibold text-gray-700 border-b pb-2">Supervisor Information</h3>
+          <Descriptions column={1} size="small" bordered>
+            <Descriptions.Item label={<span><UserOutlined /> Name</span>}>
+              {teacher?.title ? `${teacher.title} ` : ''}{teacher?.fullName || <span className="text-gray-400">N/A</span>}
+            </Descriptions.Item>
+            <Descriptions.Item label={<span><MailOutlined /> Email</span>}>
+              {teacher?.email ? <a href={`mailto:${teacher.email}`} className="text-blue-600">{teacher.email}</a> : '-'}
+            </Descriptions.Item>
+            <Descriptions.Item label="Office">{teacher?.office || '-'}</Descriptions.Item>
+            <Descriptions.Item label={<span><PhoneOutlined /> Phone</span>}>
+              {teacher?.phone || '-'}
+            </Descriptions.Item>
+          </Descriptions>
+        </div>
+      </div>
     </Card>
   );
 }
@@ -52,24 +67,64 @@ function PreThesisCard({
   topic: any;
   topicApplication: any;
 }) {
+  const getStatusColor = (status: string) => {
+    switch (status?.toLowerCase()) {
+      case 'approved': return 'success';
+      case 'rejected': return 'error';
+      case 'pending': return 'warning';
+      default: return 'default';
+    }
+  };
+
   return (
-    <div className="bg-white rounded shadow p-4 mb-4">
-      <h2 className="font-bold mb-2">Pre-Thesis Info</h2>
-      <div className="mb-2">
-        <div className="font-semibold">Status:</div>
-        <div>{preThesis?.status || '-'}</div>
+    <Card 
+      title={<span className="text-lg font-semibold">Pre-Thesis Information</span>} 
+      className="mb-4 shadow-md hover:shadow-lg transition-shadow" 
+      bodyStyle={{ padding: '1.5rem' }}
+    >
+      <div className="space-y-4">
+        <div className="flex items-center gap-3">
+          <span className="text-sm font-semibold text-gray-600">Status:</span>
+          <Tag color={getStatusColor(preThesis?.status)} className="text-base px-3 py-1">
+            {preThesis?.status || 'Unknown'}
+          </Tag>
+        </div>
+
+        <Divider orientation="left" orientationMargin="0">
+          <span className="text-base font-semibold text-gray-700">
+            <FileTextOutlined /> Topic Details
+          </span>
+        </Divider>
+        
+        <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
+          <div className="mb-3">
+            <label className="text-sm font-semibold text-gray-600 block mb-1">Title</label>
+            <p className="text-base">{topic?.title || <span className="text-gray-400">No title provided</span>}</p>
+          </div>
+          <div>
+            <label className="text-sm font-semibold text-gray-600 block mb-1">Description</label>
+            <p className="text-base text-justify leading-relaxed">{topic?.description || <span className="text-gray-400">No description provided</span>}</p>
+          </div>
+        </div>
+
+        <Divider orientation="left" orientationMargin="0">
+          <span className="text-base font-semibold text-gray-700">
+            <FileTextOutlined /> Proposal Details
+          </span>
+        </Divider>
+
+        <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
+          <div className="mb-3">
+            <label className="text-sm font-semibold text-gray-600 block mb-1">Proposal Title</label>
+            <p className="text-base">{topicApplication?.proposalTitle || <span className="text-gray-400">No proposal title</span>}</p>
+          </div>
+          <div>
+            <label className="text-sm font-semibold text-gray-600 block mb-1">Abstract</label>
+            <p className="text-base text-justify leading-relaxed">{topicApplication?.proposalAbstract || <span className="text-gray-400">No abstract provided</span>}</p>
+          </div>
+        </div>
       </div>
-      <div className="mb-2">
-        <div className="font-semibold">Topic:</div>
-        <div>Title: {topic?.title || '-'}</div>
-        <div>Description: {topic?.description || '-'}</div>
-      </div>
-      <div>
-        <div className="font-semibold">Proposal:</div>
-        <div>Title: {topicApplication?.proposalTitle || '-'}</div>
-        <div>Abstract: {topicApplication?.proposalAbstract || '-'}</div>
-      </div>
-    </div>
+    </Card>
   );
 }
 
@@ -110,106 +165,118 @@ function SubmissionCard({
 
   const handleDownload = async (file: any) => {
     try {
+      message.loading({ content: 'Downloading...', key: 'download' });
       const res = await downloadAttachment(file.id);
       if (res.error || !res.data) {
-        message.error('Download failed');
+        message.error({ content: 'Download failed', key: 'download' });
         return;
       }
       saveAs(res.data, file.fileName || 'downloaded-file');
+      message.success({ content: 'Downloaded successfully', key: 'download' });
     } catch (e) {
-      message.error('Download failed');
+      message.error({ content: 'Download failed', key: 'download' });
     }
   };
 
   return (
-    <Card
-      title="Submission"
-      className="mb-4 shadow"
+    <Card 
+      title={<span className="text-lg font-semibold">Submission</span>} 
+      className="mb-4 shadow-md hover:shadow-lg transition-shadow" 
       bodyStyle={{ padding: '1.5rem' }}
-      headStyle={{ fontWeight: 700, fontSize: 18 }}
     >
       {isTeacher && (
-        <div>
+        <>
           {submissions.length === 0 ? (
-            <div className="text-gray-500">No submissions yet.</div>
+            <Empty description="No submissions yet" />
           ) : (
             <List
               bordered
               dataSource={submissions}
               renderItem={(file: any) => (
                 <List.Item
+                  className="hover:bg-gray-50 transition-colors"
                   actions={[
                     <Tooltip title="Download" key="download">
                       <Button
                         type="text"
                         icon={<DownloadOutlined />}
-                        className="text-blue-600"
+                        className="text-blue-600 hover:text-blue-700"
                         onClick={() => handleDownload(file)}
                       />
                     </Tooltip>
                   ]}
                 >
-                  <span className="truncate">{file.fileName}</span>
+                  <div className="flex items-center gap-2">
+                    <span className="truncate">{file.fileName}</span>
+                    <span className="text-xs text-gray-400">
+                      {file.createdAt && `(${new Date(file.createdAt).toLocaleDateString()})`}
+                    </span>
+                  </div>
                 </List.Item>
               )}
-              className="bg-white"
             />
           )}
-        </div>
+        </>
       )}
       {isStudent && (
-        <div>
-          <Upload
-            multiple
-            fileList={fileList}
-            beforeUpload={() => false}
-            onChange={handleChange}
-            className="mb-2"
-            showUploadList={{
-              showRemoveIcon: true,
-              removeIcon: (file: any) => (
-                <DeleteOutlined
-                  onClick={e => {
-                    e.stopPropagation();
-                    setFileList(prev => prev.filter(f => f.uid !== file.uid));
-                  }}
-                  className="text-red-500"
-                />
-              ),
-            }}
-          >
-            <Button icon={<UploadOutlined />}>Select File(s)</Button>
-          </Upload>
-          <Button
-            type="primary"
-            className="w-full mt-2"
-            onClick={handleSubmit}
-            disabled={fileList.length === 0 || uploading}
-            loading={uploading}
-          >
-            Submit
-          </Button>
+        <div className="space-y-4">
+          <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 bg-gray-50">
+            <Upload
+              multiple
+              fileList={fileList}
+              beforeUpload={() => false}
+              onChange={handleChange}
+              className="w-full"
+              showUploadList={{
+                showRemoveIcon: true,
+                removeIcon: (file: any) => (
+                  <DeleteOutlined
+                    onClick={e => {
+                      e.stopPropagation();
+                      setFileList(prev => prev.filter(f => f.uid !== file.uid));
+                    }}
+                    className="text-red-500"
+                  />
+                ),
+              }}
+            >
+              <Button icon={<UploadOutlined />} size="large" className="w-full">
+                Select File(s) to Upload
+              </Button>
+            </Upload>
+            <Button
+              type="primary"
+              size="large"
+              className="w-full mt-3"
+              onClick={handleSubmit}
+              disabled={fileList.length === 0 || uploading}
+              loading={uploading}
+            >
+              {uploading ? 'Submitting...' : `Submit ${fileList.length > 0 ? `(${fileList.length})` : ''}`}
+            </Button>
+          </div>
           {submissions.length > 0 && (
-            <div className="mt-4">
-              <div className="font-semibold mb-2">Your Submitted Files</div>
+            <div>
+              <Divider orientation="left">Your Submitted Files</Divider>
               <List
                 bordered
                 dataSource={submissions}
                 renderItem={(file: any) => (
                   <List.Item
+                    className="hover:bg-gray-50 transition-colors"
                     actions={[
                       <Tooltip title="Download" key="download">
-                        <a
-                          href={file.fileUrl}
-                          download
-                          className="text-blue-600 hover:underline"
-                        >
-                          <DownloadOutlined />
-                        </a>
+                        <Button
+                          type="text"
+                          icon={<DownloadOutlined />}
+                          className="text-blue-600 hover:text-blue-700"
+                          onClick={() => handleDownload(file)}
+                        />
                       </Tooltip>,
                       onDelete && (
                         <Popconfirm
                           title="Delete this file?"
+                          description="This action cannot be undone."
                           onConfirm={() => onDelete(file.id)}
                           okText="Yes"
                           cancelText="No"
@@ -218,17 +285,22 @@ function SubmissionCard({
                           <Tooltip title="Delete">
                             <Button
                               type="text"
-                              icon={<DeleteOutlined className="text-red-500" />}
+                              danger
+                              icon={<DeleteOutlined />}
                             />
                           </Tooltip>
                         </Popconfirm>
                       )
                     ].filter(Boolean)}
                   >
-                    <span className="truncate">{file.fileName}</span>
+                    <div className="flex items-center gap-2">
+                      <span className="truncate">{file.fileName}</span>
+                      <span className="text-xs text-gray-400">
+                        {file.createdAt && `(${new Date(file.createdAt).toLocaleDateString()})`}
+                      </span>
+                    </div>
                   </List.Item>
                 )}
-                className="bg-white"
               />
             </div>
           )}
@@ -257,88 +329,99 @@ function GradingCard({
   const handleFinish = (values: any) => {
     onGrade && onGrade(values.finalScore, values.feedback);
     form.resetFields();
+    message.success('Grade submitted successfully!');
+  };
+
+  const getGradeColor = (score: number) => {
+    if (score >= 80) return 'text-green-600';
+    if (score >= 60) return 'text-blue-600';
+    if (score >= 40) return 'text-orange-600';
+    return 'text-red-600';
   };
 
   return (
-    <Card
-      title="Grading"
-      className="mb-4 shadow"
+    <Card 
+      title={<span className="text-lg font-semibold">Grading & Feedback</span>} 
+      className="mb-4 shadow-md hover:shadow-lg transition-shadow" 
       bodyStyle={{ padding: '1.5rem' }}
-      headStyle={{ fontWeight: 700, fontSize: 18 }}
     >
-      {isTeacher && (
-        <>
-          {(grade !== undefined && grade !== null) && (
-            <div className="mb-4">
-              <div className="text-lg font-semibold">
-                Grade: <span className="text-green-600">{grade}</span>
-              </div>
-              <div className="mt-2">
-                <span className="font-semibold">Feedback: </span>
-                {feedback ? (
-                  <span>{feedback}</span>
-                ) : (
-                  <span className="text-gray-400">No feedback yet</span>
-                )}
-              </div>
-              <Divider />
-            </div>
+      <div className="space-y-4">
+        <div className="flex items-center justify-between mb-3">
+          <h3 className="text-base font-semibold text-gray-700">Current Grade</h3>
+          {grade !== undefined && grade !== null && (
+            <Tag color={grade >= 60 ? 'success' : 'error'} className="text-lg px-3 py-1">
+              Score: {grade}
+            </Tag>
           )}
-          <Form
-            form={form}
-            layout="vertical"
-            onFinish={handleFinish}
-            className="flex flex-col gap-4"
-          >
-            <Form.Item
-              name="finalScore"
-              label="Score"
-              rules={[
-                { required: true, message: 'Please input a score!' },
-                { type: 'number', min: 0, max: 100, message: 'Score must be 0-100' },
-              ]}
-            >
-              <InputNumber
-                min={0}
-                max={100}
-                placeholder="Enter score"
-                className="w-full"
-              />
-            </Form.Item>
-            <Form.Item
-              name="feedback"
-              label="Feedback"
-              rules={[{ required: true, message: 'Please provide feedback!' }]}
-            >
-              <Input.TextArea rows={3} placeholder="Enter feedback for student..." />
-            </Form.Item>
-            <Form.Item>
-              <Button type="primary" htmlType="submit" className="w-full">
-                Submit Grade
-              </Button>
-            </Form.Item>
-          </Form>
-        </>
-      )}
-      {isStudent && (
-        <div>
-          <div className="text-lg font-semibold">
-            Grade: {grade !== undefined && grade !== null ? (
-              <span className="text-green-600">{grade}</span>
-            ) : (
-              <span className="text-gray-400">Not graded yet</span>
-            )}
+        </div>
+
+        <div className="bg-gray-50 p-4 rounded-lg border border-gray-200 space-y-3">
+          <div className="flex items-start gap-2">
+            <span className="font-medium text-gray-600 min-w-[80px]">Grade:</span>
+            <span className={grade !== undefined && grade !== null
+              ? `font-semibold text-xl ${getGradeColor(grade)}`
+              : 'text-gray-400'}>
+              {grade !== undefined && grade !== null
+                ? `${grade} / 100`
+                : 'Not graded yet'}
+            </span>
           </div>
-          <div className="mt-2">
-            <span className="font-semibold">Feedback: </span>
-            {feedback ? (
-              <span>{feedback}</span>
-            ) : (
-              <span className="text-gray-400">No feedback yet</span>
-            )}
+          <div className="flex items-start gap-2">
+            <span className="font-medium text-gray-600 min-w-[80px]">Feedback:</span>
+            <span className={feedback ? 'text-gray-700' : 'text-gray-400'}>
+              {feedback || 'No feedback yet'}
+            </span>
           </div>
         </div>
-      )}
+
+        {isTeacher && (
+          <div className="bg-blue-50 p-4 rounded-lg border border-blue-200 mt-4">
+            <h4 className="font-semibold text-gray-700 mb-3">Submit New Grade</h4>
+            <Form
+              form={form}
+              layout="vertical"
+              onFinish={handleFinish}
+              className="space-y-3"
+            >
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <Form.Item
+                  name="finalScore"
+                  label="Score (0-100)"
+                  rules={[
+                    { required: true, message: 'Please input a score!' },
+                    { type: 'number', min: 0, max: 100, message: 'Score must be 0-100' },
+                  ]}
+                >
+                  <InputNumber
+                    min={0}
+                    max={100}
+                    placeholder="Enter score"
+                    className="w-full"
+                    size="large"
+                  />
+                </Form.Item>
+                <Form.Item
+                  name="feedback"
+                  label="Feedback"
+                  rules={[{ required: true, message: 'Please provide feedback!' }]}
+                  className="md:col-span-2"
+                >
+                  <Input.TextArea 
+                    placeholder="Enter feedback for student..." 
+                    rows={1}
+                    size="large"
+                  />
+                </Form.Item>
+              </div>
+              <Form.Item className="mb-0">
+                <Button type="primary" htmlType="submit" size="large" className="w-full md:w-auto">
+                  Submit Grade
+                </Button>
+              </Form.Item>
+            </Form>
+          </div>
+        )}
+      </div>
     </Card>
   );
 }
@@ -358,7 +441,6 @@ function PreThesisDetailPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Fetch user and pre-thesis data
   useEffect(() => {
     setLoading(true);
     setError(null);
@@ -372,9 +454,8 @@ function PreThesisDetailPage() {
       if (preThesisRes.error) setError(preThesisRes.error);
       else setPreThesisData(preThesisRes.data);
 
-      // Fetch submissions if preThesis exists
       if (id) {
-        const { data: files } = await getByEntity('prethesis_submission', id);
+        const { data: files } = await getByEntity('prethesis_submission', Number(id));
         setSubmissions(files || []);
       }
       setLoading(false);
@@ -382,7 +463,6 @@ function PreThesisDetailPage() {
     // eslint-disable-next-line
   }, [id, getMe, getPreThesisById, getByEntity]);
 
-  // Submission handlers
   const handleSubmitFiles = async (files: FileList) => {
     if (!preThesisData?.preThesis?.id) return;
     const { data, error } = await submitPreThesisFiles(files, 'prethesis_submission', preThesisData.preThesis.id);
@@ -390,19 +470,17 @@ function PreThesisDetailPage() {
       message.error(error);
     } else {
       message.success('Files submitted successfully!');
-      // Refetch submissions
       const { data: filesData } = await getByEntity('prethesis_submission', preThesisData.preThesis.id);
       setSubmissions(filesData || []);
     }
   };
   
   const handleDeleteFile = async (fileId: number) => {
-    const { error } = await deleteAttachment(String(fileId));
+    const { error } = await deleteAttachment(fileId);
     if (error) {
       message.error('Failed to delete file');
     } else {
       message.success('File deleted');
-      // Refetch submissions
       if (preThesisData?.preThesis?.id) {
         const { data: filesData } = await getByEntity('prethesis_submission', preThesisData.preThesis.id);
         setSubmissions(filesData || []);
@@ -410,7 +488,6 @@ function PreThesisDetailPage() {
     }
   };
 
-  // Role check
   const isTeacher = user?.roles?.some((r: any) => r.name === 'teacher');
   const isStudent = user?.roles?.some((r: any) => r.name === 'student');
 
@@ -422,7 +499,6 @@ function PreThesisDetailPage() {
   const grade = preThesis?.finalScore;
   const feedback = preThesis?.feedback;
 
-  // Grading handler
   const handleGrade = async (finalScore: number, feedback: string) => {
     if (!id) return;
     setLoading(true);
@@ -433,12 +509,6 @@ function PreThesisDetailPage() {
       preThesis: { ...prev.preThesis, finalScore, feedback }
     }));
     setLoading(false);
-  };
-
-  const fetchSubmissions = async () => {
-    if (!id) return;
-    const { data, error } = await getByEntity('prethesis_submission', id);
-    if (!error) setSubmissions(data || []);
   };
 
   return (
@@ -453,13 +523,23 @@ function PreThesisDetailPage() {
         }}
       >
         <Navbar user={user} pageName="Pre-Thesis Detail" />
-        <div className="min-h-screen bg-gray-50 p-6">
+        <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 p-4 md:p-6">
           {loading ? (
-            <div>Loading...</div>
+            <div className="flex items-center justify-center min-h-[400px]">
+              <Spin size="large" tip="Loading pre-thesis details..." />
+            </div>
           ) : error ? (
-            <div className="text-red-500">{error}</div>
+            <div className="max-w-3xl mx-auto mt-8">
+              <Alert
+                message="Error Loading Pre-Thesis"
+                description={error}
+                type="error"
+                showIcon
+                closable
+              />
+            </div>
           ) : (
-            <div className="max-w-3xl mx-auto space-y-4">
+            <div className="max-w-5xl mx-auto space-y-4">
               <StudentTeacherCard student={student} teacher={supervisor} />
               <PreThesisCard
                 preThesis={preThesis}
@@ -487,6 +567,7 @@ function PreThesisDetailPage() {
     </>
   );
 }
+
 
 export default function PreThesisDetailPageContent() {
   return (

@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useUserApi } from '../api/endpoints/user.api';
 import { Navigate } from 'react-router-dom';
 import LoadingSpinner from '../components/common/feedback/LoadingSpinner';
-import AllStudentProjects from '../components/AllStudentProjects';
+import AllStudentProjects from '../components/student/AllStudentProjects';
 
 const AllProjectsStudentPage: React.FC = () => {
   const [user, setUser] = useState<any | null>(null);

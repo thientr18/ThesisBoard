@@ -4,7 +4,7 @@ import AllAdministratorPreTheses from '../../components/pre-thesis/project/AllAd
 import { useUserApi } from '../../api/endpoints/user.api';
 import { useSemesterApi } from '../../api/endpoints/semester.api';
 import { Select, Spin, Alert } from 'antd';
-import { useLayoutContext, SIDEBAR_WIDTH, SIDEBAR_COLLAPSED_WIDTH } from "../../contexts/LayoutContext";
+import { LayoutProvider, useLayoutContext, SIDEBAR_WIDTH, SIDEBAR_COLLAPSED_WIDTH } from "../../contexts/LayoutContext";
 import Sidebar from "../../components/common/navigation/Sidebar";
 import Navbar from "../../components/common/navigation/Navbar";
 
@@ -125,4 +125,10 @@ const PreThesisProjectsListPage: React.FC = () => {
   );
 };
 
-export default PreThesisProjectsListPage;
+export default function PreThesisProjectsListPageWrapper() {
+  return (
+    <LayoutProvider>
+      <PreThesisProjectsListPage />
+    </LayoutProvider>
+  )
+}

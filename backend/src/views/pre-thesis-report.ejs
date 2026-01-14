@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Pre-Thesis Evaluation Report</title>
+  <title>Pre-Thesis Report</title>
   <style>
     body {
       font-family: 'Times New Roman', Times, serif;
@@ -86,20 +86,9 @@
     
     <!-- Supervisor Information Section -->
     <div class="section">
-      <h2 class="section-title">Supervisor Information</h2>
-      <div class="info-grid">
-        <div class="info-item">
-          <span class="label">Supervisor Name:</span>
-          <span><%= report.supervisor.name %></span>
-        </div>
-        <div class="info-item">
-          <span class="label">Academic Title:</span>
-          <span><%= report.supervisor.academicTitle %></span>
-        </div>
-        <div class="info-item">
-          <span class="label">Department:</span>
-          <span><%= report.supervisor.department %></span>
-        </div>
+      <div class="info-item">
+        <span class="label">Supervisor:</span>
+        <span><%= report.supervisor.academicTitle %> <%= report.supervisor.name %></span>
       </div>
     </div>
     
@@ -141,8 +130,7 @@
     <div class="signature-section">
       <div class="signature">
         <div>Prepared by:</div>
-        <div><strong><%= report.supervisor.name %></strong></div>
-        <div><%= report.supervisor.academicTitle %></div>
+        <div><strong><%= report.supervisor.academicTitle %> <%= report.supervisor.name %></strong></div>
         <span class="signature-line"></span>
         <div>Date: <%= formatDate(report.date) %></div>
       </div>

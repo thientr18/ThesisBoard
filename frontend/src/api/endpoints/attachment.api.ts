@@ -8,34 +8,54 @@ import type {
 
 const BASE_PATH = '/api/attachments';
 
+const entityTypes = ['topic', 'prethesis_submission', 'thesis_submission', 'announcement', 'topic_application', 'thesis_proposal',  'thesis_registration', 'system', 'other'] as const;
+
+const handleApiError = (error: unknown): string => {
+  if (error instanceof Error) {
+    const anyErr = error as any;
+    if (anyErr?.response?.data) {
+      const data = anyErr.response.data;
+      if (data.message) {
+        let msg = data.message;
+        if (data.code) msg += ` (code: ${data.code})`;
+        if (data.details) msg += `: ${JSON.stringify(data.details)}`;
+        return msg;
+      }
+      return JSON.stringify(data);
+    }
+    return error.message;
+  }
+  return 'An unexpected error occurred';
+};
+
 export const useAttachmentApi = () => {
   const authApi = useAuthenticatedApi();
 
   const getByEntity = useCallback(async (
-    entityType: string,
-    entityId: string
+    entityType: typeof entityTypes[number],
+    entityId: number
   ): Promise<ApiResponse<Attachment[]>> => {
     try {
       const res = await authApi.get(`${BASE_PATH}/${entityType}/${entityId}`);
       return { data: res.data as Attachment[], error: null };
     } catch (e) {
-      return { data: null, error: e instanceof Error ? e.message : 'Failed to fetch attachments' };
+      return { data: null, error: handleApiError(e) };
     }
   }, [authApi]);
 
-  const getById = useCallback(async (id: string): Promise<ApiResponse<Attachment>> => {
+  const getById = useCallback(async (id: number): Promise<ApiResponse<Attachment>> => {
     try {
       const res = await authApi.get(`${BASE_PATH}/${id}`);
       return { data: res.data as Attachment, error: null };
     } catch (e) {
-      return { data: null, error: e instanceof Error ? e.message : 'Failed to fetch attachment' };
+      return { data: null, error: handleApiError(e) };
     }
   }, [authApi]);
 
   const uploadFiles = useCallback(async (
     files: FileList,
-    entityType: string,
-    entityId: string
+    entityType: typeof entityTypes[number],
+    entityId: number
   ): Promise<ApiResponse<Attachment[]>> => {
     const formData = new FormData();
     Array.from(files).forEach(file => formData.append('files', file));
@@ -45,7 +65,7 @@ export const useAttachmentApi = () => {
       });
       return { data: res.data.data, error: null };
     } catch (e) {
-      return { data: null, error: e instanceof Error ? e.message : 'Failed to upload files' };
+      return { data: null, error: handleApiError(e) };
     }
   }, [authApi]);
 
@@ -58,27 +78,27 @@ export const useAttachmentApi = () => {
       });
       return { data: res.data as Attachment, error: null };
     } catch (e) {
-      return { data: null, error: e instanceof Error ? e.message : 'Failed to create external link' };
+      return { data: null, error: handleApiError(e) };
     }
   }, [authApi]);
 
-  const downloadAttachment = useCallback(async (id: string): Promise<ApiResponse<Blob>> => {
+  const downloadAttachment = useCallback(async (id: number): Promise<ApiResponse<Blob>> => {
     try {
       const res = await authApi.get(`${BASE_PATH}/download/${id}`, {
         responseType: 'blob',
       });
       return { data: res.data as Blob, error: null };
     } catch (e) {
-      return { data: null, error: e instanceof Error ? e.message : 'Failed to download attachment' };
+      return { data: null, error: handleApiError(e) };
     }
   }, [authApi]);
 
-  const deleteAttachment = useCallback(async (id: string): Promise<ApiResponse<void>> => {
+  const deleteAttachment = useCallback(async (id: number): Promise<ApiResponse<void>> => {
     try {
       await authApi.delete(`${BASE_PATH}/${id}`);
       return { data: null, error: null };
     } catch (e) {
-      return { data: null, error: e instanceof Error ? e.message : 'Failed to delete attachment' };
+      return { data: null, error: handleApiError(e) };
     }
   }, [authApi]);
 

@@ -7,7 +7,7 @@ import type {
   PreThesis,
   PreThesisGrade,
   PreThesisStats,
-  ApplicationStats
+  ApplicationStats,
 } from '../../types/pre-thesis.types';
 
 const BASE = '/api/pre-theses';
@@ -17,13 +17,22 @@ const PRETHESIS_PATH = `${BASE}/pretheses`;
 const STATS_PATH = `${BASE}/stats`;
 const REPORTS_PATH = `${BASE}/reports`;
 
-const handleError = (e: unknown, fallback: string): string => {
-  if (e && typeof e === 'object' && 'response' in e) {
-    const anyErr = e as any;
-    return anyErr.response?.data?.message || fallback;
+const handleApiError = (error: unknown): string => {
+  if (error instanceof Error) {
+    const anyErr = error as any;
+    if (anyErr?.response?.data) {
+      const data = anyErr.response.data;
+      if (data.message) {
+        let msg = data.message;
+        if (data.code) msg += ` (code: ${data.code})`;
+        if (data.details) msg += `: ${JSON.stringify(data.details)}`;
+        return msg;
+      }
+      return JSON.stringify(data);
+    }
+    return error.message;
   }
-  if (e instanceof Error) return e.message;
-  return fallback;
+  return 'An unexpected error occurred';
 };
 
 export const usePreThesisApi = () => {
@@ -35,7 +44,7 @@ export const usePreThesisApi = () => {
       const res = await api.get(TOPICS_PATH);
       return { data: res.data?.data as Topic[], error: null };
     } catch (e) {
-      return { data: null, error: handleError(e, 'Failed to fetch topics') };
+      return { data: null, error: handleApiError(e) };
     }
   }, [api]);
 
@@ -44,7 +53,7 @@ export const usePreThesisApi = () => {
       const res = await api.get(`${TOPICS_PATH}/semester/${semesterId}`);
       return { data: res.data?.data as Topic[], error: null };
     } catch (e) {
-      return { data: null, error: handleError(e, 'Failed to fetch topics for semester') };
+      return { data: null, error: handleApiError(e) };
     }
   }, [api]);
 
@@ -53,7 +62,7 @@ export const usePreThesisApi = () => {
       const res = await api.get(`${TOPICS_PATH}/${id}`);
       return { data: res.data?.data as Topic, error: null };
     } catch (e) {
-      return { data: null, error: handleError(e, 'Failed to fetch topic') };
+      return { data: null, error: handleApiError(e) };
     }
   }, [api]);
 
@@ -62,7 +71,7 @@ export const usePreThesisApi = () => {
       const res = await api.get(`${TOPICS_PATH}/with-slots`, { params: { semesterId } });
       return { data: res.data?.data as Topic[], error: null };
     } catch (e) {
-      return { data: null, error: handleError(e, 'Failed to fetch topics with slots') };
+      return { data: null, error: handleApiError(e) };
     }
   }, [api]);
 
@@ -71,7 +80,7 @@ export const usePreThesisApi = () => {
       const res = await api.get(`${TOPICS_PATH}/active-semester/own`, { params: { semesterId } });
       return { data: res.data?.data as Topic[], error: null };
     } catch (e) {
-      return { data: null, error: handleError(e, 'Failed to fetch own topics in active semester') };
+      return { data: null, error: handleApiError(e) };
     }
   }, [api]);
 
@@ -87,7 +96,7 @@ export const usePreThesisApi = () => {
       const res = await api.post(TOPICS_PATH, data);
       return { data: res.data?.data as Topic, error: null };
     } catch (e) {
-      return { data: null, error: handleError(e, 'Failed to create topic') };
+      return { data: null, error: handleApiError(e) };
     }
   }, [api]);
 
@@ -99,7 +108,7 @@ export const usePreThesisApi = () => {
       const res = await api.put(`${TOPICS_PATH}/${id}`, data);
       return { data: res.data?.data as Topic, error: null };
     } catch (e) {
-      return { data: null, error: handleError(e, 'Failed to update topic') };
+      return { data: null, error: handleApiError(e) };
     }
   }, [api]);
 
@@ -108,7 +117,7 @@ export const usePreThesisApi = () => {
       await api.delete(`${TOPICS_PATH}/${id}`);
       return { error: null };
     } catch (e) {
-      return { error: handleError(e, 'Failed to delete topic') };
+      return { error: handleApiError(e) };
     }
   }, [api]);
 
@@ -119,7 +128,7 @@ export const usePreThesisApi = () => {
       const res = await api.get(APPLICATIONS_PATH);
       return { data: res.data as TopicApplication[], error: null };
     } catch (e) {
-      return { data: null, error: handleError(e, 'Failed to fetch applications') };
+      return { data: null, error: handleApiError(e) };
     }
   }, [api]);
 
@@ -128,7 +137,7 @@ export const usePreThesisApi = () => {
       const res = await api.get(`${APPLICATIONS_PATH}/teacher/me/${semesterId}`);
       return { data: res.data?.data as TopicApplication[], error: null };
     } catch (e) {
-      return { data: null, error: handleError(e, 'Failed to fetch applications for teacher') };
+      return { data: null, error: handleApiError(e) };
     }
   }, [api]);
 
@@ -137,7 +146,7 @@ export const usePreThesisApi = () => {
       const res = await api.get(`${APPLICATIONS_PATH}/student/me/${semesterId}`);
       return { data: res.data?.data as TopicApplication[], error: null };
     } catch (e) {
-      return { data: null, error: handleError(e, 'Failed to fetch own applications') };
+      return { data: null, error: handleApiError(e) };
     }
   }, [api]);
 
@@ -146,7 +155,7 @@ export const usePreThesisApi = () => {
       const res = await api.get(`${APPLICATIONS_PATH}/${id}`);
       return { data: res.data as TopicApplication, error: null };
     } catch (e) {
-      return { data: null, error: handleError(e, 'Failed to fetch application') };
+      return { data: null, error: handleApiError(e) };
     }
   }, [api]);
 
@@ -158,7 +167,7 @@ export const usePreThesisApi = () => {
       const res = await api.post(`${TOPICS_PATH}/${topicId}/apply`, data);
       return { data: res.data as TopicApplication, error: null };
     } catch (e) {
-      return { data: null, error: handleError(e, 'Failed to apply to topic') };
+      return { data: null, error: handleApiError(e) };
     }
   }, [api]);
 
@@ -170,20 +179,20 @@ export const usePreThesisApi = () => {
       const res = await api.put(`${APPLICATIONS_PATH}/${id}`, data);
       return { data: res.data as TopicApplication, error: null };
     } catch (e) {
-      return { data: null, error: handleError(e, 'Failed to update application') };
+      return { data: null, error: handleApiError(e) };
     }
   }, [api]);
 
   const updateApplicationStatus = useCallback(async (
     id: number | string,
-    status: string,
+    status: 'pending' | 'accepted' | 'rejected' | 'cancelled',
     note?: string | null
   ): Promise<BaseResponse<TopicApplication>> => {
     try {
       const res = await api.patch(`${APPLICATIONS_PATH}/${id}/status`, { status, note });
       return { data: res.data as TopicApplication, error: null };
     } catch (e) {
-      return { data: null, error: handleError(e, 'Failed to update application status') };
+      return { data: null, error: handleApiError(e) };
     }
   }, [api]);
 
@@ -192,7 +201,7 @@ export const usePreThesisApi = () => {
       const res = await api.patch(`${APPLICATIONS_PATH}/${id}/cancel`);
       return { data: res.data as TopicApplication, error: null };
     } catch (e) {
-      return { data: null, error: handleError(e, 'Failed to cancel application') };
+      return { data: null, error: handleApiError(e) };
     }
   }, [api]);
 
@@ -202,7 +211,7 @@ export const usePreThesisApi = () => {
       const res = await api.get(PRETHESIS_PATH);
       return { data: res.data as PreThesis[], error: null };
     } catch (e) {
-      return { data: null, error: handleError(e, 'Failed to fetch pre-theses') };
+      return { data: null, error: handleApiError(e) };
     }
   }, [api]);
 
@@ -211,7 +220,7 @@ export const usePreThesisApi = () => {
       const res = await api.get(`${PRETHESIS_PATH}/student/me`);
       return { data: res.data?.data as PreThesis[], error: null };
     } catch (e) {
-      return { data: null, error: handleError(e, 'Failed to fetch pre-theses by student') };
+      return { data: null, error: handleApiError(e) };
     }
   }, [api]);
 
@@ -220,7 +229,16 @@ export const usePreThesisApi = () => {
       const res = await api.get(`${PRETHESIS_PATH}/${id}`);
       return { data: res.data?.data as PreThesis, error: null };
     } catch (e) {
-      return { data: null, error: handleError(e, 'Failed to fetch pre-thesis') };
+      return { data: null, error: handleApiError(e) };
+    }
+  }, [api]);
+
+  const getPreThesisForStudentAndSemester = useCallback(async (semesterId: number | string): Promise<BaseResponse<PreThesis | null>> => {
+    try {
+      const res = await api.get(`${PRETHESIS_PATH}/student/me/semester/${semesterId}`);
+      return { data: res.data?.data as PreThesis | null, error: null };
+    } catch (e) {
+      return { data: null, error: handleApiError(e) };
     }
   }, [api]);
 
@@ -229,7 +247,7 @@ export const usePreThesisApi = () => {
       const res = await api.get(`${PRETHESIS_PATH}/teacher/me/${semesterId}`);
       return { data: res.data?.data as PreThesis[], error: null };
     } catch (e) {
-      return { data: null, error: handleError(e, 'Failed to fetch pre-theses for teacher by semester') };
+      return { data: null, error: handleApiError(e) };
     }
   }, [api]);
 
@@ -238,7 +256,7 @@ export const usePreThesisApi = () => {
       const res = await api.get(`${PRETHESIS_PATH}/administrator/me/${semesterId}`);
       return { data: res.data?.data as PreThesis[], error: null };
     } catch (e) {
-      return { data: null, error: handleError(e, 'Failed to fetch pre-theses for administrator by semester') };
+      return { data: null, error: handleApiError(e) };
     }
   }, [api]);
 
@@ -250,7 +268,7 @@ export const usePreThesisApi = () => {
       const res = await api.patch(`${PRETHESIS_PATH}/${id}/status`, { status });
       return { data: res.data as PreThesis, error: null };
     } catch (e) {
-      return { data: null, error: handleError(e, 'Failed to update pre-thesis status') };
+      return { data: null, error: handleApiError(e) };
     }
   }, [api]);
 
@@ -262,7 +280,7 @@ export const usePreThesisApi = () => {
       const res = await api.patch(`${PRETHESIS_PATH}/${id}/grade`, gradeData);
       return { data: res.data as PreThesis, error: null };
     } catch (e) {
-      return { data: null, error: handleError(e, 'Failed to grade pre-thesis') };
+      return { data: null, error: handleApiError(e) };
     }
   }, [api]);
 
@@ -274,7 +292,7 @@ export const usePreThesisApi = () => {
       const res = await api.get(`${STATS_PATH}/pretheses/${semesterId}`);
       return { data: res.data as PreThesisStats, error: null };
     } catch (e) {
-      return { data: null, error: handleError(e, 'Failed to fetch pre-thesis statistics') };
+      return { data: null, error: handleApiError(e) };
     }
   }, [api]);
 
@@ -285,9 +303,31 @@ export const usePreThesisApi = () => {
       const res = await api.get(`${STATS_PATH}/applications/${semesterId}`);
       return { data: res.data as ApplicationStats, error: null };
     } catch (e) {
-      return { data: null, error: handleError(e, 'Failed to fetch application statistics') };
+      return { data: null, error: handleApiError(e) };
     }
   }, [api]);
+
+// GET /api/pre-thesis/stats/outcomes
+const getOutcomeStats = useCallback(async (): Promise<BaseResponse<any[]>> => {
+  try {
+    const res = await api.get(`${STATS_PATH}/outcomes`);
+    const responseData = res.data?.data || res.data;
+    return { data: responseData, error: null };
+  } catch (e) {
+    return { data: null, error: handleApiError(e) };
+  }
+}, [api]);
+
+// GET /api/pre-thesis/stats/grades
+const getGradeStats = useCallback(async (): Promise<BaseResponse<any[]>> => {
+  try {
+    const res = await api.get(`${STATS_PATH}/grades`);
+    const responseData = res.data?.data || res.data;
+    return { data: responseData, error: null };
+  } catch (e) {
+    return { data: null, error: handleApiError(e) };
+  }
+}, [api]);
 
   // Report
   const generatePreThesisReport = useCallback(async (
@@ -299,7 +339,7 @@ export const usePreThesisApi = () => {
       });
       return { data: res.data as Blob, error: null };
     } catch (e) {
-      return { data: null, error: handleError(e, 'Failed to generate pre-thesis report') };
+      return { data: null, error: handleApiError(e) };
     }
   }, [api]);
 
@@ -322,7 +362,7 @@ export const usePreThesisApi = () => {
       URL.revokeObjectURL(url);
       return { data: true, error: null };
     } catch (e) {
-      return { data: null, error: handleError(e, 'Failed to download pre-thesis report') };
+      return { data: null, error: handleApiError(e) };
     }
   }, [generatePreThesisReport]);
 
@@ -349,6 +389,7 @@ export const usePreThesisApi = () => {
     getPreTheses,
     getPreThesesByStudent,
     getPreThesisById,
+    getPreThesisForStudentAndSemester,
     getPreThesesForTeacherBySemester,
     getPreThesesForAdministratorBySemester,
     updatePreThesisStatus,
@@ -356,6 +397,8 @@ export const usePreThesisApi = () => {
     // Stats
     getPreThesisStats,
     getApplicationStats,
+    getOutcomeStats,
+    getGradeStats,
     // Reports
     generatePreThesisReport,
     downloadPreThesisReport
@@ -379,12 +422,15 @@ export const usePreThesisApi = () => {
     getPreTheses,
     getPreThesesByStudent,
     getPreThesisById,
+    getPreThesisForStudentAndSemester,
     getPreThesesForTeacherBySemester,
     getPreThesesForAdministratorBySemester,
     updatePreThesisStatus,
     gradePreThesis,
     getPreThesisStats,
     getApplicationStats,
+    getOutcomeStats,
+    getGradeStats,
     generatePreThesisReport,
     downloadPreThesisReport
   ]);

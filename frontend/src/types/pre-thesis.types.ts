@@ -21,13 +21,28 @@ export interface TopicApplication {
   id: number;
   topicId: number;
   studentId: number;
-  status: 'pending' | 'approved' | 'rejected' | 'cancelled';
+  status: 'pending' | 'accepted' | 'rejected' | 'cancelled';
   note: string | null;
-  decidedAt: string | null;
+  decidedAt: Date | null;
   proposalTitle: string | null;
   proposalAbstract: string | null;
-  createdAt: string;
-  updatedAt: string;
+  createdAt?: Date;
+  updatedAt?: Date;
+  deletedAt?: Date | null;
+  // Relations (populated by backend joins)
+  topic?: Topic;
+  student?: {
+    id: number;
+    userId: number;
+    studentIdCode: string;
+    className?: string;
+    phone?: string;
+    user?: {
+      id: number;
+      fullName: string;
+      email: string;
+    };
+  };
 }
 
 export interface PreThesis {

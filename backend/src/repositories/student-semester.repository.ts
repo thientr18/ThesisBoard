@@ -3,6 +3,7 @@ import { StudentSemester } from '../models/StudentSemester';
 import { Student } from '../models/Student';
 import { User } from '../models/User';
 import { Op, fn, col, where } from "sequelize";
+import { Semester } from '../models/Semester';
 
 export class StudentSemesterRepository extends GenericRepository<StudentSemester, number> {
     constructor() {
@@ -122,6 +123,11 @@ export class StudentSemesterRepository extends GenericRepository<StudentSemester
                             attributes: ['email', 'fullName']
                         }
                     ]
+                },
+                {
+                    model: Semester,
+                    as: 'semester',
+                    attributes: ['id', 'name', 'isActive', 'isCurrent']
                 }
             ]
         });

@@ -9,6 +9,24 @@ import type {
 
 const BASE_PATH = '/api/semesters';
 
+const handleApiError = (error: unknown): string => {
+  if (error instanceof Error) {
+    const anyErr = error as any;
+    if (anyErr?.response?.data) {
+      const data = anyErr.response.data;
+      if (data.message) {
+        let msg = data.message;
+        if (data.code) msg += ` (code: ${data.code})`;
+        if (data.details) msg += `: ${JSON.stringify(data.details)}`;
+        return msg;
+      }
+      return JSON.stringify(data);
+    }
+    return error.message;
+  }
+  return 'An unexpected error occurred';
+};
+
 export const useSemesterApi = () => {
   const authApi = useAuthenticatedApi();
 
@@ -18,7 +36,7 @@ export const useSemesterApi = () => {
       const res = await authApi.get(BASE_PATH);
       return { data: res.data as Semester[], error: null };
     } catch (e) {
-      return { data: null, error: e instanceof Error ? e.message : 'Failed to fetch semesters' };
+      return { data: null, error: handleApiError(e) };
     }
   }, [authApi]);
 
@@ -28,7 +46,7 @@ export const useSemesterApi = () => {
       const res = await authApi.get(`${BASE_PATH}/${id}`);
       return { data: res.data as Semester, error: null };
     } catch (e) {
-      return { data: null, error: e instanceof Error ? e.message : 'Failed to fetch semester' };
+      return { data: null, error: handleApiError(e) };
     }
   }, [authApi]);
 
@@ -38,7 +56,7 @@ export const useSemesterApi = () => {
       const res = await authApi.post(BASE_PATH, payload);
       return { data: res.data as Semester, error: null };
     } catch (e) {
-      return { data: null, error: e instanceof Error ? e.message : 'Failed to create semester' };
+      return { data: null, error: handleApiError(e) };
     }
   }, [authApi]);
 
@@ -48,7 +66,7 @@ export const useSemesterApi = () => {
       const res = await authApi.put(`${BASE_PATH}/${id}`, payload);
       return { data: res.data as Semester, error: null };
     } catch (e) {
-      return { data: null, error: e instanceof Error ? e.message : 'Failed to update semester' };
+      return { data: null, error: handleApiError(e) };
     }
   }, [authApi]);
 
@@ -58,7 +76,7 @@ export const useSemesterApi = () => {
       await authApi.delete(`${BASE_PATH}/${id}`);
       return { data: true, error: null };
     } catch (e) {
-      return { data: null, error: e instanceof Error ? e.message : 'Failed to delete semester' };
+      return { data: null, error: handleApiError(e) };
     }
   }, [authApi]);
 
@@ -68,7 +86,7 @@ export const useSemesterApi = () => {
       const res = await authApi.get(`${BASE_PATH}/current`);
       return { data: res.data as Semester, error: null };
     } catch (e) {
-      return { data: null, error: e instanceof Error ? e.message : 'Failed to fetch current semester' };
+      return { data: null, error: handleApiError(e) };
     }
   }, [authApi]);
 
@@ -78,7 +96,7 @@ export const useSemesterApi = () => {
       const res = await authApi.post(`${BASE_PATH}/current/${id}`);
       return { data: res.data as Semester, error: null };
     } catch (e) {
-      return { data: null, error: e instanceof Error ? e.message : 'Failed to set current semester' };
+      return { data: null, error: handleApiError(e) };
     }
   }, [authApi]);
 
@@ -88,7 +106,7 @@ export const useSemesterApi = () => {
       const res = await authApi.patch(`${BASE_PATH}/unset-current/${id}`);
       return { data: res.data as Semester, error: null };
     } catch (e) {
-      return { data: null, error: e instanceof Error ? e.message : 'Failed to unset current semester' };
+      return { data: null, error: handleApiError(e) };
     }
   }, [authApi]);
 
@@ -98,7 +116,7 @@ export const useSemesterApi = () => {
       const res = await authApi.get(`${BASE_PATH}/active`);
       return { data: res.data as Semester, error: null };
     } catch (e) {
-      return { data: null, error: e instanceof Error ? e.message : 'Failed to fetch active semester' };
+      return { data: null, error: handleApiError(e) };
     }
   }, [authApi]);
 
@@ -108,7 +126,7 @@ export const useSemesterApi = () => {
       const res = await authApi.post(`${BASE_PATH}/active/${id}`);
       return { data: res.data as Semester, error: null };
     } catch (e) {
-      return { data: null, error: e instanceof Error ? e.message : 'Failed to set active semester' };
+      return { data: null, error: handleApiError(e) };
     }
   }, [authApi]);
 
@@ -118,7 +136,7 @@ export const useSemesterApi = () => {
       const res = await authApi.patch(`${BASE_PATH}/unset-active/${id}`);
       return { data: res.data as Semester, error: null };
     } catch (e) {
-      return { data: null, error: e instanceof Error ? e.message : 'Failed to unset active semester' };
+      return { data: null, error: handleApiError(e) };
     }
   }, [authApi]);
 
@@ -149,7 +167,7 @@ export const useSemesterApi = () => {
         );
         return { data: res.data, error: null };
       } catch (e) {
-        return { data: null, error: e instanceof Error ? e.message : 'Failed to fetch students in semester' };
+        return { data: null, error: handleApiError(e) };
       }
     },
     [authApi]
@@ -161,7 +179,7 @@ export const useSemesterApi = () => {
       const res = await authApi.get(`${BASE_PATH}/student-semesters/student/${studentId}`);
       return { data: res.data, error: null };
     } catch (e) {
-      return { data: null, error: e instanceof Error ? e.message : 'Failed to fetch semesters for student' };
+      return { data: null, error: handleApiError(e) };
     }
   }, [authApi]);
 
@@ -171,7 +189,7 @@ export const useSemesterApi = () => {
       const res = await authApi.get(`${BASE_PATH}/student-semesters/${studentId}/${semesterId}`);
       return { data: res.data, error: null };
     } catch (e) {
-      return { data: null, error: e instanceof Error ? e.message : 'Failed to add semester for student' };
+      return { data: null, error: handleApiError(e) };
     }
   }, [authApi]);
 
@@ -181,7 +199,7 @@ export const useSemesterApi = () => {
       const res = await authApi.post(`${BASE_PATH}/student-semesters/${semesterId}`, payload);
       return { data: res.data, error: null };
     } catch (e) {
-      return { data: null, error: e instanceof Error ? e.message : 'Failed to create student in semester' };
+      return { data: null, error: handleApiError(e) };
     }
   }, [authApi]);
 
@@ -191,7 +209,7 @@ export const useSemesterApi = () => {
       const res = await authApi.put(`${BASE_PATH}/student-semesters/${studentId}/${semesterId}`, payload);
       return { data: res.data, error: null };
     } catch (e) {
-      return { data: null, error: e instanceof Error ? e.message : 'Failed to update student in semester' };
+      return { data: null, error: handleApiError(e) };
     }
   }, [authApi]);
 
@@ -201,7 +219,7 @@ export const useSemesterApi = () => {
       const res = await authApi.delete(`${BASE_PATH}/student-semesters/${studentId}/${semesterId}`);
       return { data: res.data, error: null };
     } catch (e) {
-      return { data: null, error: e instanceof Error ? e.message : 'Failed to delete student from semester' };
+      return { data: null, error: handleApiError(e) };
     }
   }, [authApi]);
 
@@ -212,7 +230,7 @@ export const useSemesterApi = () => {
       const res = await authApi.get(`${BASE_PATH}/teacher/${semesterId}`);
       return { data: res.data, error: null };
     } catch (e) {
-      return { data: null, error: e instanceof Error ? e.message : 'Failed to fetch teachers in semester' };
+      return { data: null, error: handleApiError(e) };
     }
   }, [authApi]);
 
@@ -221,7 +239,8 @@ export const useSemesterApi = () => {
       const res = await authApi.get(`${BASE_PATH}/teacher/availability/own`);
       return { data: res.data, error: null };
     } catch (e) {
-      return { data: null, error: e instanceof Error ? e.message : 'Failed to fetch teacher availability' };
+      console.error('API error:', e);
+      return { data: null, error: handleApiError(e) };
     }
   }, [authApi]);
 
@@ -231,7 +250,7 @@ export const useSemesterApi = () => {
       const res = await authApi.post(`${BASE_PATH}/teacher/${semesterId}`, payload);
       return { data: res.data, error: null };
     } catch (e) {
-      return { data: null, error: e instanceof Error ? e.message : 'Failed to create teacher in semester' };
+      return { data: null, error: handleApiError(e) };
     }
   }, [authApi]);
 
@@ -241,7 +260,7 @@ export const useSemesterApi = () => {
       const res = await authApi.put(`${BASE_PATH}/teacher/${semesterId}/${teacherId}`, payload);
       return { data: res.data, error: null };
     } catch (e) {
-      return { data: null, error: e instanceof Error ? e.message : 'Failed to update teacher in semester' };
+      return { data: null, error: handleApiError(e) };
     }
   }, [authApi]);
 
@@ -251,7 +270,17 @@ export const useSemesterApi = () => {
       const res = await authApi.delete(`${BASE_PATH}/teacher/${semesterId}/${teacherId}`);
       return { data: res.data, error: null };
     } catch (e) {
-      return { data: null, error: e instanceof Error ? e.message : 'Failed to delete teacher from semester' };
+      return { data: null, error: handleApiError(e) };
+    }
+  }, [authApi]);
+
+  // GET /api/semesters/statistics/population
+  const getPopulationStats = useCallback(async (): Promise<ApiResponse<any[]>> => {
+    try {
+      const res = await authApi.get(`${BASE_PATH}/statistics/population`);
+      return { data: res.data, error: null };
+    } catch (e) {
+      return { data: null, error: handleApiError(e) };
     }
   }, [authApi]);
 
@@ -278,6 +307,7 @@ export const useSemesterApi = () => {
     updateTeacherInSemester,
     deleteTeacherFromSemester,
     getOwnTeacherAvailabilityInActiveSemester,
+    getPopulationStats,
   }), [
     getAll,
     getById,
@@ -301,5 +331,6 @@ export const useSemesterApi = () => {
     updateTeacherInSemester,
     deleteTeacherFromSemester,
     getOwnTeacherAvailabilityInActiveSemester,
+    getPopulationStats
   ]);
 };

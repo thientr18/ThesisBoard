@@ -5,7 +5,7 @@ export class ThesisEvaluation extends Model<InferAttributes<ThesisEvaluation>, I
   declare id: CreationOptional<number>;
   declare thesisId: number;
   declare evaluatorTeacherId: number;
-  declare role: 'supervisor' | 'reviewer' | 'committee';
+  declare role: 'supervisor' | 'reviewer' | 'committee_member';
   declare score: number;
   declare comments: string | null;
 }
@@ -15,7 +15,7 @@ ThesisEvaluation.init(
     id: { type: DataTypes.BIGINT, primaryKey: true, autoIncrement: true },
     thesisId: { type: DataTypes.BIGINT, allowNull: false, field: 'thesis_id' },
     evaluatorTeacherId: { type: DataTypes.BIGINT, allowNull: false, field: 'evaluator_teacher_id' },
-    role: { type: DataTypes.ENUM('supervisor', 'reviewer', 'committee'), allowNull: false },
+    role: { type: DataTypes.ENUM('supervisor', 'reviewer', 'committee_member'), allowNull: false },
     score: { type: DataTypes.DECIMAL(5, 2), allowNull: false },
     comments: { type: DataTypes.TEXT, allowNull: true },
   },

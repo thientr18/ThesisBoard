@@ -13,7 +13,7 @@ router.use(attachUserFromJwt);
 // ============= THESIS PROPOSAL ROUTES =============
 router.post(
   '/proposals',
-  allowedPermissions(['submit:thesis_proposals', 'student:thesis', 'admin:all']),
+  allowedPermissions(['submit:thesis_proposals', 'student:all', 'admin:all', 'moderator:all']),
   thesisController.createThesisProposal
 );
 
@@ -23,29 +23,53 @@ router.get(
   thesisController.getThesisProposal
 );
 
-router.get(
-  '/proposals/my',
-  allowedPermissions(['view:thesis_proposals', 'student:thesis', 'teacher:base', 'admin:all']),
-  thesisController.getMyThesisProposals
-);
-
 router.patch(
   '/proposals/:id/process',
-  allowedPermissions(['approve:thesis_proposals', 'teacher:supervisor', 'admin:all']),
+  allowedPermissions(['approve:thesis_proposals', 'teacher:all', 'admin:all', 'moderator:all']),
   thesisController.processThesisProposal
 );
 
-// ============= THESIS REGISTRATION ROUTES =============
-router.post(
-  '/registrations',
-  allowedPermissions(['create:thesis_registrations', 'teacher:supervisor', 'admin:all']),
-  thesisController.createThesisRegistration
+router.patch(
+  '/proposals/:id/cancel',
+  allowedPermissions(['approve:thesis_proposals', 'teacher:all', 'admin:all', 'moderator:all', 'student:all']),
+  thesisController.cancelThesisProposal
 );
 
 router.get(
+  '/proposals/teacher/:semesterId',
+  allowedPermissions(['view:thesis_proposals', 'teacher:all', 'admin:all', 'moderator:all', 'student:all']),
+  thesisController.getTeacherAvailable
+);
+
+router.get(
+  '/proposals/student/me/:semesterId',
+  allowedPermissions(['view:thesis_proposals', 'student:all']),
+  thesisController.getMyThesisProposalsForStudent
+);
+
+router.get(
+  '/proposals/teacher/me/:semesterId',
+  allowedPermissions(['view:thesis_proposals', 'teacher:all']),
+  thesisController.getMyThesisProposalsForTeacher
+);
+
+router.put(
+  '/proposals/:id',
+  allowedPermissions(['update:thesis_proposals', 'student:all', 'admin:all', 'moderator:all']),
+  thesisController.updateThesisProposal
+)
+
+// ============= THESIS REGISTRATION ROUTES =============
+router.get(
   '/registrations',
-  allowedPermissions(['view:thesis_proposals', 'teacher:base', 'admin:all', 'moderator:all']),
+  allowedPermissions(['view:thesis_proposals', 'teacher:all', 'admin:all', 'moderator:all']),
   thesisController.getThesisRegistrations
+);
+
+router.get(
+  '/registrations/teacher/me/:semesterId',
+  allowedPermissions(['view:thesis_proposals', 'teacher:all']),
+  thesisController.getMyThesisRegistrationsForTeacher
 );
 
 router.patch(
@@ -54,48 +78,67 @@ router.patch(
   thesisController.processThesisRegistration
 );
 
+router.put(
+  '/registrations/:id',
+  allowedPermissions(['update:thesis_registrations', 'teacher:all', 'admin:all', 'moderator:all']),
+  thesisController.updateThesisRegistration
+);
+
+// get report for a registration
+// router.get(
+//   '/registrations/:id/report',
+//   allowedPermissions(['view:reports', 'admin:all', 'moderator:all']),
+//   thesisController.generateThesisRegistrationReport
+// );
+
 // ============= THESIS ROUTES =============
 router.get(
-  '/theses/:id',
-  allowedPermissions(['view:thesis_proposals', 'student:thesis', 'teacher:base', 'admin:all']),
+  '/student/me/:semesterId',
+  allowedPermissions(['view:thesis_proposals', 'student:all']),
+  thesisController.getThesisForStudentAndSemester
+);
+router.get(
+  '/supervisor/me/:semesterId',
+  allowedPermissions(['view:thesis_proposals', 'teacher:all']),
+  thesisController.getThesesBySupervisor
+);
+router.get(
+  '/assignment/me/:semesterId',
+  allowedPermissions(['view:thesis_proposals', 'teacher:all']),
+  thesisController.getThesesByAssignedTeacher
+)
+router.patch(
+  '/:id/status',
+  allowedPermissions(['update:thesis_proposals', 'teacher:all', 'admin:all', 'moderator:all']),
+  thesisController.updateThesisStatus
+);
+router.get(
+  '/semester/:semesterId',
+  allowedPermissions(['view:thesis_proposals', 'student:all', 'teacher:all', 'admin:all', 'moderator:all']),
+  thesisController.getThesesBySemester
+);
+router.get(
+  '/:id',
+  allowedPermissions(['admin:all', 'moderator:all', 'view:thesis_proposals', 'teacher:all', 'student:all']),
   thesisController.getThesis
 );
-
 router.get(
-  '/theses',
-  allowedPermissions(['view:thesis_proposals', 'teacher:base', 'admin:all', 'moderator:all']),
+  '/',
+  allowedPermissions(['view:thesis_proposals', 'teacher:all', 'admin:all', 'moderator:all']),
   thesisController.getTheses
-);
-
-router.get(
-  '/theses/my',
-  allowedPermissions(['view:thesis_proposals', 'student:thesis', 'teacher:base', 'admin:all']),
-  thesisController.getMyTheses
-);
-
-router.patch(
-  '/theses/:id/status',
-  allowedPermissions(['update:thesis_proposals', 'teacher:supervisor', 'admin:all', 'moderator:all']),
-  thesisController.updateThesisStatus
 );
 
 // ============= THESIS ASSIGNMENT ROUTES =============
 router.post(
-  '/theses/:thesisId/assignments',
+  '/:thesisId/assignments',
   allowedPermissions(['assign:thesis_reviewers', 'assign:committees', 'admin:all', 'moderator:all']),
   thesisController.assignTeacherToThesis
 );
 
 router.delete(
-  '/theses/:thesisId/assignments',
+  '/:thesisId/assignments',
   allowedPermissions(['assign:thesis_reviewers', 'assign:committees', 'admin:all', 'moderator:all']),
   thesisController.removeTeacherAssignment
-);
-
-router.get(
-  '/theses/:thesisId/assignments',
-  allowedPermissions(['view:thesis_proposals', 'student:thesis', 'teacher:base', 'admin:all']),
-  thesisController.getThesisAssignments
 );
 
 // ============= DEFENSE SESSION ROUTES =============
@@ -106,52 +149,43 @@ router.post(
 );
 
 router.patch(
-  '/defense-sessions/:id/reschedule',
-  allowedPermissions(['update:defense_sessions', 'admin:all', 'moderator:all']),
+  '/defense-sessions/:id',
+  allowedPermissions(['schedule:defense_sessions', 'admin:all', 'moderator:all']),
   thesisController.rescheduleDefenseSession
 );
 
 router.patch(
   '/defense-sessions/:id/complete',
-  allowedPermissions(['update:defense_sessions', 'grade:thesis_committees', 'admin:all', 'moderator:all']),
+  allowedPermissions(['schedule:defense_sessions', 'admin:all', 'moderator:all']),
   thesisController.completeDefenseSession
-);
-
-router.get(
-  '/defense-sessions/upcoming',
-  allowedPermissions(['view:thesis_proposals', 'student:thesis', 'teacher:base', 'admin:all']),
-  thesisController.getUpcomingDefenseSessions
 );
 
 // ============= THESIS EVALUATION ROUTES =============
 router.post(
-  '/theses/evaluations',
-  allowedPermissions(['grade:thesis_supervisors', 'grade:thesis_reviews', 'grade:thesis_committees', 'teacher:base', 'admin:all']),
+  '/evaluations',
+  allowedPermissions(['grade:thesis_supervisors', 'grade:thesis_reviews', 'grade:thesis_committees', 'teacher:all', 'admin:all']),
   thesisController.submitThesisEvaluation
 );
 
-router.get(
-  '/theses/:thesisId/evaluations',
-  allowedPermissions(['view:thesis_proposals', 'grade:thesis_supervisors', 'grade:thesis_reviews', 'admin:all', 'moderator:all']),
-  thesisController.getThesisEvaluations
-);
-
-router.get(
-  '/theses/:thesisId/final-grade',
-  allowedPermissions(['view:thesis_proposals', 'student:thesis', 'teacher:base', 'admin:all']),
-  thesisController.getThesisFinalGrade
-);
-
 // ============= REPORT ROUTES =============
+// Report generation route
 router.get(
-  '/reports/thesis-registration/:registrationId',
-  allowedPermissions(['view:reports', 'admin:all', 'moderator:all']),
-  thesisController.generateThesisRegistrationReport
-);
-router.get(
-  '/reports/evaluation/:thesisId',
-  allowedPermissions(['view:reports', 'admin:all', 'moderator:all']),
+  '/reports/:thesisId',
+  allowedPermissions(['generate:reports', 'admin:all', 'moderator:all']),
   thesisController.generateThesisEvaluationReport
+);
+
+// ============= STATISTICS ROUTES =============
+router.get(
+  '/stats/outcomes',
+  allowedPermissions(['view:thesis_proposals', 'teacher:all', 'moderator:all', 'admin:all']),
+  thesisController.getThesisOutcomeStats
+);
+
+router.get(
+  '/stats/grades',
+  allowedPermissions(['view:thesis_proposals', 'teacher:all', 'moderator:all', 'admin:all']),
+  thesisController.getThesisGradeDistribution
 );
 
 export default router;

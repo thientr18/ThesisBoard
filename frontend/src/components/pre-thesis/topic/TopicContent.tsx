@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import { Spin, Alert, message, Modal } from "antd";
+import { Spin, Alert, message, Modal, Table, Button } from "antd";
 import { Title, Text } from "../../common/display/Typography";
 import Sidebar from "../../common/navigation/Sidebar";
 import Navbar from "../../common/navigation/Navbar";
@@ -203,17 +203,13 @@ function TopicContent({ user }: { user: any | null }) {
                 ) : applications.length === 0 ? (
                   <Text className="text-gray-500">You have not applied to any topics.</Text>
                 ) : (
-                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
-                    {applications.map(app => (
-                      <ApplicationCard
-                        key={app.id}
-                        application={app}
-                        onEdit={handleAppClick}
-                        onCancel={handleCancelApp}
-                        loading={cancelAppId === app.id}
-                      />
-                    ))}
-                  </div>
+                  <StudentApplicationsTable
+                    applications={applications}
+                    loading={appLoading}
+                    onEdit={handleAppClick}
+                    onCancel={handleCancelApp}
+                    cancelAppId={cancelAppId}
+                  />
                 )}
                 <ApplicationDetail
                   open={appDetailVisible}
@@ -261,7 +257,7 @@ function TopicContent({ user }: { user: any | null }) {
                 </Text>
               </div>
             ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6 mb-8">
+              <div className="grid grid-cols-1 gap-6 mb-8">
                 {filteredTopics.map(topic => (
                   <TopicCard
                     key={topic.id}
@@ -312,3 +308,52 @@ export default function TopicPageContent({ user }: { user: any | null }) {
     </LayoutProvider>
   );
 }
+
+const StudentApplicationsTable: React.FC<{
+  applications: any[];
+  loading: boolean;
+  onEdit: (application: any) => void;
+  onCancel: (id: number) => void;
+  cancelAppId: number | null;
+}> = ({ applications, loading, onEdit, onCancel, cancelAppId }) => (
+  <Table
+    loading={loading}
+    dataSource={applications}
+    rowKey="id"
+    pagination={false}
+    columns={[
+      { title: "Topic", dataIndex: ["topic", "title"], key: "topic" },
+      { title: "Proposal Title", dataIndex: "proposalTitle", key: "proposalTitle" },
+      { title: "Abstract", dataIndex: "proposalAbstract", key: "proposalAbstract" },
+      { title: "Status", dataIndex: "status", key: "status",
+        render: (status: string) => {
+          const color = status === "pending" ? "blue" : status === "accepted" ? "green" : status === "rejected" ? "red" : "default";
+          return <span style={{ color }}>{status.toUpperCase()}</span>;
+        }
+      },
+      {
+        title: "Actions",
+        key: "actions",
+        render: (_: any, record: any) => (
+          <div className="flex gap-2">
+            {record.status === "pending" && (
+              <>
+                <Button
+                  size="small"
+                  danger
+                  loading={cancelAppId === record.id}
+                  onClick={() => onCancel(record.id)}
+                >
+                  Cancel
+                </Button>
+              </>
+            )}
+            <Button size="small" onClick={() => onEdit(record)}>
+              Details
+            </Button>
+          </div>
+        ),
+      },
+    ]}
+  />
+);

@@ -14,6 +14,7 @@ import {
   SolutionOutlined,
   ReadOutlined,
   IdcardOutlined,
+  LineChartOutlined,
 } from "@ant-design/icons";
 import { NavLink, useLocation } from "react-router-dom";
 import type { UserWithRoles } from "../../../types/user.types";
@@ -104,6 +105,20 @@ const adminModeratorMenu: MenuItem[] = [
     label: "Thesis Management",
     icon: <BookOutlined />,
     path: "/thesis",
+    children: [
+      {
+        key: "thesis-registrations",
+        label: "Registrations",
+        icon: <FormOutlined />,
+        path: "/thesis/registrations",
+      },
+      {
+        key: "thesis-projects",
+        label: "Projects",
+        icon: <ProjectOutlined />,
+        path: "/thesis/projects",
+      },
+    ],
   },
   {
     key: "announcement",
@@ -111,6 +126,12 @@ const adminModeratorMenu: MenuItem[] = [
     icon: <NotificationOutlined />,
     path: "/announcements",
   },
+  {
+    key: "statistics",
+    label: "Statistics",
+    icon: <LineChartOutlined />,
+    path: "/statistics",
+  }
 ];
 
 const studentMenu: MenuItem[] = [
@@ -125,12 +146,6 @@ const studentMenu: MenuItem[] = [
     label: "Projects",
     icon: <ProjectOutlined />,
     path: "/projects",
-  },
-  {
-    key: "registration",
-    label: "Registration",
-    icon: <FormOutlined />,
-    path: "/registrations",
   },
 ];
 
@@ -172,6 +187,20 @@ const teacherMenu: MenuItem[] = [
     label: "Thesis",
     icon: <BookOutlined />,
     path: "/thesis",
+    children: [
+      {
+        key: "thesis-registrations",
+        label: "Registrations",
+        icon: <FormOutlined />,
+        path: "/thesis/registrations",
+      },
+      {
+        key: "thesis-projects",
+        label: "Projects",
+        icon: <ProjectOutlined />,
+        path: "/thesis/projects",
+      },
+    ],
   },
 ];
 
@@ -210,7 +239,7 @@ const Sidebar: React.FC<SidebarProps> = ({ user }) => {
   const activeKey =
     flatMenuItems.find(item => location.pathname === item.path)?.key
     || flatMenuItems.find(item => location.pathname.startsWith(item.path))?.key
-    || menuItems[0]?.key;
+    || undefined;
 
   const handleCollapse = (value: boolean) => {
     setCollapsed(value);
@@ -302,7 +331,7 @@ const Sidebar: React.FC<SidebarProps> = ({ user }) => {
       </div>
       <Menu
         mode="inline"
-        selectedKeys={[activeKey]}
+        selectedKeys={activeKey ? [activeKey] : []}
         style={{ borderRight: 0, fontFamily: theme.fonts.body }}
       >
         {renderMenuItems(menuItems)}

@@ -17,7 +17,7 @@ const InfoRow: React.FC<{ label: string; value?: React.ReactNode }> = ({ label, 
 
 const TeacherPanel: React.FC<TeacherProps> = ({ user }) => {
   const { isAuthenticated, isLoading: authLoading, getAccessTokenSilently } = useAuth0();
-  const { getTeacherById } = useUserApi();
+  const { getTeacherByUserId } = useUserApi();
 
   const [teacherDetails, setTeacherDetails] = useState<any>(null);
   const [loading, setLoading] = useState<boolean>(true);
@@ -37,14 +37,12 @@ const TeacherPanel: React.FC<TeacherProps> = ({ user }) => {
       setLoading(true);
       setError(null);
       await getAccessTokenSilently();
-      const { data, error } = await getTeacherById(user.id);
-      console.log("Teacher details fetched:", data, error);
+      const { data, error } = await getTeacherByUserId(user.id);
       if (error) {
         setError(error);
         setTeacherDetails(null);
       } else {
         setTeacherDetails(data as Teacher ?? null);
-        console.log("Teacher details set in state:", data);
       }
     } catch (e: any) {
       setError(e?.message ?? 'Failed to load profile');
@@ -52,7 +50,7 @@ const TeacherPanel: React.FC<TeacherProps> = ({ user }) => {
     } finally {
       setLoading(false);
     }
-  }, [authLoading, isAuthenticated, getAccessTokenSilently, getTeacherById]);
+  }, [authLoading, isAuthenticated, getAccessTokenSilently, getTeacherByUserId, user.id]);
   useEffect(() => {
     loadTeacherDetails();
   }, [loadTeacherDetails]);
@@ -100,9 +98,9 @@ const TeacherPanel: React.FC<TeacherProps> = ({ user }) => {
   return (
     <div className="grid gap-4">
       <InfoRow label="Teacher Code" value={teacherDetails.teacherCode} />
-      <InfoRow label="Teacher Code" value={teacherDetails.title} />
-      <InfoRow label="Teacher Code" value={teacherDetails.office} />
-      <InfoRow label="Teacher Code" value={teacherDetails.phone} />
+      <InfoRow label="Title" value={teacherDetails.title} />
+      <InfoRow label="Office" value={teacherDetails.office} />
+      <InfoRow label="Phone" value={teacherDetails.phone} />
     </div>
   );
 };

@@ -25,19 +25,34 @@ export interface EvaluationInfo {
 }
 
 export interface PreThesisReportData {
-  student: StudentInfo;
-  supervisor: SupervisorInfo;
-  evaluation: EvaluationInfo;
+  student: {
+    name: string;
+    id: string;
+    phone: string;
+    className: string;
+    preThesisTitle: string;
+  };
+  supervisor: {
+    name: string;
+    academicTitle: string;
+    office: string;
+  };
+  evaluation: {
+    numericGrade: number;
+    letterGrade: string;
+    comments: string;
+    status: string;
+  };
+  departmentHead: {
+    name: string;
+    title: string;
+  };
   semester: string;
   date: Date;
   universityInfo: {
     name: string;
     address: string;
     contact: string;
-  };
-  departmentHead: {
-    name: string;
-    title: string;
   };
 }
 
@@ -84,68 +99,46 @@ export interface ThesisRegistrationReportData {
 }
 
 export interface ThesisEvaluationReportData {
-  university: {
-    name: string;
-    logo: string; // Base64 encoded image
-    referenceNumber?: string;
-  };
-  document: {
-    title: string;
-    semester: string;
-    department: string;
-    generatedAt: Date;
-  };
   student: {
-    fullName: string;
+    name: string;
     id: string;
-    major: string;
-    faculty: string;
-    gpa: number;
-    accumulatedCredits: number;
-  };
-  thesis: {
-    title: string;
-    type: string;
-    abstract: string;
-    defenseDate?: Date;
+    phone: string;
+    className: string;
+    thesisTitle: string;
   };
   supervisor: {
-    fullName: string;
+    name: string;
     academicTitle: string;
-    department: string;
-    email: string;
-    comments?: string;
-    grade?: number;
-  };
-  reviewer: {
-    fullName: string;
-    academicTitle: string;
-    department: string;
-    email: string;
-    comments: string;
     grade: number;
+    comments: string;
+  };
+  reviewer?: {
+    name: string;
+    academicTitle: string;
+    grade: number;
+    comments: string;
   };
   committee: Array<{
     fullName: string;
-    role: string;
-    department: string;
+    academicTitle: string;
     grade: number;
-    comments?: string;
+    comments: string;
   }>;
   evaluation: {
     averageGrade: number;
     letterGrade: string;
-    status: 'Pass' | 'Fail';
-    remarks?: string;
+    status: string;
+    defenseDate?: Date;
   };
-  signatures: {
-    supervisorName: string;
-    committeeName: string;
-    departmentHeadName: string;
-    date: Date;
+  departmentHead: {
+    name: string;
+    title: string;
   };
-  footer: {
-    universityContactInfo: string;
-    websiteUrl: string;
+  semester: string;
+  date: Date;
+  universityInfo: {
+    name: string;
+    address: string;
+    contact: string;
   };
 }
