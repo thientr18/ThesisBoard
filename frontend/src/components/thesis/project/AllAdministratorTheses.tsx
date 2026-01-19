@@ -1,7 +1,8 @@
 import React, { useEffect, useState, useMemo } from 'react';
-import { useTheses, useThesisRegistrations, useThesisAssignments, useDefenseSessions } from '../../../api/endpoints/thesis.api';
+import { useTheses, useThesisAssignments, useDefenseSessions } from '../../../api/endpoints/thesis.api';
 import { useUserApi } from '../../../api/endpoints/user.api';
-import { Card, List, Spin, Alert, Empty, Button, Tag, Tooltip, Typography, Modal, Select, message, Space, DatePicker, Input, Result } from 'antd';
+import DefenseSchedulingModal from './DefenseSchedulingModal';
+import { Card, List, Spin, Alert, Empty, Button, Tag, Tooltip, Typography, Modal, Select, message, Space, Input, Result } from 'antd';
 import { FilePdfOutlined, UserOutlined, DownOutlined, RightOutlined, PlusOutlined, DeleteOutlined, CalendarOutlined, EditOutlined, ExclamationCircleOutlined, ReloadOutlined, SearchOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
 
@@ -24,6 +25,8 @@ const statusColor = (status: string) => {
       return 'warning';
     case 'defense_completed':
       return 'cyan';
+    case 'failed':
+      return 'red';
     default:
       return 'default';
   }
@@ -60,7 +63,6 @@ const ThesisFilterBar: React.FC<ThesisFilterBarProps> = ({
   return (
     <Card className="mb-6 shadow-sm">
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
-        {/* Search Input */}
         <Input
           placeholder="Search by student or title..."
           prefix={<SearchOutlined className="text-gray-400" />}
@@ -70,7 +72,6 @@ const ThesisFilterBar: React.FC<ThesisFilterBarProps> = ({
           className="w-full"
         />
 
-        {/* Status Filter */}
         <Select
           placeholder="Filter by status"
           value={status || undefined}
@@ -84,9 +85,9 @@ const ThesisFilterBar: React.FC<ThesisFilterBarProps> = ({
           <Select.Option value="defense_completed">Defense Completed</Select.Option>
           <Select.Option value="completed">Completed</Select.Option>
           <Select.Option value="cancelled">Cancelled</Select.Option>
+          <Select.Option value="failed">Failed</Select.Option>
         </Select>
 
-        {/* Supervisor Filter */}
         <Select
           placeholder="Filter by supervisor"
           value={supervisor || undefined}
@@ -104,7 +105,6 @@ const ThesisFilterBar: React.FC<ThesisFilterBarProps> = ({
           ))}
         </Select>
 
-        {/* Assignment Status Filter */}
         <Select
           placeholder="Filter by committee status"
           value={assignmentStatus || undefined}
@@ -120,7 +120,6 @@ const ThesisFilterBar: React.FC<ThesisFilterBarProps> = ({
           <Select.Option value="fully_assigned">Fully Assigned</Select.Option>
         </Select>
 
-        {/* Score Range Filter */}
         <Select
           placeholder="Filter by final score"
           value={scoreRange || undefined}
@@ -145,7 +144,7 @@ const ThesisFilterBar: React.FC<ThesisFilterBarProps> = ({
 const AllAdministratorTheses: React.FC<AllAdministratorThesesProps> = ({ user, semester }) => {
   const { getAllTeachers } = useUserApi();
   const { getThesesBySemester, getReport: downloadThesisReport } = useTheses();
-  const { schedule, reschedule, complete } = useDefenseSessions();
+  const { schedule, reschedule, complete, getSuggestedSlots, getCommitteeAvailability } = useDefenseSessions();
   const { assign, remove } = useThesisAssignments();
   
   const [theses, setTheses] = useState<any[]>([]);
@@ -170,11 +169,6 @@ const AllAdministratorTheses: React.FC<AllAdministratorThesesProps> = ({ user, s
   const [defenseModalOpen, setDefenseModalOpen] = useState(false);
   const [defenseModalType, setDefenseModalType] = useState<'schedule' | 'reschedule'>('schedule');
   const [selectedDefenseThesis, setSelectedDefenseThesis] = useState<any>(null);
-  const [defenseDate, setDefenseDate] = useState<dayjs.Dayjs | null>(null);
-  const [defenseRoom, setDefenseRoom] = useState<string>('');
-  const [defenseNotes, setDefenseNotes] = useState<string>('');
-  const [scheduling, setScheduling] = useState(false);
-  const [defenseError, setDefenseError] = useState<string | null>(null);
 
   const [modal, contextHolder] = Modal.useModal();
 
@@ -311,18 +305,6 @@ const AllAdministratorTheses: React.FC<AllAdministratorThesesProps> = ({ user, s
   const openDefenseModal = (thesis: any, type: 'schedule' | 'reschedule') => {
     setSelectedDefenseThesis(thesis);
     setDefenseModalType(type);
-    setDefenseError(null);
-    
-    if (type === 'reschedule' && thesis.defenseSession) {
-      setDefenseDate(dayjs(thesis.defenseSession.scheduledAt));
-      setDefenseRoom(thesis.defenseSession.room || '');
-      setDefenseNotes(thesis.defenseSession.notes || '');
-    } else {
-      setDefenseDate(null);
-      setDefenseRoom('');
-      setDefenseNotes('');
-    }
-    
     setDefenseModalOpen(true);
   };
 
@@ -434,82 +416,6 @@ const AllAdministratorTheses: React.FC<AllAdministratorThesesProps> = ({ user, s
     });
   };
 
-  // Schedule defense session
-  const handleScheduleDefense = async () => {
-    if (!selectedDefenseThesis || !defenseDate || !defenseRoom) {
-      const warningMsg = 'Please fill in all required fields (Date & Room)';
-      setDefenseError(warningMsg);
-      message.warning(warningMsg);
-      return;
-    }
-
-    setScheduling(true);
-    setDefenseError(null);
-    
-    try {
-      const { error } = await schedule(
-        selectedDefenseThesis.thesis.id,
-        defenseDate.toISOString(),
-        defenseRoom,
-        defenseNotes || undefined
-      );
-
-      if (error) {
-        setDefenseError(error);
-        message.error(`Failed to schedule defense: ${error}`);
-      } else {
-        message.success('Defense session scheduled successfully!');
-        await reloadTheses();
-        setDefenseModalOpen(false);
-      }
-    } catch (err) {
-      const errorMsg = 'An unexpected error occurred while scheduling defense';
-      setDefenseError(errorMsg);
-      message.error(errorMsg);
-      console.error('Schedule defense error:', err);
-    } finally {
-      setScheduling(false);
-    }
-  };
-
-  // Reschedule defense session
-  const handleRescheduleDefense = async () => {
-    if (!selectedDefenseThesis?.defenseSession || !defenseDate || !defenseRoom) {
-      const warningMsg = 'Please fill in all required fields (Date & Room)';
-      setDefenseError(warningMsg);
-      message.warning(warningMsg);
-      return;
-    }
-
-    setScheduling(true);
-    setDefenseError(null);
-    
-    try {
-      const { error } = await reschedule(
-        selectedDefenseThesis.defenseSession.id,
-        defenseDate.toISOString(),
-        defenseRoom,
-        defenseNotes || undefined
-      );
-
-      if (error) {
-        setDefenseError(error);
-        message.error(`Failed to reschedule defense: ${error}`);
-      } else {
-        message.success('Defense session rescheduled successfully!');
-        await reloadTheses();
-        setDefenseModalOpen(false);
-      }
-    } catch (err) {
-      const errorMsg = 'An unexpected error occurred while rescheduling defense';
-      setDefenseError(errorMsg);
-      message.error(errorMsg);
-      console.error('Reschedule defense error:', err);
-    } finally {
-      setScheduling(false);
-    }
-  };
-
   // Complete defense session
   const handleCompleteDefense = (thesis: any) => {
     if (!thesis.defenseSession) {
@@ -525,7 +431,7 @@ const AllAdministratorTheses: React.FC<AllAdministratorThesesProps> = ({ user, s
       cancelText: 'Cancel',
       onOk: async () => {
         try {
-          const { error } = await complete(thesis.defenseSession.id, defenseNotes);
+          const { error } = await complete(thesis.defenseSession.id);
           
           if (error) {
             setActionError(error);
@@ -616,7 +522,6 @@ const AllAdministratorTheses: React.FC<AllAdministratorThesesProps> = ({ user, s
         return;
       }
       
-      // Create a blob URL and trigger download
       const blob = new Blob([data], { type: 'application/pdf' });
       const url = window.URL.createObjectURL(blob);
       const link = document.createElement('a');
@@ -654,7 +559,6 @@ const AllAdministratorTheses: React.FC<AllAdministratorThesesProps> = ({ user, s
   const filteredTheses = useMemo(() => {
     let filtered = [...theses];
 
-    // Search filter
     if (searchKeyword) {
       const keyword = searchKeyword.toLowerCase();
       filtered = filtered.filter(
@@ -664,17 +568,14 @@ const AllAdministratorTheses: React.FC<AllAdministratorThesesProps> = ({ user, s
       );
     }
 
-    // Status filter
     if (statusFilter) {
       filtered = filtered.filter((thesis) => thesis.thesis?.status === statusFilter);
     }
 
-    // Supervisor filter
     if (supervisorFilter) {
       filtered = filtered.filter((thesis) => String(thesis.supervisor?.id) === supervisorFilter);
     }
 
-    // Assignment status filter
     if (assignmentStatusFilter) {
       filtered = filtered.filter((thesis) => {
         const reviewer = thesis.committeeAssignments?.find((a: any) => a.role === 'reviewer');
@@ -697,7 +598,6 @@ const AllAdministratorTheses: React.FC<AllAdministratorThesesProps> = ({ user, s
       });
     }
 
-    // Score range filter
     if (scoreRangeFilter) {
       filtered = filtered.filter((thesis) => {
         const finalScore = thesis.finalGrade?.finalScore;
@@ -730,12 +630,10 @@ const AllAdministratorTheses: React.FC<AllAdministratorThesesProps> = ({ user, s
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  // Reset to page 1 when filters change
   useEffect(() => {
     setCurrentPage(1);
   }, [searchKeyword, statusFilter, supervisorFilter, assignmentStatusFilter, scoreRangeFilter]);
 
-  // Render loading state
   if (!semester) {
     return (
       <div className="flex justify-center items-center h-64">
@@ -793,7 +691,6 @@ const AllAdministratorTheses: React.FC<AllAdministratorThesesProps> = ({ user, s
         Thesis Projects for <span className="font-bold">{semester.name}</span>
       </Title>
 
-      {/* Filter Bar */}
       <ThesisFilterBar
         search={searchKeyword}
         onSearchChange={setSearchKeyword}
@@ -808,14 +705,12 @@ const AllAdministratorTheses: React.FC<AllAdministratorThesesProps> = ({ user, s
         supervisors={supervisors}
       />
 
-      {/* Results Summary */}
       <div className="mb-4 flex items-center justify-between">
         <Text className="text-gray-600 text-sm">
           Showing {Math.min(startIndex + 1, totalItems)}-{Math.min(endIndex, totalItems)} of {totalItems} theses
         </Text>
       </div>
 
-      {/* Display action errors */}
       {actionError && (
         <Alert
           message="Action Failed"
@@ -828,20 +723,6 @@ const AllAdministratorTheses: React.FC<AllAdministratorThesesProps> = ({ user, s
         />
       )}
 
-      {/* Display action errors */}
-      {actionError && (
-        <Alert
-          message="Action Failed"
-          description={actionError}
-          type="error"
-          showIcon
-          closable
-          onClose={() => setActionError(null)}
-          className="mb-4"
-        />
-      )}
-
-      {/* Theses List */}
       {currentTheses.length === 0 ? (
         <div className="my-8">
           <Empty description="No thesis projects found matching your filters." />
@@ -850,7 +731,7 @@ const AllAdministratorTheses: React.FC<AllAdministratorThesesProps> = ({ user, s
         <>
           <List
             grid={{ gutter: 24, xs: 1, sm: 1, md: 1, lg: 1, xl: 1, xxl: 1 }}
-            dataSource={theses}
+            dataSource={currentTheses}
             renderItem={pt => {
               const isExpanded = expandedThesisId === pt.thesis.id;
               const reviewer = getReviewer(pt);
@@ -881,7 +762,7 @@ const AllAdministratorTheses: React.FC<AllAdministratorThesesProps> = ({ user, s
                                   ? pt.thesis.status.charAt(0).toUpperCase() + pt.thesis.status.slice(1)
                                   : 'Unknown'}
                         </Tag>
-                        {pt.committeeEligibility?.preDefenseScore && (
+                        {pt.committeeEligibility?.preDefenseScore !== undefined && (
                           <Tag color={pt.committeeEligibility.preDefenseScore >= 50 ? 'green' : 'red'}>
                             Pre-Defense: {pt.committeeEligibility.preDefenseScore.toFixed(2)}
                           </Tag>
@@ -950,7 +831,6 @@ const AllAdministratorTheses: React.FC<AllAdministratorThesesProps> = ({ user, s
 
                         <Title level={5} className="mt-4">Committee Members</Title>
                         
-                        {/* Committee Eligibility Alert */}
                         {!canAssignCommittee(pt) && (
                           <Alert
                             message="Committee Assignment Restricted"
@@ -1014,10 +894,8 @@ const AllAdministratorTheses: React.FC<AllAdministratorThesesProps> = ({ user, s
                           {canAssignCommittee(pt) ? 'Add Committee Members' : 'Committee Assignment Locked'}
                         </Button>
 
-                        {/* Defense Session Section */}
                         <Title level={5} className="mt-4">Defense Session</Title>
 
-                        {/* Defense Eligibility Alert */}
                         {!canScheduleDefense(pt) && !pt.defenseSession && (
                           <Alert
                             message="Defense Scheduling Restricted"
@@ -1106,7 +984,6 @@ const AllAdministratorTheses: React.FC<AllAdministratorThesesProps> = ({ user, s
             }}
           />
           
-          {/* Pagination */}
           {totalPages > 1 && (
             <div className="flex justify-center items-center gap-2 mt-8">
               <button
@@ -1157,6 +1034,7 @@ const AllAdministratorTheses: React.FC<AllAdministratorThesesProps> = ({ user, s
           )}
         </>
       )}
+
       {/* Modal for assigning reviewer or committee */}
       <Modal
         open={modalOpen}
@@ -1272,70 +1150,46 @@ const AllAdministratorTheses: React.FC<AllAdministratorThesesProps> = ({ user, s
         </Space>
       </Modal>
 
-      {/* Modal for defense session */}
-      <Modal
-        open={defenseModalOpen}
-        title={defenseModalType === 'schedule' ? 'Schedule Defense Session' : 'Reschedule Defense Session'}
+      {/* Enhanced Defense Scheduling Modal */}
+      <DefenseSchedulingModal
+        visible={defenseModalOpen}
         onCancel={() => {
           setDefenseModalOpen(false);
-          setDefenseError(null);
         }}
-        footer={null}
-        destroyOnClose
-      >
-        <Space direction="vertical" style={{ width: '100%' }} size="large">
-          {defenseError && (
-            <Alert
-              message="Defense Session Error"
-              description={defenseError}
-              type="error"
-              showIcon
-              closable
-              onClose={() => setDefenseError(null)}
-            />
-          )}
-
-          <div>
-            <Text strong>Date & Time *</Text>
-            <DatePicker
-              showTime
-              format="YYYY-MM-DD HH:mm"
-              style={{ width: '100%', marginTop: 8 }}
-              value={defenseDate}
-              onChange={setDefenseDate}
-              disabledDate={(current) => current && current < dayjs().startOf('day')}
-            />
-          </div>
-          <div>
-            <Text strong>Room *</Text>
-            <Input
-              placeholder="Enter room number or location"
-              style={{ marginTop: 8 }}
-              value={defenseRoom}
-              onChange={(e) => setDefenseRoom(e.target.value)}
-            />
-          </div>
-          <div>
-            <Text strong>Notes (Optional)</Text>
-            <Input.TextArea
-              placeholder="Enter any additional notes"
-              rows={4}
-              style={{ marginTop: 8 }}
-              value={defenseNotes}
-              onChange={(e) => setDefenseNotes(e.target.value)}
-            />
-          </div>
-          <Button
-            type="primary"
-            loading={scheduling}
-            disabled={!defenseDate || !defenseRoom}
-            onClick={defenseModalType === 'schedule' ? handleScheduleDefense : handleRescheduleDefense}
-            block
-          >
-            {defenseModalType === 'schedule' ? 'Schedule Defense' : 'Reschedule Defense'}
-          </Button>
-        </Space>
-      </Modal>
+        onSchedule={async (data) => {
+          try {
+            if (defenseModalType === 'schedule') {
+              const { error } = await schedule(
+                selectedDefenseThesis.thesis.id,
+                data.scheduledAt,
+                data.room,
+                data.notes,
+                data.duration
+              );
+              if (error) throw new Error(error);
+            } else {
+              const { error } = await reschedule(
+                selectedDefenseThesis.defenseSession.id,
+                data.scheduledAt,
+                data.room,
+                data.notes,
+                data.duration
+              );
+              if (error) throw new Error(error);
+            }
+            message.success('Defense session scheduled successfully!');
+            await reloadTheses();
+            setDefenseModalOpen(false);
+          } catch (err: any) {
+            throw err;
+          }
+        }}
+        thesis={selectedDefenseThesis}
+        mode={defenseModalType}
+        existingSession={selectedDefenseThesis?.defenseSession}
+        getSuggestedSlots={getSuggestedSlots}
+        getCommitteeAvailability={getCommitteeAvailability}
+      />
     </div>
   );
 }

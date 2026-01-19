@@ -36,6 +36,7 @@ import { ThesisRegistrationReportData } from '../types/report.types';
 import { ThesisEvaluationReportData } from '../types/report.types';
 import { TeacherAvailability } from '../models/TeacherAvailability';
 import { Semester } from '../models/Semester';
+import { fail } from 'assert';
 
 export class ThesisService {
   private studentSemesterRepository: StudentSemesterRepository = new StudentSemesterRepository();
@@ -770,7 +771,8 @@ export class ThesisService {
         defense_scheduled: 'has been scheduled for defense',
         defense_completed: 'has completed the defense',
         completed: 'has been completed successfully',
-        cancelled: 'has been cancelled'
+        cancelled: 'has been cancelled',
+        failed: 'has failed',
       };
       
       const message = statusMessages[status] || 'status has been updated';
@@ -1037,15 +1039,12 @@ export class ThesisService {
     return await this.defenseSessionRepository.findByThesisId(thesisId);
   }
 
-  /**
-   * Schedule a defense session for a thesis
-   * Enhanced with eligibility check
-   */
   async scheduleDefenseSession(data: {
     thesisId: number;
     scheduledAt: Date;
     room: string;
     notes?: string;
+    duration?: number;
   }): Promise<DefenseSession> {
     const thesis = await this.thesisRepository.findById(data.thesisId);
     
@@ -1075,13 +1074,18 @@ export class ThesisService {
       );
     }
     
+    // Default duration to 15 minutes if not provided (school standard)
+    const duration = data.duration || 15;
+    
     // Create defense session
     const session = await this.defenseSessionRepository.create({
       thesisId: data.thesisId,
       scheduledAt: data.scheduledAt,
       room: data.room,
       notes: data.notes || null,
-      status: 'scheduled'
+      status: 'scheduled',
+      duration: duration,
+      startTime: data.scheduledAt
     } as DefenseSession);
     
     // Update thesis status
@@ -1105,7 +1109,7 @@ export class ThesisService {
       userId: Number(student?.userId),
       type: 'DEFENSE_SCHEDULED',
       title: 'Defense Session Scheduled',
-      content: `Your thesis defense has been scheduled for ${formattedDate} in room ${data.room}. Pre-defense score: ${eligibility.preDefenseScore?.toFixed(2)}`
+      content: `Your thesis defense has been scheduled for ${formattedDate} in room ${data.room}. Duration: ${duration} minutes. Pre-defense score: ${eligibility.preDefenseScore?.toFixed(2)}`
     });
     
     // Notify supervisor
@@ -1114,7 +1118,7 @@ export class ThesisService {
         userId: Number(supervisor?.userId),
         type: 'DEFENSE_SCHEDULED',
         title: 'Defense Session Scheduled',
-        content: `Defense for thesis "${thesis.title}" has been scheduled for ${formattedDate} in room ${data.room}.`
+        content: `Defense for thesis "${thesis.title}" has been scheduled for ${formattedDate} in room ${data.room}. Duration: ${duration} minutes.`
       });
     }
     
@@ -1127,7 +1131,7 @@ export class ThesisService {
           userId: Number(teacher?.userId),
           type: 'DEFENSE_SCHEDULED',
           title: 'Defense Session Scheduled',
-          content: `Defense for thesis "${thesis.title}" has been scheduled for ${formattedDate} in room ${data.room}.`
+          content: `Defense for thesis "${thesis.title}" has been scheduled for ${formattedDate} in room ${data.room}. Duration: ${duration} minutes.`
         });
       }
     }
@@ -1135,13 +1139,12 @@ export class ThesisService {
     return session;
   }
 
-  /**
-   * Reschedule a defense session
-   */
   async rescheduleDefenseSession(
     sessionId: number, 
     scheduledAt: Date, 
-    room?: string
+    room?: string,
+    notes?: string,
+    duration?: number
   ): Promise<DefenseSession | null> {
     const session = await this.defenseSessionRepository.findById(sessionId);
     if (!session) {
@@ -1155,7 +1158,25 @@ export class ThesisService {
 
     const student = await this.studentRepository.findById(thesis.studentId);
     
-    const updatedSession = await this.defenseSessionRepository.reschedule(sessionId, scheduledAt, room);
+    // Update session with new values
+    const updateData: any = {
+      scheduledAt,
+      startTime: scheduledAt
+    };
+    
+    if (room !== undefined) {
+      updateData.room = room;
+    }
+    
+    if (notes !== undefined) {
+      updateData.notes = notes;
+    }
+    
+    if (duration !== undefined) {
+      updateData.duration = duration;
+    }
+    
+    const updatedSession = await this.defenseSessionRepository.update(sessionId, updateData);
     
     if (updatedSession) {
       // Format the date for better readability
@@ -1169,13 +1190,14 @@ export class ThesisService {
       });
       
       const roomText = room ? ` in room ${room}` : '';
+      const durationText = duration ? ` Duration: ${duration} minutes.` : '';
       
       // Notify student
       await this.notificationService.createNotification({
         userId: Number(student?.userId),
         type: 'DEFENSE_RESCHEDULED',
         title: 'Defense Session Rescheduled',
-        content: `Your thesis defense has been rescheduled for ${formattedDate}${roomText}.`
+        content: `Your thesis defense has been rescheduled for ${formattedDate}${roomText}.${durationText}`
       });
       
       // Notify supervisor and committee members
@@ -1194,7 +1216,7 @@ export class ThesisService {
           userId: Number(teacher?.userId),
           type: 'DEFENSE_RESCHEDULED',
           title: 'Defense Session Rescheduled',
-          content: `Defense for thesis "${thesis.title}" has been rescheduled for ${formattedDate}${roomText}.`
+          content: `Defense for thesis "${thesis.title}" has been rescheduled for ${formattedDate}${roomText}.${durationText}`
         });
       }
     }
@@ -1898,5 +1920,216 @@ export class ThesisService {
         average,
         fail
       }));
+  }
+
+  /**
+   * Get committee member availability for defense scheduling
+   * Returns a schedule showing when teachers are busy with other defenses
+   */
+  async getCommitteeMemberAvailability(
+    semesterId: number,
+    excludeThesisId?: number
+  ): Promise<{
+    teachers: Array<{
+      id: number;
+      name: string;
+      title: string;
+      code: string;
+      busySlots: Array<{
+        thesisId: number;
+        thesisTitle: string;
+        scheduledAt: Date;
+        endTime: Date;
+        room: string;
+        role: string;
+      }>;
+    }>;
+  }> {
+    // Get all teachers
+    const teachers = await this.teacherRepository.findAll();
+    
+    // Get all scheduled defense sessions in this semester (excluding current thesis if editing)
+    const theses = await this.thesisRepository.findAll(
+      { 
+        semesterId,
+        ...(excludeThesisId && { id: { [Op.ne]: excludeThesisId } })
+      },
+      0,
+      undefined,
+      undefined,
+      {
+        include: [
+          {
+            model: DefenseSession,
+            as: 'defenseSession',
+            where: {
+              status: { [Op.in]: ['scheduled', 'completed'] }
+            },
+            required: false
+          }
+        ]
+      }
+    );
+
+    const teacherAvailability = await Promise.all(
+      teachers.map(async (teacher) => {
+        const teacherUser = await this.userRepository.findById(teacher.userId);
+        const busySlots: any[] = [];
+
+        // Check each thesis for this teacher's involvement
+        for (const thesis of theses) {
+          const thesisData = thesis as any;
+          if (!thesisData.defenseSession) continue;
+
+          const defenseSession = thesisData.defenseSession;
+          const scheduledAt = new Date(defenseSession.scheduledAt);
+          const duration = defenseSession.duration || 90; // Default 90 minutes
+          const endTime = new Date(scheduledAt.getTime() + duration * 60000);
+
+          // Check if teacher is supervisor
+          if (thesis.supervisorTeacherId === teacher.id) {
+            busySlots.push({
+              thesisId: thesis.id,
+              thesisTitle: thesis.title || 'Untitled',
+              scheduledAt,
+              endTime,
+              room: defenseSession.room || 'N/A',
+              role: 'Supervisor'
+            });
+            continue;
+          }
+
+          // Check if teacher is assigned as reviewer or committee member
+          const assignments = await this.thesisAssignmentRepository.findByThesisId(thesis.id);
+          const teacherAssignment = assignments.find(a => a.teacherId === teacher.id);
+          
+          if (teacherAssignment) {
+            busySlots.push({
+              thesisId: thesis.id,
+              thesisTitle: thesis.title || 'Untitled',
+              scheduledAt,
+              endTime,
+              room: defenseSession.room || 'N/A',
+              role: teacherAssignment.role === 'reviewer' ? 'Reviewer' : 'Committee Member'
+            });
+          }
+        }
+
+        // Sort busy slots by time
+        busySlots.sort((a, b) => a.scheduledAt.getTime() - b.scheduledAt.getTime());
+
+        return {
+          id: teacher.id,
+          name: teacherUser?.fullName || 'Unknown',
+          title: teacher.title || '',
+          code: teacher.teacherCode || '',
+          busySlots
+        };
+      })
+    );
+
+    return { teachers: teacherAvailability };
+  }
+  
+  async getSuggestedDefenseSlots(
+    thesisId: number,
+    startDate: Date,
+    endDate: Date,
+    preferredDuration: number = 15
+  ): Promise<Array<{
+    startTime: Date;
+    endTime: Date;
+    availableTeachers: number[];
+    conflictingTeachers: number[];
+  }>> {
+    const thesis = await this.thesisRepository.findById(thesisId);
+    if (!thesis) {
+      throw new AppError('Thesis not found', 404, 'THESIS_NOT_FOUND');
+    }
+
+    // Get supervisor and assigned teachers
+    const assignments = await this.thesisAssignmentRepository.findByThesisId(thesisId);
+    const requiredTeachers = [
+      thesis.supervisorTeacherId,
+      ...assignments.map(a => a.teacherId)
+    ];
+
+    // Get availability data
+    const { teachers } = await this.getCommitteeMemberAvailability(
+      thesis.semesterId,
+      thesisId
+    );
+
+    const suggestions: any[] = [];
+    const slotDuration = preferredDuration; // minutes
+    
+    // Generate time slots (every 15 minutes from 8 AM to 5 PM on weekdays)
+    const currentDate = new Date(startDate);
+    currentDate.setHours(0, 0, 0, 0); // Reset to start of day
+    
+    while (currentDate <= endDate) {
+      // Skip weekends
+      const dayOfWeek = currentDate.getDay();
+      if (dayOfWeek === 0 || dayOfWeek === 6) {
+        currentDate.setDate(currentDate.getDate() + 1);
+        continue;
+      }
+
+      // Check slots from 8:00 AM to 5:00 PM in 15-minute intervals
+      for (let hour = 8; hour < 17; hour++) {
+        for (let minute = 0; minute < 60; minute += 15) {
+          const slotStart = new Date(currentDate);
+          slotStart.setHours(hour, minute, 0, 0);
+          
+          const slotEnd = new Date(slotStart.getTime() + slotDuration * 60000);
+          
+          // Don't suggest slots that end after 5:30 PM
+          if (slotEnd.getHours() > 17 || (slotEnd.getHours() === 17 && slotEnd.getMinutes() > 30)) {
+            continue;
+          }
+
+          // Check which teachers are available
+          const availableTeachers: number[] = [];
+          const conflictingTeachers: number[] = [];
+
+          for (const teacherId of requiredTeachers) {
+            const teacher = teachers.find(t => t.id === teacherId);
+            if (!teacher) continue;
+
+            const hasConflict = teacher.busySlots.some((slot: any) => {
+              const slotStartTime = new Date(slot.scheduledAt);
+              const slotEndTime = new Date(slot.endTime);
+              
+              // Check for overlap
+              return (
+                (slotStart >= slotStartTime && slotStart < slotEndTime) ||
+                (slotEnd > slotStartTime && slotEnd <= slotEndTime) ||
+                (slotStart <= slotStartTime && slotEnd >= slotEndTime)
+              );
+            });
+
+            if (hasConflict) {
+              conflictingTeachers.push(teacherId);
+            } else {
+              availableTeachers.push(teacherId);
+            }
+          }
+
+          // Only suggest slots where all required teachers are available
+          if (conflictingTeachers.length === 0 && availableTeachers.length === requiredTeachers.length) {
+            suggestions.push({
+              startTime: slotStart.toISOString(), // Return ISO string for consistent time handling
+              endTime: slotEnd.toISOString(),
+              availableTeachers,
+              conflictingTeachers: []
+            });
+          }
+        }
+      }
+
+      currentDate.setDate(currentDate.getDate() + 1);
+    }
+
+    return suggestions.slice(0, 50); // Return top 50 suggestions
   }
 }

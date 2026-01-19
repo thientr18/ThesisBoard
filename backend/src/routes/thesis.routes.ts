@@ -160,6 +160,19 @@ router.patch(
   thesisController.completeDefenseSession
 );
 
+// ============= COMMITTEE AVAILABILITY ROUTES =============
+router.get(
+  '/committee/availability',
+  allowedPermissions(['schedule:defense_sessions', 'admin:all', 'moderator:all']),
+  thesisController.getCommitteeMemberAvailability
+);
+
+router.get(
+  '/defense-sessions/suggest-slots',
+  allowedPermissions(['schedule:defense_sessions', 'admin:all', 'moderator:all']),
+  thesisController.getSuggestedDefenseSlots
+);
+
 // ============= THESIS EVALUATION ROUTES =============
 router.post(
   '/evaluations',

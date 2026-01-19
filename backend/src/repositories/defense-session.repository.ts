@@ -64,13 +64,38 @@ export class DefenseSessionRepository extends GenericRepository<DefenseSession, 
   }
 
   async reschedule(id: number, scheduledAt: Date, room?: string): Promise<DefenseSession | null> {
-    const session = await this.findById(id);
-    if (!session) return null;
+    const session = await DefenseSession.findByPk(id);
     
-    return session.update({
-      scheduledAt,
-      ...(room !== undefined && { room })
+    if (!session) {
+      return null;
+    }
+    
+    session.scheduledAt = scheduledAt;
+    session.startTime = scheduledAt;
+    
+    if (room !== undefined) {
+      session.room = room;
+    }
+    
+    await session.save();
+    return session;
+  }
+
+  async update(id: number, data: Partial<DefenseSession>): Promise<DefenseSession | null> {
+    const session = await DefenseSession.findByPk(id);
+    
+    if (!session) {
+      return null;
+    }
+    
+    Object.keys(data).forEach(key => {
+      if (data[key as keyof DefenseSession] !== undefined) {
+        (session as any)[key] = data[key as keyof DefenseSession];
+      }
     });
+    
+    await session.save();
+    return session;
   }
 
   async updateStatus(id: number, status: 'scheduled' | 'completed' | 'cancelled'): Promise<DefenseSession | null> {

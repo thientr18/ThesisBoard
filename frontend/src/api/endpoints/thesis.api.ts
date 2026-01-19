@@ -400,7 +400,8 @@ export const useDefenseSessions = () => {
     thesisId: number,
     scheduledAt: string,
     room: string,
-    notes?: string
+    notes?: string,
+    duration?: number
   ): Promise<ApiResponse<any>> => {
     try {
       const response = await api.post(`${DEFENSE_PATH}`, {
@@ -408,6 +409,7 @@ export const useDefenseSessions = () => {
         scheduledAt,
         room,
         notes,
+        duration: duration || 15
       });
       return { data: response.data.data, error: null };
     } catch (error) {
@@ -419,13 +421,15 @@ export const useDefenseSessions = () => {
     sessionId: number,
     scheduledAt: string,
     room: string,
-    notes?: string
+    notes?: string,
+    duration?: number
   ): Promise<ApiResponse<any>> => {
     try {
       const response = await api.patch(`${DEFENSE_PATH}/${sessionId}`, {
         scheduledAt,
         room,
         notes,
+        duration: duration || 15
       });
       return { data: response.data.data, error: null };
     } catch (error) {
@@ -447,13 +451,46 @@ export const useDefenseSessions = () => {
     }
   }, [api]);
 
+
+  const getCommitteeAvailability = useCallback(async (
+    semesterId: number,
+    excludeThesisId?: number
+  ): Promise<ApiResponse<any>> => {
+    try {
+      const params: any = { semesterId };
+      if (excludeThesisId) params.excludeThesisId = excludeThesisId;
+      
+      const response = await api.get(`${BASE}/committee/availability`, { params });
+      return { data: response.data.data, error: null };
+    } catch (error) {
+      return { data: null, error: handleApiError(error) };
+    }
+  }, [api]);
+
+  const getSuggestedSlots = useCallback(async (
+    thesisId: number,
+    startDate: string,
+    endDate: string,
+    duration: number = 90
+  ): Promise<ApiResponse<any>> => {
+    try {
+      const response = await api.get(`${DEFENSE_PATH}/suggest-slots`, {
+        params: { thesisId, startDate, endDate, duration }
+      });
+      return { data: response.data.data, error: null };
+    } catch (error) {
+      return { data: null, error: handleApiError(error) };
+    }
+  }, [api]);
+
   return useMemo(() => ({
     schedule,
     reschedule,
     complete,
-  }), [schedule, reschedule, complete]);
+    getCommitteeAvailability,
+    getSuggestedSlots,
+  }), [schedule, reschedule, complete, getCommitteeAvailability, getSuggestedSlots]);
 };
-
 // ========== THESIS EVALUATIONS ==========
 export const useThesisEvaluations = () => {
   const api = useAuthenticatedApi();

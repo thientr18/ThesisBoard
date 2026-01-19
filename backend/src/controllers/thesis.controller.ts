@@ -698,12 +698,9 @@ export class ThesisController {
 
   // ============= DEFENSE SESSION ENDPOINTS =============
 
-  /**
-   * Schedule a defense session
-   */
   scheduleDefenseSession = async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const { thesisId, scheduledAt, room, notes } = req.body;
+      const { thesisId, scheduledAt, room, notes, duration } = req.body;
       
       // Validate scheduledAt
       if (!scheduledAt) {
@@ -722,11 +719,18 @@ export class ThesisController {
         throw new AppError('Defense session must be scheduled in the future', 400, 'PAST_DATE');
       }
       
+      // Validate duration if provided (15-30 minutes is typical)
+      const sessionDuration = duration ? parseInt(duration) : 15;
+      if (isNaN(sessionDuration) || sessionDuration < 10 || sessionDuration > 60) {
+        throw new AppError('Duration must be between 10 and 60 minutes', 400, 'INVALID_DURATION');
+      }
+      
       const session = await this.thesisService.scheduleDefenseSession({
         thesisId,
         scheduledAt: scheduledDate,
         room,
-        notes
+        notes,
+        duration: sessionDuration
       });
       
       return res.status(201).json({
@@ -738,13 +742,10 @@ export class ThesisController {
     }
   };
 
-  /**
-   * Reschedule a defense session
-   */
   rescheduleDefenseSession = async (req: Request, res: Response, next: NextFunction) => {
     try {
       const { id } = req.params;
-      const { scheduledAt, room } = req.body;
+      const { scheduledAt, room, notes, duration } = req.body;
       
       // Validate scheduledAt
       if (!scheduledAt) {
@@ -763,10 +764,18 @@ export class ThesisController {
         throw new AppError('Defense session must be scheduled in the future', 400, 'PAST_DATE');
       }
       
+      // Validate duration if provided
+      const sessionDuration = duration ? parseInt(duration) : undefined;
+      if (sessionDuration !== undefined && (isNaN(sessionDuration) || sessionDuration < 10 || sessionDuration > 60)) {
+        throw new AppError('Duration must be between 10 and 60 minutes', 400, 'INVALID_DURATION');
+      }
+      
       const session = await this.thesisService.rescheduleDefenseSession(
         parseInt(id),
         scheduledDate,
-        room
+        room,
+        notes,
+        sessionDuration
       );
       
       if (!session) {
@@ -781,6 +790,7 @@ export class ThesisController {
       next(error);
     }
   };
+
   /**
    * Complete a defense session
    */
@@ -943,6 +953,58 @@ export class ThesisController {
     try {
       const stats = await this.thesisService.getGradeDistribution();
       res.json(stats);
+    } catch (error) {
+      next(error);
+    }
+  };
+
+  /**
+   * Get committee member availability
+   */
+  getCommitteeMemberAvailability = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const { semesterId, excludeThesisId } = req.query;
+      
+      if (!semesterId) {
+        throw new AppError('Semester ID is required', 400, 'SEMESTER_ID_REQUIRED');
+      }
+
+      const availability = await this.thesisService.getCommitteeMemberAvailability(
+        parseInt(semesterId as string),
+        excludeThesisId ? parseInt(excludeThesisId as string) : undefined
+      );
+
+      return res.status(200).json({
+        status: 'success',
+        data: availability
+      });
+    } catch (error) {
+      next(error);
+    }
+  };
+
+  /**
+   * Get suggested defense time slots
+   */
+  getSuggestedDefenseSlots = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const { thesisId, startDate, endDate, duration } = req.query;
+      
+      if (!thesisId || !startDate || !endDate) {
+        throw new AppError('Thesis ID, start date, and end date are required', 400, 'MISSING_PARAMETERS');
+      }
+
+      const suggestions = await this.thesisService.getSuggestedDefenseSlots(
+        parseInt(thesisId as string),
+        new Date(startDate as string),
+        new Date(endDate as string),
+        duration ? parseInt(duration as string) : 90
+      );
+
+      return res.status(200).json({
+        status: 'success',
+        data: suggestions
+      });
     } catch (error) {
       next(error);
     }

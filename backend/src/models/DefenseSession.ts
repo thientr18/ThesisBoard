@@ -8,6 +8,8 @@ export class DefenseSession extends Model<InferAttributes<DefenseSession>, Infer
   declare room: string | null;
   declare status: 'scheduled' | 'completed' | 'cancelled';
   declare notes: string | null;
+  declare startTime: CreationOptional<Date>;
+  declare duration: CreationOptional<number>;
 }
 
 DefenseSession.init(
@@ -18,8 +20,10 @@ DefenseSession.init(
     room: { type: DataTypes.STRING(64), allowNull: true },
     status: { type: DataTypes.ENUM('scheduled', 'completed', 'cancelled'), defaultValue: 'scheduled' },
     notes: { type: DataTypes.STRING(255), allowNull: true },
-  },
-  { 
+    startTime: { type: DataTypes.DATE, allowNull: true, field: 'start_time' },
+    duration: { type: DataTypes.INTEGER, allowNull: true, defaultValue: 15, comment: 'Duration in minutes' },
+  }, 
+  {
     sequelize,
     tableName: 'defense_sessions',
     modelName: 'DefenseSession',
