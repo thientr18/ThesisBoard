@@ -1467,7 +1467,7 @@ export class ThesisService {
   }
 
   // ============= THESIS FINAL GRADE METHODS =============
-  /**
+    /**
    * Check if all required evaluations are complete and compute final grade
    */
   async isFullyEvaluated(thesisId: number): Promise<boolean> {
@@ -1482,12 +1482,12 @@ export class ThesisService {
     // Build list of required evaluators
     const requiredEvaluators: { teacherId: number, role: ThesisEvaluation['role'] }[] = [];
     
-    // Supervisor is required
+    // 1. Supervisor is always required
     if (thesis.supervisorTeacherId) {
       requiredEvaluators.push({ teacherId: thesis.supervisorTeacherId, role: 'supervisor' });
     }
     
-    // Add assigned reviewers and committee members
+    // 2. Add ONLY assigned reviewers and committee members from assignments
     for (const assignment of assignments) {
       if (assignment.role === 'reviewer') {
         requiredEvaluators.push({ teacherId: assignment.teacherId, role: 'reviewer' });
@@ -1495,6 +1495,16 @@ export class ThesisService {
         requiredEvaluators.push({ teacherId: assignment.teacherId, role: 'committee_member' });
       }
     }
+
+    // Must have at least supervisor + reviewer + 1 committee member
+    const hasReviewer = requiredEvaluators.some(e => e.role === 'reviewer');
+    const hasCommittee = requiredEvaluators.some(e => e.role === 'committee_member');
+    
+    if (!hasReviewer || !hasCommittee) {
+      console.log(`Thesis ${thesisId} is not fully evaluated: missing reviewer or committee members`);
+      return false;
+    }
+    
     // Check if every required evaluator has submitted an evaluation
     const allEvaluated = requiredEvaluators.every(req =>
       evaluations.some(ev =>
@@ -1502,7 +1512,9 @@ export class ThesisService {
       )
     );
 
-    const result = allEvaluated && requiredEvaluators.length > 0;
+    const result = allEvaluated && requiredEvaluators.length >= 3; // At least supervisor + reviewer + 1 committee
+    
+    console.log(`Thesis ${thesisId} evaluation status: ${result ? 'FULLY EVALUATED' : 'PENDING'} (${evaluations.length}/${requiredEvaluators.length} evaluations)`);
     
     return result;
   }
@@ -1521,10 +1533,11 @@ export class ThesisService {
     const isFullyEvaluated = await this.isFullyEvaluated(thesisId);
     
     if (!isFullyEvaluated) {
+      console.log(`Thesis ${thesisId} is not fully evaluated yet - skipping final grade calculation`);
       return;
     }
     
-    // Calculate average score
+    // Calculate average score ONLY when fully evaluated
     const averageScore = await this.thesisEvaluationRepository.getAverageScoreByThesisId(thesisId);
     
     if (averageScore === null) {

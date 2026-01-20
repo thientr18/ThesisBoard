@@ -91,10 +91,24 @@ export class PreThesisController {
         }
       });
 
-      const result = topics.map(topic => ({
-        ...topic.toJSON(),
-        slotsLeft: topic.maxSlots !== null ? Math.max(0, topic.maxSlots - (slotsMap[topic.id] || 0)) : null,
-      }));
+      // Fetch teacher information for each topic
+      const result = await Promise.all(
+        topics.map(async (topic) => {
+          const teacher = await this.userService.getTeacherById(topic.teacherId);
+          const teacherUser = teacher ? await this.userService.getUserById(teacher.userId) : null;
+          
+          return {
+            ...topic.toJSON(),
+            slotsLeft: topic.maxSlots !== null ? Math.max(0, topic.maxSlots - (slotsMap[topic.id] || 0)) : null,
+            teacher: {
+              id: teacher?.id,
+              fullName: teacherUser?.fullName || 'Unknown',
+              title: teacher?.title,
+              office: teacher?.office,
+            }
+          };
+        })
+      );
 
       res.status(200).json({ status: 'success', data: result });
     } catch (error) {

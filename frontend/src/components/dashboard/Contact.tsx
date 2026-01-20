@@ -69,7 +69,7 @@ export default function Contact() {
           }}
         >
           This thesis project is developed by <strong>Tran Thien</strong> under the supervision of 
-          <strong> Dr. Le Thanh Son</strong> at the School of Computer Science and Engineering, 
+          <strong> MSc. Le Thanh Son</strong> at the School of Computer Science and Engineering, 
           Vietnam National University - International University.
         </p>
       </div>

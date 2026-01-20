@@ -21,6 +21,7 @@ import { TeacherAvailabilityRepository } from '../repositories/teacher-availabil
 import { StudentRepository } from '../repositories/student.repository';
 import { TeacherRepository } from '../repositories/teacher.repository';
 import { Semester } from '../models/Semester';
+import { UserRepository } from '../repositories/user.repository';
 
 export class PreThesisService {
   private preThesisRepository: PreThesisRepository;
@@ -30,7 +31,8 @@ export class PreThesisService {
   private teacherAvailabilityRepository: TeacherAvailabilityRepository;
   private studentRepository: StudentRepository;
   private teacherRepository: TeacherRepository;
-
+  private userRepository: UserRepository;
+  
   private notificationService: NotificationService = new NotificationService();
 
   constructor() {
@@ -41,9 +43,34 @@ export class PreThesisService {
     this.teacherAvailabilityRepository = new TeacherAvailabilityRepository();
     this.studentRepository = new StudentRepository();
     this.teacherRepository = new TeacherRepository();
+    this.userRepository = new UserRepository();
   }
 
   // Topic-related methods
+  async getTopicsWithSlots(semesterId?: number): Promise<Topic[]> {
+    const topics = semesterId
+      ? await this.topicRepository.findBySemesterId(semesterId)
+      : await this.getAllTopicsByActiveSemester();
+
+    // Include teacher information
+    const topicsWithTeacher = await Promise.all(
+      topics.map(async (topic) => {
+        const teacher = await this.teacherRepository.findById(topic.teacherId);
+        const teacherUser = teacher ? await this.userRepository.findById(teacher.userId) : null;
+        return {
+          ...topic.toJSON(),
+          teacher: {
+            id: teacher?.id,
+            fullName: teacherUser?.fullName,
+            title: teacher?.title,
+            office: teacher?.office,
+          }
+        };
+      })
+    );
+
+    return topicsWithTeacher as any;
+  }
   async getAllTopicsByActiveSemester(): Promise<Topic[]> {
     const activeSemester = await new SemesterRepository().findActiveSemester();
     if (!activeSemester) throw new AppError('No active semester found', 404, 'NO_ACTIVE_SEMESTER');

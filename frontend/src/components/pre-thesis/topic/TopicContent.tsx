@@ -55,6 +55,7 @@ function TopicContent({ user }: { user: any | null }) {
     if (!activeSemester?.id) return; // Không gọi nếu chưa có semester
     setLoading(true);
     const { data, error } = await getTopicsWithSlots(activeSemester.id);
+    console.log("Fetched topics:", data, "Error:", error);
     if (error) setError(error);
     setTopics(Array.isArray(data) ? data : []);
     setLoading(false);

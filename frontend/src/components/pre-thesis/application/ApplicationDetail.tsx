@@ -98,7 +98,7 @@ const ApplicationDetail = ({
         </div>
       )}
       
-      <div className="mt-2">
+      {/* <div className="mt-2">
         <b>Attachments:</b>
         {loadingFiles ? <Spin size="small" /> : (
           attachments.length > 0 ? (
@@ -118,7 +118,7 @@ const ApplicationDetail = ({
             </ul>
           ) : <span> No attachments </span>
         )}
-      </div>
+      </div> */}
 
       {canProcessApplication && !action && (
         <div style={{ marginTop: 16 }}>

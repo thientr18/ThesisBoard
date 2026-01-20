@@ -25,6 +25,16 @@ const TopicCard: React.FC<TopicCardProps> = ({
             <Tag color="default">Closed</Tag>
           )}
         </div>
+        
+        {/* Teacher information */}
+        {topic.teacher && (
+          <div className="text-sm text-gray-600">
+            <span className="font-medium">Supervisor:</span>{" "}
+            {topic.teacher.title && `${topic.teacher.title} `}
+            {topic.teacher.fullName || "N/A"}
+          </div>
+        )}
+        
         <div className="text-gray-700 text-sm line-clamp-2 mb-1">
           {topic.description}
         </div>
@@ -36,7 +46,6 @@ const TopicCard: React.FC<TopicCardProps> = ({
         <div className="text-xs text-gray-500 mt-1">
           Max Slots: {topic.maxSlots ?? "N/A"} &nbsp;|&nbsp; Slots Left: <b>{topic.slotsLeft ?? "?"}</b>
         </div>
-        {/* Đã xóa nút Apply và Full ở đây */}
       </div>
     </Card>
   );

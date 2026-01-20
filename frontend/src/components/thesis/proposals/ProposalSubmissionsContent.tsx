@@ -41,8 +41,8 @@ const TeacherRegistrationTable: React.FC<TeacherRegistrationTableProps> = ({
               </Button>
             ) : (
               <span className="text-gray-400">
-                {record.status === "approved" ? "Approved - Cannot Edit" : 
-                 record.status === "rejected" ? "Rejected - Cannot Edit" : "Cannot Edit"}
+                {record.status === "approved" ? "Approved" : 
+                 record.status === "rejected" ? "Rejected" : "Cannot Edit"}
               </span>
             )
           ),
