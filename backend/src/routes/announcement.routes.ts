@@ -15,22 +15,22 @@ router.use(attachUserFromJwt);
 
 router.get(
   '/',
-  allowedPermissions(['view:announcements', 'admin:all', 'moderator:all']),
+  allowedPermissions(['view:announcements', 'admin:all', 'moderator:all', 'teacher:all', 'student:all']),
   announcementController.getAllAnnouncements
 );
 router.get(
   '/pinned',
-  allowedPermissions(['view:announcements', 'admin:all', 'moderator:all']),
+  allowedPermissions(['view:announcements', 'admin:all', 'moderator:all', 'teacher:all', 'student:all']),
   announcementController.getPinnedAnnouncements
 );
 router.get(
   '/slide',
-  allowedPermissions(['view:announcements', 'admin:all', 'moderator:all']),
+  allowedPermissions(['view:announcements', 'admin:all', 'moderator:all', 'teacher:all', 'student:all']),
   announcementController.getAnnouncementSlides
 );
 router.get(
   '/:id',
-  allowedPermissions(['view:announcements', 'admin:all', 'moderator:all']),
+  allowedPermissions(['view:announcements', 'admin:all', 'moderator:all', 'teacher:all', 'student:all']),
   announcementController.getAnnouncementById
 );
 router.post(
@@ -52,19 +52,19 @@ router.delete(
 // For statistics
 router.get(
   '/stats/count',
-  allowedPermissions(['view:announcements', 'admin:all', 'moderator:all']),
+  allowedPermissions(['view:announcements', 'admin:all', 'moderator:all', 'teacher:all', 'student:all']),
   announcementController.getAnnouncementCount
 );
 
 router.get(
   '/stats/pinned/count',
-  allowedPermissions(['view:announcements', 'admin:all', 'moderator:all']),
+  allowedPermissions(['view:announcements', 'admin:all', 'moderator:all', 'teacher:all', 'student:all']),
   announcementController.getPinnedAnnouncementCount
 );
 
 router.get(
   '/stats/weekly/count',
-  allowedPermissions(['view:announcements', 'admin:all', 'moderator:all']),
+  allowedPermissions(['view:announcements', 'admin:all', 'moderator:all', 'teacher:all', 'student:all']),
   announcementController.getWeeklyAnnouncementCount
 );
 

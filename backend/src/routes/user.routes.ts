@@ -11,14 +11,14 @@ router.use(checkJwt);
 router.use(attachUserFromJwt);
 
 // Role management
-router.post('/roles', allowedPermissions(['admin:all', 'manage:roles']), userController.assignRoleToUser);
-router.delete('/roles', allowedPermissions(['admin:all', 'manage:roles']), userController.removeRoleFromUser);
+router.post('/roles', allowedPermissions(['admin:all', 'moderator:all','manage:roles']), userController.assignRoleToUser);
+router.delete('/roles', allowedPermissions(['admin:all', 'moderator:all', 'manage:roles']), userController.removeRoleFromUser);
 
 // User listing and search
 router.get('/me', userController.getCurrentUserProfile);
 router.put('/change-password', userController.changeOwnPassword);
 router.get('/search', allowedPermissions(['admin:all', 'moderator:all', 'read:users']), userController.searchUsers);
-router.get('/statistics', allowedPermissions(['admin:all', 'access:admin_dashboard', 'view:logs']), userController.getUserStatistics);
+router.get('/statistics', allowedPermissions(['admin:all', 'moderator:all', 'access:admin_dashboard', 'view:logs']), userController.getUserStatistics);
 
 // Student-specific operations
 router.post('/student', allowedPermissions(['admin:all', 'moderator:all']), userController.createStudent);
@@ -37,8 +37,8 @@ router.delete('/teacher/:teacherId', allowedPermissions(['admin:all', 'moderator
 
 // Administrator-specific operations
 router.get('/administrator/:id', allowedPermissions(['admin:all', 'moderator:all', 'read:users']), userController.getUserWithRolesById);
-router.get('/administrators', allowedPermissions(['admin:all', 'moderator, all', 'read:users']), userController.getAllAdministrators);
-router.post('/administrator', allowedPermissions(['admin:all', 'create:users']), userController.createAdministrator);
-router.put('/administrator/:id', allowedPermissions(['admin:all', 'update:users']), userController.updateAdministrator);
-router.delete('/administrator/:id', allowedPermissions(['admin:all', 'delete:users']), userController.deleteAdministrator);
+router.get('/administrators', allowedPermissions(['admin:all', 'moderator:all', 'read:users']), userController.getAllAdministrators);
+router.post('/administrator', allowedPermissions(['admin:all', 'moderator:all', 'create:users']), userController.createAdministrator);
+router.put('/administrator/:id', allowedPermissions(['admin:all', 'moderator:all', 'update:users']), userController.updateAdministrator);
+router.delete('/administrator/:id', allowedPermissions(['admin:all', 'moderator:all', 'delete:users']), userController.deleteAdministrator);
 export default router;
