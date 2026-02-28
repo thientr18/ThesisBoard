@@ -153,6 +153,7 @@ async function initData() {
   studentSemesters.forEach(row => studentSemesterSchema.parse(row));
 
   const transaction = await sequelize.transaction();
+  const createdAuth0UserIds: string[] = [];
 
   try {
     // Insert semesters
@@ -189,6 +190,8 @@ async function initData() {
         password: student.password,
         name: student.fullName,
       });
+      createdAuth0UserIds.push(auth0User.user_id);
+      console.log(`Created student ${createdAuth0UserIds.length}: ${auth0User.user_id} - ${student.email}`);
 
       await assignRoleWithRetry(auth0Service, auth0User.user_id, studentRole.id);
 
@@ -223,58 +226,44 @@ async function initData() {
 
     // Insert admins
     for (const admin of admins) {
-      let auth0User: Auth0User | null = null;
-      try {
-        auth0User = await auth0Service.createUser({
-          connection: 'Username-Password-Authentication',
-          email: admin.email,
-          username: admin.username,
-          password: admin.password,
-          name: admin.fullName,
-        });
+      const auth0User = await auth0Service.createUser({
+        connection: 'Username-Password-Authentication',
+        email: admin.email,
+        username: admin.username,
+        password: admin.password,
+        name: admin.fullName,
+      });
+      createdAuth0UserIds.push(auth0User.user_id);
+      console.log(`Created admin ${createdAuth0UserIds.length}: ${auth0User.user_id} - ${admin.email}`);
 
-        await assignRoleWithRetry(auth0Service, auth0User.user_id, adminRole.id);
+      await assignRoleWithRetry(auth0Service, auth0User.user_id, adminRole.id);
 
-        await User.create({
-          email: admin.email,
-          fullName: admin.fullName,
-          auth0UserId: auth0User.user_id
-        }, { transaction });
-      } catch (err) {
-        // Delete Auth0 user if created
-        if (auth0User) {
-          try { await auth0Service.deleteUser(auth0User.user_id); } catch {}
-        }
-        throw err;
-      }
+      await User.create({
+        email: admin.email,
+        fullName: admin.fullName,
+        auth0UserId: auth0User.user_id
+      }, { transaction });
     }
 
     // Insert moderators
     for (const moderator of moderators) {
-      let auth0User: Auth0User | null = null;
-      try {
-        auth0User = await auth0Service.createUser({
-          connection: 'Username-Password-Authentication',
-          email: moderator.email,
-          username: moderator.username,
-          password: moderator.password,
-          name: moderator.fullName,
-        });
+      const auth0User = await auth0Service.createUser({
+        connection: 'Username-Password-Authentication',
+        email: moderator.email,
+        username: moderator.username,
+        password: moderator.password,
+        name: moderator.fullName,
+      });
+      createdAuth0UserIds.push(auth0User.user_id);
+      console.log(`Created moderator ${createdAuth0UserIds.length}: ${auth0User.user_id} - ${moderator.email}`);
 
-        await assignRoleWithRetry(auth0Service, auth0User.user_id, moderatorRole.id);
+      await assignRoleWithRetry(auth0Service, auth0User.user_id, moderatorRole.id);
 
-        await User.create({
-          email: moderator.email,
-          fullName: moderator.fullName,
-          auth0UserId: auth0User.user_id
-        }, { transaction });
-      } catch (err) {
-        // Delete Auth0 user if created
-        if (auth0User) {
-          try { await auth0Service.deleteUser(auth0User.user_id); } catch {}
-        }
-        throw err;
-      }
+      await User.create({
+        email: moderator.email,
+        fullName: moderator.fullName,
+        auth0UserId: auth0User.user_id
+      }, { transaction });
     }
 
     // Insert teachers
@@ -286,6 +275,8 @@ async function initData() {
         password: teacher.password,
         name: teacher.fullName
       });
+      createdAuth0UserIds.push(auth0User.user_id);
+      console.log(`Created teacher ${createdAuth0UserIds.length}: ${auth0User.user_id} - ${teacher.email}`);
 
       await assignRoleWithRetry(auth0Service, auth0User.user_id, teacherRole.id);
 
@@ -304,9 +295,21 @@ async function initData() {
     }
 
     await transaction.commit();
-    console.log('Data import completed successfully.');
+    console.log(`Data import completed successfully. Total users created: ${createdAuth0UserIds.length}`);
   } catch (err) {
     await transaction.rollback();
+    
+    // Cleanup all created Auth0 users
+    console.log(`Rolling back... Deleting ${createdAuth0UserIds.length} Auth0 users...`);
+    for (const userId of createdAuth0UserIds) {
+      try {
+        await auth0Service.deleteUser(userId);
+        console.log(`Deleted Auth0 user: ${userId}`);
+      } catch (deleteErr) {
+        console.error(`Failed to delete Auth0 user ${userId}:`, deleteErr);
+      }
+    }
+    
     console.error('Data import failed:', err);
     throw err;
   }

@@ -5,24 +5,31 @@ import { Auth0Service } from '../services/auth0.service';
 async function bulkDeleteAllUsers() {
   const auth0Service = new Auth0Service();
   try {
-    let page = 0;
     const perPage = 100;
     let totalDeleted = 0;
+
     while (true) {
-      const { users } = await auth0Service.getUsers(undefined, page, perPage);
-      if (!users.length) break;
+      const { users } = await auth0Service.getUsers(undefined, 0, perPage);
+      
+      if (!users.length) {
+        console.log('No more users to delete.');
+        break;
+      }
+      
+      console.log(`Found ${users.length} users to delete...`);
+      
       for (const user of users) {
         try {
           await auth0Service.deleteUser(user.user_id);
           totalDeleted++;
-          console.log(`Deleted user: ${user.user_id}`);
+          console.log(`Deleted user ${totalDeleted}: ${user.user_id}`);
         } catch (err) {
           console.error(`Failed to delete user ${user.user_id}:`, err);
         }
         await new Promise(res => setTimeout(res, 200));
       }
-      page++;
     }
+    
     console.log(`Bulk delete completed. Total users deleted: ${totalDeleted}`);
   } catch (err) {
     console.error('Bulk delete failed:', err);
