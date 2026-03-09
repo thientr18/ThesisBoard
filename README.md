@@ -115,7 +115,7 @@ FLUSH PRIVILEGES;
 
 #### 3.1. Clone Repository
 ```bash
-git clone <repository-url>
+git clone git@github.com:thientr18/ThesisBoard.git
 pwd
 cd <pwd>
 ```
