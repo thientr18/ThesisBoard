@@ -287,15 +287,3 @@ ThesisBoard/
 ### CORS Errors
 - Check `Allowed Origins` in Auth0 Application settings
 - Verify backend CORS configuration
-
-## 📝 License
-
-[Add your license here]
-
-## 👥 Contributors
-
-[Add contributors list]
-
-## 📧 Contact
-
-[Add contact information]
